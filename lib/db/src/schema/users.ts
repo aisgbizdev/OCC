@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, boolean, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, boolean, timestamp, integer, index, foreignKey } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -28,6 +28,7 @@ export const usersTable = pgTable("users", {
   index("users_branch_id_idx").on(table.branchId),
   index("users_shift_id_idx").on(table.shiftId),
   index("users_active_status_idx").on(table.activeStatus),
+  foreignKey({ columns: [table.supervisorId], foreignColumns: [table.id], name: "users_supervisor_id_fk" }),
 ]);
 
 export const usersRelations = relations(usersTable, ({ one }) => ({
@@ -35,7 +36,7 @@ export const usersRelations = relations(usersTable, ({ one }) => ({
   pt: one(ptsTable, { fields: [usersTable.ptId], references: [ptsTable.id] }),
   branch: one(branchesTable, { fields: [usersTable.branchId], references: [branchesTable.id] }),
   shift: one(shiftsTable, { fields: [usersTable.shiftId], references: [shiftsTable.id] }),
-  supervisor: one(usersTable, { fields: [usersTable.supervisorId], references: [usersTable.id] }),
+  supervisor: one(usersTable, { fields: [usersTable.supervisorId], references: [usersTable.id], relationName: "supervisor" }),
 }));
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });

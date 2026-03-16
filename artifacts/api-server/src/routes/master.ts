@@ -6,7 +6,7 @@ import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/pts", authMiddleware, async (_req, res) => {
+router.get("/pts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const pts = await db.select().from(ptsTable);
     res.json(pts);
@@ -54,7 +54,7 @@ router.delete("/pts/:id", authMiddleware, requireRole("Owner", "Admin System"), 
   }
 });
 
-router.get("/branches", authMiddleware, async (req, res) => {
+router.get("/branches", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const conditions: SQL[] = [];
     if (req.query.ptId) conditions.push(eq(branchesTable.ptId, Number(req.query.ptId)));
@@ -106,7 +106,7 @@ router.delete("/branches/:id", authMiddleware, requireRole("Owner", "Admin Syste
   }
 });
 
-router.get("/shifts", authMiddleware, async (_req, res) => {
+router.get("/shifts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const shifts = await db.select().from(shiftsTable);
     res.json(shifts);
@@ -155,7 +155,7 @@ router.delete("/shifts/:id", authMiddleware, requireRole("Owner", "Admin System"
   }
 });
 
-router.get("/activity-types", authMiddleware, async (_req, res) => {
+router.get("/activity-types", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const types = await db.select().from(activityTypesTable);
     res.json(types);

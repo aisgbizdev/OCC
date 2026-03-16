@@ -33,7 +33,7 @@ async function enrichUser(user: typeof usersTable.$inferSelect) {
   };
 }
 
-router.get("/users", authMiddleware, async (req, res) => {
+router.get("/users", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Direksi"), async (req, res) => {
   try {
     const conditions: SQL[] = [];
     if (req.query.ptId) conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
@@ -77,7 +77,7 @@ router.post("/users", authMiddleware, requireRole("Owner", "Admin System", "Chie
   }
 });
 
-router.get("/users/:id", authMiddleware, async (req, res) => {
+router.get("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Direksi"), async (req, res) => {
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
@@ -106,6 +106,17 @@ router.put("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "C
     res.json(await enrichUser(user));
   } catch (error) {
     console.error("Update user error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/users/:id", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
+  try {
+    const [user] = await db.update(usersTable).set({ activeStatus: false }).where(eq(usersTable.id, Number(req.params.id))).returning();
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    res.json({ message: "User deactivated" });
+  } catch (error) {
+    console.error("Delete user error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
