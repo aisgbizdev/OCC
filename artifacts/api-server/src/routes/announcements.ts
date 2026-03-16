@@ -14,10 +14,13 @@ router.get("/announcements", authMiddleware, requireRole(...ALL_ROLES), async (r
   try {
     const conditions: SQL[] = [];
     if (req.query.priority) conditions.push(eq(announcementsTable.priority, req.query.priority as string));
+    const now = new Date();
     if (req.query.activeOnly === "true") {
-      const now = new Date();
       conditions.push(or(isNull(announcementsTable.startsAt), lte(announcementsTable.startsAt, now))!);
       conditions.push(or(isNull(announcementsTable.endsAt), gte(announcementsTable.endsAt, now))!);
+    }
+    if (req.query.expiredOnly === "true") {
+      conditions.push(lte(announcementsTable.endsAt, now));
     }
 
     if (!["Owner", "Admin System"].includes(req.user!.roleName)) {
@@ -33,6 +36,11 @@ router.get("/announcements", authMiddleware, requireRole(...ALL_ROLES), async (r
       if (req.user!.roleId) {
         scopeConditions.push(
           and(eq(announcementsTable.targetScope, "role"), eq(announcementsTable.roleId, req.user!.roleId))!
+        );
+      }
+      if (req.user!.shiftId) {
+        scopeConditions.push(
+          and(eq(announcementsTable.targetScope, "shift"), eq(announcementsTable.shiftId, req.user!.shiftId))!
         );
       }
       conditions.push(or(...scopeConditions)!);

@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { systemSettingsTable, auditLogsTable, usersTable, activityLogsTable } from "@workspace/db/schema";
 import { eq, and, desc, lt, type SQL, sql } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
-import { createAuditLog } from "../helpers/audit";
+import { createAuditLog, createNotification } from "../helpers/audit";
 
 const router: IRouter = Router();
 
@@ -115,10 +115,26 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
         };
       });
 
+    for (const dealer of inactive) {
+      await createAuditLog({
+        userId: _req.user!.userId,
+        actionType: "inactivity_flag",
+        module: "system",
+        entityId: String(dealer.userId),
+      });
+      await createNotification({
+        userId: dealer.userId,
+        type: "warning",
+        title: "Inactivity Warning",
+        content: `You have been flagged as inactive (${dealer.hoursInactive}h without activity). Please log your activities.`,
+      });
+    }
+
     res.json({
       warningThresholdHours: warningHours,
       criticalThresholdHours: criticalHours,
       inactiveCount: inactive.length,
+      markedAt: new Date().toISOString(),
       dealers: inactive,
     });
   } catch (error) {

@@ -14,6 +14,7 @@ export interface AuthPayload {
   roleId: number;
   roleName: string;
   ptId: number | null;
+  shiftId: number | null;
 }
 
 declare global {

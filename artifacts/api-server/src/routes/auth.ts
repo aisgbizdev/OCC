@@ -46,6 +46,7 @@ router.post("/auth/login", async (req, res) => {
       roleId: user.roleId,
       roleName,
       ptId: user.ptId,
+      shiftId: user.shiftId,
     });
 
     const pt = user.ptId ? (await db.select().from(ptsTable).where(eq(ptsTable.id, user.ptId)).limit(1))[0] : null;
