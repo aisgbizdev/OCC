@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useListChats, useListChatMessages, useSendChatMessage } from "@workspace/api-client-react";
+import { useListChats, useListChatMessages, useSendChatMessage, type ChatMessage } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Hash, ArrowLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,24 +10,18 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Chats() {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
-
-  if (selectedChatId) {
-    return <ChatRoom chatId={selectedChatId} onBack={() => setSelectedChatId(null)} />;
-  }
-
+  if (selectedChatId) return <ChatRoom chatId={selectedChatId} onBack={() => setSelectedChatId(null)} />;
   return <ChatList onSelect={setSelectedChatId} />;
 }
 
 function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
   const { data: chats } = useListChats();
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Chat Rooms</h1>
         <p className="text-muted-foreground mt-1">Internal team communications.</p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {chats?.map(chat => (
           <button key={chat.id} onClick={() => onSelect(chat.id)} className="bg-card border rounded-2xl p-5 shadow-sm hover:bg-muted/10 transition-colors cursor-pointer group text-left w-full">
@@ -44,8 +38,8 @@ function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
               <p className="text-sm text-muted-foreground line-clamp-2 mt-2 bg-background p-2 rounded-lg border">{chat.lastMessage}</p>
             )}
             <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{chat.members?.length || 0} members</span>
-              <span>{format(new Date(chat.createdAt), "MMM d, yyyy")}</span>
+              <span>{chat.members?.length ?? 0} members</span>
+              <span>{chat.createdAt ? format(new Date(chat.createdAt), "MMM d, yyyy") : ""}</span>
             </div>
           </button>
         ))}
@@ -60,7 +54,7 @@ function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
 function ChatRoom({ chatId, onBack }: { chatId: number; onBack: () => void }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: messages } = useListChatMessages(chatId, { query: { refetchInterval: 5000 } });
+  const { data: messages } = useListChatMessages(chatId, { query: { queryKey: ["chat-messages", chatId], refetchInterval: 5000 } });
   const sendMessage = useSendChatMessage();
   const qc = useQueryClient();
   const [text, setText] = useState("");
@@ -73,14 +67,12 @@ function ChatRoom({ chatId, onBack }: { chatId: number; onBack: () => void }) {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-    sendMessage.mutate({ chatId, data: { message: text.trim() } }, {
+    sendMessage.mutate({ id: chatId, data: { message: text.trim() } }, {
       onSuccess: () => {
         setText("");
-        qc.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+        qc.invalidateQueries({ queryKey: ["chat-messages", chatId] });
       },
-      onError: () => {
-        toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
-      }
+      onError: () => toast({ title: "Error", description: "Failed to send message", variant: "destructive" })
     });
   };
 
@@ -97,15 +89,15 @@ function ChatRoom({ chatId, onBack }: { chatId: number; onBack: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
-        {messages?.map((msg: any) => {
-          const isMe = msg.userId === user?.id;
+        {messages?.map((msg: ChatMessage) => {
+          const isMe = msg.senderId === user?.id;
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>
-                {!isMe && <p className="text-xs font-bold mb-1 opacity-70">{msg.userName}</p>}
+                {!isMe && <p className="text-xs font-bold mb-1 opacity-70">{msg.senderName}</p>}
                 <p className="text-sm">{msg.message}</p>
                 <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                  {format(new Date(msg.createdAt), "HH:mm")}
+                  {msg.createdAt ? format(new Date(msg.createdAt), "HH:mm") : ""}
                 </p>
               </div>
             </div>

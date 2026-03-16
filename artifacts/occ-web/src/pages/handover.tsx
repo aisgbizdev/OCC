@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { useListHandoverLogs, useCreateHandoverLog, useListShifts, useListTasks, useListComplaints } from "@workspace/api-client-react";
+import {
+  useListHandoverLogs,
+  useCreateHandoverLog,
+  useListShifts,
+  useListTasks,
+  useListComplaints,
+  type HandoverLogWithRelations,
+  type TaskWithRelations,
+  type ComplaintWithRelations
+} from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,19 +21,19 @@ export default function Handover() {
   const [createOpen, setCreateOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleCopy = (log: any) => {
+  const handleCopy = (log: HandoverLogWithRelations) => {
     const text = `SHIFT HANDOVER REPORT
-From: ${log.fromShiftName} → ${log.toShiftName}
-By: ${log.creatorName}
-Date: ${format(new Date(log.createdAt), "yyyy-MM-dd HH:mm")}
+From: ${log.fromShiftName ?? "-"} → ${log.toShiftName ?? "-"}
+By: ${log.creatorName ?? "-"}
+Date: ${log.createdAt ? format(new Date(log.createdAt), "yyyy-MM-dd HH:mm") : "-"}
 
-SUMMARY: ${log.summary || "-"}
-PENDING ACTIVITIES: ${log.pendingActivities || "None"}
-PENDING TASKS: ${log.pendingTasks || "None"}
-PENDING COMPLAINTS: ${log.pendingComplaints || "None"}
-NOTES: ${log.notes || "-"}`;
+SUMMARY: ${log.summary ?? "-"}
+PENDING ACTIVITIES: ${log.pendingActivities ?? "None"}
+PENDING TASKS: ${log.pendingTasks ?? "None"}
+PENDING COMPLAINTS: ${log.pendingComplaints ?? "None"}
+NOTES: ${log.notes ?? "-"}`;
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied", description: "Handover report copied to clipboard" });
+    toast({ title: "Disalin", description: "Laporan handover disalin ke clipboard" });
   };
 
   return (
@@ -32,15 +41,15 @@ NOTES: ${log.notes || "-"}`;
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shift Handover</h1>
-          <p className="text-muted-foreground mt-1">Structured shift transition reports.</p>
+          <p className="text-muted-foreground mt-1">Laporan transisi shift terstruktur.</p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> New Handover
+          <Plus className="w-4 h-4" /> Handover Baru
         </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {logs?.map(log => (
+        {logs?.map((log: HandoverLogWithRelations) => (
           <div key={log.id} className="bg-card border rounded-2xl p-6 shadow-sm">
             <div className="flex justify-between items-start mb-6 border-b pb-4">
               <div className="flex items-center gap-3">
@@ -48,47 +57,47 @@ NOTES: ${log.notes || "-"}`;
                   <Repeat className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Handover from {log.creatorName}</h3>
-                  <p className="text-sm text-muted-foreground">{log.fromShiftName} → {log.toShiftName}</p>
+                  <h3 className="font-bold text-lg">Handover dari {log.creatorName ?? "-"}</h3>
+                  <p className="text-sm text-muted-foreground">{log.fromShiftName ?? "-"} → {log.toShiftName ?? "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Copy report">
+                <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Salin laporan">
                   <Copy className="w-4 h-4" />
                 </Button>
                 <div className="text-right">
-                  <p className="font-mono text-sm font-medium">{format(new Date(log.createdAt), "MMM d, yyyy")}</p>
-                  <p className="text-xs text-muted-foreground">{format(new Date(log.createdAt), "HH:mm")}</p>
+                  <p className="font-mono text-sm font-medium">{log.createdAt ? format(new Date(log.createdAt), "MMM d, yyyy") : "-"}</p>
+                  <p className="text-xs text-muted-foreground">{log.createdAt ? format(new Date(log.createdAt), "HH:mm") : ""}</p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5"/> Summary</h4>
-                <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.summary || "-"}</p>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5"/> Ringkasan</h4>
+                <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.summary ?? "-"}</p>
               </div>
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Notes</h4>
-                <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.notes || "-"}</p>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Catatan</h4>
+                <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.notes ?? "-"}</p>
               </div>
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Pending Tasks</h4>
-                <p className="text-sm font-mono bg-amber-500/5 p-3 rounded-lg border border-amber-500/20">{log.pendingTasks || "None"}</p>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Tugas Tertunda</h4>
+                <p className="text-sm font-mono bg-amber-500/5 p-3 rounded-lg border border-amber-500/20 whitespace-pre-line">{log.pendingTasks ?? "None"}</p>
               </div>
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-destructive mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Pending Complaints</h4>
-                <p className="text-sm font-mono bg-destructive/5 p-3 rounded-lg border border-destructive/20">{log.pendingComplaints || "None"}</p>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-destructive mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Komplain Terbuka</h4>
+                <p className="text-sm font-mono bg-destructive/5 p-3 rounded-lg border border-destructive/20 whitespace-pre-line">{log.pendingComplaints ?? "None"}</p>
               </div>
             </div>
           </div>
         ))}
         {logs?.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">No handover logs yet.</div>
+          <div className="text-center py-12 text-muted-foreground">Belum ada log handover.</div>
         )}
       </div>
 
-      <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Shift Handover Checklist" description="Complete all sections before submitting.">
+      <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Checklist Handover Shift" description="Lengkapi semua poin sebelum submit.">
         <HandoverChecklistForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
     </div>
@@ -114,32 +123,31 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
   const [systemStatusNote, setSystemStatusNote] = useState("All systems operational");
   const [notes, setNotes] = useState("");
 
-  const pendingTaskNames = tasks?.map(t => `• ${t.title} (${t.assigneeName})`).join("\n") || "None";
-  const openComplaintNames = complaints?.map(c => `• ${c.title} [${c.severity}]`).join("\n") || "None";
-
+  const pendingTaskNames = (tasks as TaskWithRelations[] | undefined)?.map(t => `• ${t.title} (${t.assigneeName ?? "-"})`).join("\n") ?? "None";
+  const openComplaintNames = (complaints as ComplaintWithRelations[] | undefined)?.map(c => `• ${c.title} [${c.severity}]`).join("\n") ?? "None";
   const allChecked = checks.reviewedComplaints && checks.reviewedTasks && checks.systemStatus && checks.activitiesLogged;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!allChecked) {
-      toast({ title: "Incomplete", description: "Please complete all checklist items", variant: "destructive" });
+      toast({ title: "Belum Lengkap", description: "Lengkapi semua poin checklist", variant: "destructive" });
       return;
     }
     createHandover.mutate({ data: {
       fromShiftId: Number(fromShiftId),
       toShiftId: Number(toShiftId),
-      summary: `Checklist completed. System: ${systemStatusNote}. ${tasks?.length || 0} task(s) in progress, ${complaints?.length || 0} complaint(s) open.`,
-      pendingActivities: checks.activitiesLogged ? "All activities for this shift have been logged" : "Some activities may not be logged yet",
+      summary: `Checklist selesai. Sistem: ${systemStatusNote}. ${tasks?.length ?? 0} tugas berjalan, ${complaints?.length ?? 0} komplain terbuka.`,
+      pendingActivities: checks.activitiesLogged ? "Semua aktivitas shift ini sudah dilog" : "Ada aktivitas yang belum dilog",
       pendingTasks: pendingTaskNames,
       pendingComplaints: openComplaintNames,
       notes: notes || undefined,
     }}, {
       onSuccess: () => {
-        toast({ title: "Handover Submitted", description: "Shift handover report filed successfully" });
+        toast({ title: "Handover Submitted", description: "Laporan handover berhasil disimpan" });
         qc.invalidateQueries({ queryKey: ["/api/handover"] });
         onSuccess();
       },
-      onError: () => toast({ title: "Error", description: "Failed to submit handover", variant: "destructive" })
+      onError: () => toast({ title: "Error", description: "Gagal submit handover", variant: "destructive" })
     });
   };
 
@@ -147,71 +155,45 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">From Shift *</label>
+          <label className="text-sm font-medium">Dari Shift *</label>
           <select className="w-full h-10 px-3 rounded-md bg-background border text-sm" value={fromShiftId} onChange={e => setFromShiftId(e.target.value)} required>
-            <option value="" disabled>Select...</option>
+            <option value="" disabled>Pilih...</option>
             {shifts?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium">To Shift *</label>
+          <label className="text-sm font-medium">Ke Shift *</label>
           <select className="w-full h-10 px-3 rounded-md bg-background border text-sm" value={toShiftId} onChange={e => setToShiftId(e.target.value)} required>
-            <option value="" disabled>Select...</option>
+            <option value="" disabled>Pilih...</option>
             {shifts?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Handover Checklist</h3>
-
-        <ChecklistItem
-          checked={checks.reviewedComplaints}
-          onChange={v => setChecks({...checks, reviewedComplaints: v})}
-          label="Reviewed Pending Complaints"
-          detail={`${complaints?.length || 0} open complaint(s)`}
-          color="text-destructive"
-        />
-
-        <ChecklistItem
-          checked={checks.reviewedTasks}
-          onChange={v => setChecks({...checks, reviewedTasks: v})}
-          label="Reviewed Unfinished Tasks"
-          detail={`${tasks?.length || 0} in-progress task(s)`}
-          color="text-amber-500"
-        />
-
-        <ChecklistItem
-          checked={checks.systemStatus}
-          onChange={v => setChecks({...checks, systemStatus: v})}
-          label="Verified System Status"
-          color="text-emerald-500"
-        >
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Checklist Handover</h3>
+        <ChecklistItem checked={checks.reviewedComplaints} onChange={v => setChecks({...checks, reviewedComplaints: v})} label="Review Komplain Tertunda" detail={`${complaints?.length ?? 0} komplain terbuka`} color="text-destructive" />
+        <ChecklistItem checked={checks.reviewedTasks} onChange={v => setChecks({...checks, reviewedTasks: v})} label="Review Tugas Belum Selesai" detail={`${tasks?.length ?? 0} tugas berjalan`} color="text-amber-500" />
+        <ChecklistItem checked={checks.systemStatus} onChange={v => setChecks({...checks, systemStatus: v})} label="Verifikasi Status Sistem" color="text-emerald-500">
           <select className="w-full h-9 px-3 mt-2 rounded-md bg-background border text-sm" value={systemStatusNote} onChange={e => setSystemStatusNote(e.target.value)}>
-            <option value="All systems operational">All systems operational</option>
-            <option value="Minor issues reported">Minor issues reported</option>
-            <option value="System degraded">System degraded</option>
-            <option value="Critical outage">Critical outage</option>
+            <option value="All systems operational">Semua sistem normal</option>
+            <option value="Minor issues reported">Ada masalah kecil</option>
+            <option value="System degraded">Sistem terganggu</option>
+            <option value="Critical outage">Gangguan kritis</option>
           </select>
         </ChecklistItem>
-
-        <ChecklistItem
-          checked={checks.activitiesLogged}
-          onChange={v => setChecks({...checks, activitiesLogged: v})}
-          label="All Activities Logged"
-          color="text-blue-400"
-        />
+        <ChecklistItem checked={checks.activitiesLogged} onChange={v => setChecks({...checks, activitiesLogged: v})} label="Semua Aktivitas Telah Dilog" color="text-blue-400" />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Special Notes</label>
-        <textarea className="w-full min-h-[80px] px-3 py-2 rounded-md bg-background border text-sm resize-none" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any important information for the next shift..." />
+        <label className="text-sm font-medium">Catatan Khusus</label>
+        <textarea className="w-full min-h-[80px] px-3 py-2 rounded-md bg-background border text-sm resize-none" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Info penting untuk shift berikutnya..." />
       </div>
 
       <div className="flex justify-between items-center pt-4 border-t">
-        <span className="text-xs text-muted-foreground">{allChecked ? "✅ All items checked" : "⚠️ Complete all items"}</span>
+        <span className="text-xs text-muted-foreground">{allChecked ? "✅ Semua item selesai" : "⚠️ Lengkapi semua item"}</span>
         <Button type="submit" disabled={createHandover.isPending || !allChecked} className="px-8">
-          {createHandover.isPending ? "Submitting..." : "Submit Handover"}
+          {createHandover.isPending ? "Mengirim..." : "Submit Handover"}
         </Button>
       </div>
     </form>

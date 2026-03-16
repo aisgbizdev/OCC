@@ -14,7 +14,7 @@ export default function Messages() {
   const handleAck = (id: number) => {
     ackMsg.mutate({ id }, {
       onSuccess: () => {
-        toast({ title: "Acknowledged", description: "Message marked as read" });
+        toast({ title: "Dikonfirmasi", description: "Pesan ditandai sudah dibaca" });
         qc.invalidateQueries({ queryKey: ["/api/messages"] });
       }
     });
@@ -23,8 +23,8 @@ export default function Messages() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Official Messages</h1>
-        <p className="text-muted-foreground mt-1">Direct communications requiring acknowledgment.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Pesan Resmi</h1>
+        <p className="text-muted-foreground mt-1">Komunikasi langsung yang memerlukan konfirmasi.</p>
       </div>
 
       <div className="space-y-4">
@@ -37,21 +37,19 @@ export default function Messages() {
               <div className="flex-1">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-lg">{msg.subject}</h3>
-                  <span className="text-xs text-muted-foreground font-mono">{format(new Date(msg.createdAt), "MMM d, HH:mm")}</span>
+                  <span className="text-xs text-muted-foreground font-mono">{msg.createdAt ? format(new Date(msg.createdAt), "MMM d, HH:mm") : ""}</span>
                 </div>
                 <p className="text-sm text-foreground leading-relaxed bg-background p-4 rounded-xl border">{msg.content}</p>
-                
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground font-medium">From: {msg.senderName}</span>
-                  
+                  <span className="text-xs text-muted-foreground font-medium">Dari: {msg.senderName ?? "-"}</span>
                   {msg.requireAck && (
                     msg.acknowledged ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full">
-                        <CheckCircle2 className="w-4 h-4" /> Acknowledged
+                        <CheckCircle2 className="w-4 h-4" /> Dikonfirmasi
                       </span>
                     ) : (
                       <Button size="sm" onClick={() => handleAck(msg.id)} disabled={ackMsg.isPending}>
-                        Acknowledge Receipt
+                        Konfirmasi Penerimaan
                       </Button>
                     )
                   )}
@@ -60,6 +58,12 @@ export default function Messages() {
             </div>
           </div>
         ))}
+        {messages?.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-20" />
+            Tidak ada pesan masuk.
+          </div>
+        )}
       </div>
     </div>
   );

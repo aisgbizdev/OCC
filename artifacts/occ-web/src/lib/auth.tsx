@@ -14,9 +14,10 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [token, setToken] = useState(localStorage.getItem("occ_token"));
-  
+
   const { data: user, isLoading, isError } = useGetMe({
     query: {
+      queryKey: ["me"],
       enabled: !!token,
       retry: false,
     }
@@ -37,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user: user ?? null, 
+    <AuthContext.Provider value={{
+      user: user ?? null,
       isLoading: isLoading && !!token,
       logout,
       isAuthenticated: !!user

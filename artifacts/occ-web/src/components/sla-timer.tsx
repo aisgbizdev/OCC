@@ -2,18 +2,18 @@ import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function SlaTimer({ createdAt, status }: { createdAt: string; status: string }) {
+export function SlaTimer({ createdAt, status }: { createdAt?: string; status: string }) {
   const [elapsedHrs, setElapsedHrs] = useState(0);
 
   useEffect(() => {
-    if (status === "resolved" || status === "closed") return;
-    
+    if (!createdAt || status === "resolved" || status === "closed") return;
+
     const calculate = () => {
       const created = new Date(createdAt).getTime();
       const now = Date.now();
       setElapsedHrs((now - created) / (1000 * 60 * 60));
     };
-    
+
     calculate();
     const interval = setInterval(calculate, 60000);
     return () => clearInterval(interval);
@@ -23,13 +23,17 @@ export function SlaTimer({ createdAt, status }: { createdAt: string; status: str
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
         <Clock className="w-3.5 h-3.5" />
-        Resolved
+        Selesai
       </span>
     );
   }
 
   const isWarning = elapsedHrs >= 24 && elapsedHrs < 72;
   const isCritical = elapsedHrs >= 72;
+
+  const days = Math.floor(elapsedHrs / 24);
+  const hours = Math.floor(elapsedHrs % 24);
+  const label = days > 0 ? `${days}h ${hours}j` : elapsedHrs < 1 ? "< 1j" : `${Math.floor(elapsedHrs)}j`;
 
   return (
     <span className={cn(
@@ -39,7 +43,7 @@ export function SlaTimer({ createdAt, status }: { createdAt: string; status: str
       "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
     )}>
       <Clock className="w-3.5 h-3.5" />
-      {elapsedHrs < 1 ? "< 1h" : `${Math.floor(elapsedHrs)}h`} Elapsed
+      {label} berlalu
     </span>
   );
 }

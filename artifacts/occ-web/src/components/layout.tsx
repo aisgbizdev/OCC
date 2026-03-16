@@ -4,7 +4,7 @@ import { Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat,
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useListNotifications } from "@workspace/api-client-react";
+import { useListNotifications, type ListNotifications200 } from "@workspace/api-client-react";
 import { FAB } from "@/components/fab";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { BatchActivityForm } from "@/components/batch-activity-form";
@@ -25,15 +25,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [activityModalOpen, setActivityModalOpen] = useState(false);
 
-  const { data: notificationsData } = useListNotifications({ unreadOnly: "true" }, {
-    query: { refetchInterval: 30000, enabled: !!user }
-  });
+  const { data: notificationsData } = useListNotifications<ListNotifications200>(
+    { unreadOnly: "true" },
+    { query: { queryKey: ["notifications-unread"], refetchInterval: 30000, enabled: !!user } }
+  );
 
-  const unreadCount = notificationsData?.unreadCount || 0;
+  const unreadCount = notificationsData?.unreadCount ?? 0;
 
   if (!user) return <>{children}</>;
 
-  const isAdmin = ["Owner", "Admin System"].includes(user.roleName);
+  const isAdmin = ["Owner", "Admin System"].includes(user.roleName ?? "");
 
   return (
     <SidebarProvider style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>
@@ -102,7 +103,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="font-bold">OCC</span>
             </div>
             <div className="hidden md:block text-sm font-mono text-muted-foreground">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
 
             <div className="flex items-center gap-4">
@@ -148,7 +149,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           onNewAnnouncement={() => setLocation("/announcements")}
         />
 
-        <ResponsiveModal open={activityModalOpen} onOpenChange={setActivityModalOpen} title="Log Activities" description="Add one or more activities to your log.">
+        <ResponsiveModal open={activityModalOpen} onOpenChange={setActivityModalOpen} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
           <BatchActivityForm onSuccess={() => setActivityModalOpen(false)} />
         </ResponsiveModal>
       </div>
