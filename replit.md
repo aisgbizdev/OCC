@@ -24,7 +24,28 @@ Internal web application for Solid Group's Dealing department. Monitors operatio
 ```text
 artifacts-monorepo/
 ├── artifacts/
-│   └── api-server/           # Express API server (auth, master data, etc.)
+│   └── api-server/           # Express API server
+│       └── src/
+│           ├── routes/
+│           │   ├── index.ts          # Route aggregator (14 routers)
+│           │   ├── health.ts         # Health check
+│           │   ├── auth.ts           # Login/logout/me
+│           │   ├── users.ts          # User CRUD
+│           │   ├── master.ts         # PTs, branches, shifts, activity types
+│           │   ├── activity-logs.ts  # Activity CRUD + batch + KPI engine
+│           │   ├── kpi.ts            # Scores, leaderboard, snapshots
+│           │   ├── tasks.ts          # Task CRUD + comments + notifications
+│           │   ├── complaints.ts     # Complaint CRUD + SLA timer
+│           │   ├── announcements.ts  # Announcement CRUD
+│           │   ├── messages.ts       # Official messages + acknowledgements
+│           │   ├── chats.ts          # Chat rooms + messages
+│           │   ├── handover.ts       # Shift handover logs
+│           │   ├── notifications.ts  # User notifications + read/read-all
+│           │   └── system.ts         # System settings, audit logs, inactivity
+│           ├── helpers/
+│           │   └── audit.ts          # createAuditLog, createNotification helpers
+│           └── middlewares/
+│               └── auth.ts           # JWT auth, requireRole
 ├── lib/
 │   ├── api-spec/             # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/     # Generated React Query hooks
@@ -71,34 +92,60 @@ roles, permissions, role_permissions, users, pts, branches, shifts, activity_typ
 - dealer1@occ.id, dealer2@occ.id, dealer3@occ.id (Dealer)
 - admin@occ.id (Admin System)
 
-## API Endpoints (implemented)
+## API Endpoints (all implemented & verified)
 
+### Auth
 - `POST /api/auth/login` — JWT login
 - `POST /api/auth/logout` — Logout
 - `GET /api/auth/me` — Current user profile
-- `GET/POST /api/users` — List/create users
-- `GET/PUT /api/users/:id` — Get/update user
-- `GET/POST /api/pts` — List/create PTs
-- `PUT/DELETE /api/pts/:id` — Update/deactivate PT
-- `GET/POST /api/branches` — List/create branches
-- `PUT/DELETE /api/branches/:id` — Update/deactivate branch
-- `GET/POST /api/shifts` — List/create shifts
-- `PUT/DELETE /api/shifts/:id` — Update/deactivate shift
-- `GET/POST /api/activity-types` — List/create activity types
-- `PUT/DELETE /api/activity-types/:id` — Update/deactivate activity type
 
-## API Endpoints (defined in OpenAPI, not yet implemented)
+### Master Data
+- `GET/POST /api/users`, `GET/PUT/DELETE /api/users/:id`
+- `GET/POST /api/pts`, `GET/PUT/DELETE /api/pts/:id`
+- `GET/POST /api/branches`, `GET/PUT/DELETE /api/branches/:id`
+- `GET/POST /api/shifts`, `GET/PUT/DELETE /api/shifts/:id`
+- `GET/POST /api/activity-types`, `GET/PUT/DELETE /api/activity-types/:id`
 
-- Activity logs (CRUD + batch)
-- Tasks (CRUD + comments)
-- Complaints (CRUD)
-- Announcements (CRUD)
-- Messages (CRUD + acknowledge)
-- Chats (CRUD + messages)
-- Handover logs (CRUD)
-- KPI scores/snapshots (list)
-- Notifications (list + mark read)
-- System settings (list + update)
+### Activity Logs & KPI
+- `GET/POST /api/activity-logs` — List/create activity logs
+- `POST /api/activity-logs/batch` — Batch create activities
+- `PUT /api/activity-logs/:id` — Update (time-limited edit window)
+- `GET /api/kpi/scores` — List KPI scores
+- `GET /api/kpi/leaderboard` — Leaderboard by period
+- `GET /api/kpi/user/:userId` — User KPI detail + today breakdown
+- `GET /api/kpi/snapshots` — List KPI snapshots
+- `POST /api/kpi/snapshots/generate` — Generate period snapshots
+
+### Tasks
+- `GET/POST /api/tasks`, `GET/PUT/DELETE /api/tasks/:id`
+- `POST /api/tasks/:id/comments` — Add task comment
+
+### Complaints
+- `GET/POST /api/complaints`, `GET/PUT /api/complaints/:id`
+- SLA timer: normal/warning (>24h)/critical (>72h)
+
+### Communication
+- `GET/POST /api/announcements`, `GET/PUT/DELETE /api/announcements/:id`
+- `GET/POST /api/messages`, `GET /api/messages/:id`
+- `POST /api/messages/:id/acknowledge`
+- `GET/POST /api/chats`, `POST /api/chats/:id/members`
+- `GET/POST /api/chats/:id/messages`
+
+### Operations
+- `GET/POST /api/handover-logs`, `GET /api/handover-logs/:id`
+- `GET /api/notifications`, `PUT /api/notifications/:id/read`, `PUT /api/notifications/read-all`
+- `GET /api/system-settings`, `PUT /api/system-settings/:key`
+- `GET /api/audit-logs` — Owner/Admin only
+- `GET /api/inactivity/check` — Dealer inactivity monitoring
+
+## Key Business Logic
+
+- **KPI Engine**: Auto-calculates daily/weekly/monthly/quarterly/yearly scores on activity log create/update
+- **Activity Edit Window**: Configurable via `activity_edit_window_minutes` system setting (default 60 min); Owner/Admin bypass
+- **Complaint SLA**: normal (<24h), warning (24-72h), critical (>72h)
+- **Inactivity Detection**: Configurable warning/critical thresholds for dealer monitoring
+- **Audit Logging**: All write operations create audit log entries
+- **Notifications**: Auto-created on task assignment, complaint assignment, chat messages, task comments
 
 ## TypeScript & Composite Projects
 

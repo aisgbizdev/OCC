@@ -3,6 +3,16 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
 import masterRouter from "./master";
+import activityLogsRouter from "./activity-logs";
+import kpiRouter from "./kpi";
+import tasksRouter from "./tasks";
+import complaintsRouter from "./complaints";
+import announcementsRouter from "./announcements";
+import messagesRouter from "./messages";
+import chatsRouter from "./chats";
+import handoverRouter from "./handover";
+import notificationsRouter from "./notifications";
+import systemRouter from "./system";
 
 const router: IRouter = Router();
 
@@ -10,5 +20,15 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(usersRouter);
 router.use(masterRouter);
+router.use(activityLogsRouter);
+router.use(kpiRouter);
+router.use(tasksRouter);
+router.use(complaintsRouter);
+router.use(announcementsRouter);
+router.use(messagesRouter);
+router.use(chatsRouter);
+router.use(handoverRouter);
+router.use(notificationsRouter);
+router.use(systemRouter);
 
 export default router;
