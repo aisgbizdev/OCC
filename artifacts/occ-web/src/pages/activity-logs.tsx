@@ -3,7 +3,6 @@ import { useListActivityLogs } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Plus, Table as TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FAB } from "@/components/fab";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { BatchActivityForm } from "@/components/batch-activity-form";
 
@@ -58,13 +57,6 @@ export default function ActivityLogs() {
       <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} title="Log Activities" description="Add one or more activities to your log.">
         <BatchActivityForm onSuccess={() => setModalOpen(false)} />
       </ResponsiveModal>
-
-      <FAB 
-        onLogActivity={() => setModalOpen(true)}
-        onNewTask={() => {}}
-        onNewComplaint={() => {}}
-        onNewAnnouncement={() => {}}
-      />
     </div>
   );
 }
