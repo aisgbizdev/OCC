@@ -30,7 +30,7 @@ router.post("/pts", authMiddleware, requireRole("Owner", "Admin System"), async 
 
 router.put("/pts/:id", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
-    const updateData: Record<string, any> = {};
+    const updateData: Partial<typeof ptsTable.$inferInsert> = {};
     if (req.body.code !== undefined) updateData.code = req.body.code;
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.activeStatus !== undefined) updateData.activeStatus = req.body.activeStatus;
@@ -82,7 +82,7 @@ router.post("/branches", authMiddleware, requireRole("Owner", "Admin System"), a
 
 router.put("/branches/:id", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
-    const updateData: Record<string, any> = {};
+    const updateData: Partial<typeof branchesTable.$inferInsert> = {};
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.city !== undefined) updateData.city = req.body.city;
     if (req.body.activeStatus !== undefined) updateData.activeStatus = req.body.activeStatus;
@@ -130,7 +130,7 @@ router.post("/shifts", authMiddleware, requireRole("Owner", "Admin System"), asy
 
 router.put("/shifts/:id", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
-    const updateData: Record<string, any> = {};
+    const updateData: Partial<typeof shiftsTable.$inferInsert> = {};
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.startTime !== undefined) updateData.startTime = req.body.startTime;
     if (req.body.endTime !== undefined) updateData.endTime = req.body.endTime;
@@ -179,7 +179,7 @@ router.post("/activity-types", authMiddleware, requireRole("Owner", "Admin Syste
 
 router.put("/activity-types/:id", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
-    const updateData: Record<string, any> = {};
+    const updateData: Partial<typeof activityTypesTable.$inferInsert> = {};
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.category !== undefined) updateData.category = req.body.category;
     if (req.body.weightPoints !== undefined) updateData.weightPoints = req.body.weightPoints;

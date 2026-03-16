@@ -29,7 +29,6 @@ export const rolePermissionsTable = pgTable("role_permissions", {
 ]);
 
 export const rolesRelations = relations(rolesTable, ({ many }) => ({
-  users: many(rolesTable),
   rolePermissions: many(rolePermissionsTable),
 }));
 

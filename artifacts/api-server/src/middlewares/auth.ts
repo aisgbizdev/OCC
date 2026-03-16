@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "occ-dev-secret-key-change-in-production";
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required but was not set.");
+  }
+  return secret;
+}
 
 export interface AuthPayload {
   userId: number;
@@ -19,7 +25,7 @@ declare global {
 }
 
 export function signToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "24h" });
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -30,22 +36,13 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   }
   const token = header.slice(7);
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as AuthPayload;
     req.user = decoded;
     next();
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
   }
 }
-
-const ROLE_HIERARCHY: Record<string, number> = {
-  "Owner": 6,
-  "Direksi": 5,
-  "Chief Dealing": 4,
-  "SPV Dealing": 3,
-  "Dealer": 2,
-  "Admin System": 5,
-};
 
 export function requireRole(...allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {

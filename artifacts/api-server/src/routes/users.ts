@@ -66,8 +66,9 @@ router.post("/users", authMiddleware, requireRole("Owner", "Admin System", "Chie
     }).returning();
     const enriched = await enrichUser(user);
     res.status(201).json(enriched);
-  } catch (error: any) {
-    if (error?.code === "23505") {
+  } catch (error: unknown) {
+    const pgError = error as { code?: string };
+    if (pgError.code === "23505") {
       res.status(409).json({ error: "Email already exists" });
       return;
     }
@@ -89,17 +90,16 @@ router.get("/users/:id", authMiddleware, async (req, res) => {
 
 router.put("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing"), async (req, res) => {
   try {
-    const { name, phone, roleId, ptId, branchId, shiftId, positionTitle, supervisorId, activeStatus } = req.body;
-    const updateData: Record<string, any> = {};
-    if (name !== undefined) updateData.name = name;
-    if (phone !== undefined) updateData.phone = phone;
-    if (roleId !== undefined) updateData.roleId = roleId;
-    if (ptId !== undefined) updateData.ptId = ptId;
-    if (branchId !== undefined) updateData.branchId = branchId;
-    if (shiftId !== undefined) updateData.shiftId = shiftId;
-    if (positionTitle !== undefined) updateData.positionTitle = positionTitle;
-    if (supervisorId !== undefined) updateData.supervisorId = supervisorId;
-    if (activeStatus !== undefined) updateData.activeStatus = activeStatus;
+    const updateData: Partial<typeof usersTable.$inferInsert> = {};
+    if (req.body.name !== undefined) updateData.name = req.body.name;
+    if (req.body.phone !== undefined) updateData.phone = req.body.phone;
+    if (req.body.roleId !== undefined) updateData.roleId = req.body.roleId;
+    if (req.body.ptId !== undefined) updateData.ptId = req.body.ptId;
+    if (req.body.branchId !== undefined) updateData.branchId = req.body.branchId;
+    if (req.body.shiftId !== undefined) updateData.shiftId = req.body.shiftId;
+    if (req.body.positionTitle !== undefined) updateData.positionTitle = req.body.positionTitle;
+    if (req.body.supervisorId !== undefined) updateData.supervisorId = req.body.supervisorId;
+    if (req.body.activeStatus !== undefined) updateData.activeStatus = req.body.activeStatus;
 
     const [user] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, Number(req.params.id))).returning();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
