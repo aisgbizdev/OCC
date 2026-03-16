@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { systemSettingsTable, auditLogsTable, usersTable, activityLogsTable } from "@workspace/db/schema";
+import { systemSettingsTable, auditLogsTable, usersTable, activityLogsTable, rolesTable } from "@workspace/db/schema";
 import { eq, and, desc, lt, type SQL, sql } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog, createNotification } from "../helpers/audit";
@@ -90,6 +90,11 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
     const warningThreshold = new Date(Date.now() - warningHours * 3600000);
     const criticalThreshold = new Date(Date.now() - criticalHours * 3600000);
 
+    const [dealerRole] = await db.select({ id: rolesTable.id })
+      .from(rolesTable).where(eq(rolesTable.name, "Dealer")).limit(1);
+    const dealerRoleId = dealerRole?.id;
+    if (!dealerRoleId) { res.json({ warningThresholdHours: warningHours, criticalThresholdHours: criticalHours, inactiveCount: 0, markedAt: new Date().toISOString(), dealers: [] }); return; }
+
     const dealers = await db.select({
       userId: usersTable.id,
       userName: usersTable.name,
@@ -97,7 +102,7 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
       shiftId: usersTable.shiftId,
       lastActivity: sql<Date | null>`(SELECT MAX(${activityLogsTable.createdAt}) FROM ${activityLogsTable} WHERE ${activityLogsTable.userId} = ${usersTable.id})`,
     }).from(usersTable)
-      .where(and(eq(usersTable.activeStatus, true), eq(usersTable.roleId, 5)));
+      .where(and(eq(usersTable.activeStatus, true), eq(usersTable.roleId, dealerRoleId)));
 
     const inactive = dealers
       .filter((d) => !d.lastActivity || new Date(d.lastActivity) < warningThreshold)

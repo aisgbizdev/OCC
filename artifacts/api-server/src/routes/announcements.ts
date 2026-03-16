@@ -80,6 +80,20 @@ router.get("/announcements/:id", authMiddleware, requireRole(...ALL_ROLES), asyn
     const [announcement] = await db.select().from(announcementsTable)
       .where(eq(announcementsTable.id, Number(req.params.id))).limit(1);
     if (!announcement) { res.status(404).json({ error: "Announcement not found" }); return; }
+
+    if (!["Owner", "Admin System"].includes(req.user!.roleName)) {
+      const scope = announcement.targetScope;
+      if (scope === "pt" && announcement.ptId !== req.user!.ptId) {
+        res.status(403).json({ error: "Access denied" }); return;
+      }
+      if (scope === "role" && announcement.roleId !== req.user!.roleId) {
+        res.status(403).json({ error: "Access denied" }); return;
+      }
+      if (scope === "shift" && announcement.shiftId !== req.user!.shiftId) {
+        res.status(403).json({ error: "Access denied" }); return;
+      }
+    }
+
     res.json(announcement);
   } catch (error) {
     console.error("Get announcement error:", error);
