@@ -251,28 +251,25 @@ function ManagementDashboard() {
   };
   const pulse = getOperationalPulse();
 
-  const ptNameMap: Record<number, string> = {};
+  const ptNameMap: Record<string, string> = {};
   (leaderboard as KpiScoreWithUser[] | undefined)?.forEach(u => {
-    if (u.ptId !== undefined && u.ptName) ptNameMap[Number(u.ptId)] = u.ptName;
+    if (u.ptName) ptNameMap[u.ptName] = u.ptName;
   });
 
   const ptStats: Record<string, { name: string; complaints: number; tasks: number; topScore: number }> = {};
   allComplaints?.forEach((c: ComplaintWithRelations) => {
-    const key = String(c.ptId ?? "unknown");
-    const name = ptNameMap[c.ptId ?? 0] ?? `PT #${c.ptId ?? "?"}`;
-    if (!ptStats[key]) ptStats[key] = { name, complaints: 0, tasks: 0, topScore: 0 };
+    const key = c.ptId !== undefined ? `PT #${c.ptId}` : "Unknown";
+    if (!ptStats[key]) ptStats[key] = { name: key, complaints: 0, tasks: 0, topScore: 0 };
     if (c.status === "open" || c.status === "in_progress") ptStats[key].complaints++;
   });
   allTasks?.forEach((t: TaskWithRelations) => {
-    const key = String(t.ptId ?? "unknown");
-    const name = ptNameMap[t.ptId ?? 0] ?? `PT #${t.ptId ?? "?"}`;
-    if (!ptStats[key]) ptStats[key] = { name, complaints: 0, tasks: 0, topScore: 0 };
+    const key = t.ptId !== undefined ? `PT #${t.ptId}` : "Unknown";
+    if (!ptStats[key]) ptStats[key] = { name: key, complaints: 0, tasks: 0, topScore: 0 };
     if (t.status !== "completed") ptStats[key].tasks++;
   });
   (leaderboard as KpiScoreWithUser[] | undefined)?.forEach((u: KpiScoreWithUser) => {
-    const key = String(u.ptId ?? "unknown");
-    const name = u.ptName ?? `PT #${u.ptId ?? "?"}`;
-    if (!ptStats[key]) ptStats[key] = { name, complaints: 0, tasks: 0, topScore: 0 };
+    const key = u.ptName ?? "Unknown";
+    if (!ptStats[key]) ptStats[key] = { name: key, complaints: 0, tasks: 0, topScore: 0 };
     ptStats[key].topScore = Math.max(ptStats[key].topScore, Number(u.currentDailyScore ?? 0));
   });
 

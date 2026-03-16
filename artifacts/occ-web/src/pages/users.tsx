@@ -1,10 +1,18 @@
-import { useListUsers, useListPts, useListRoles, type UserWithRelations } from "@workspace/api-client-react";
+import { useListUsers, useListPts, type UserWithRelations, type Pt } from "@workspace/api-client-react";
 import { Users, Building, Shield, CheckCircle2, XCircle } from "lucide-react";
+
+const ROLES = [
+  { id: 1, name: "Dealer", hierarchyLevel: 1, description: "Front-line dealing operator" },
+  { id: 2, name: "SPV Dealing", hierarchyLevel: 2, description: "Shift supervisor" },
+  { id: 3, name: "Chief Dealing", hierarchyLevel: 3, description: "Chief of dealing operations" },
+  { id: 4, name: "Owner", hierarchyLevel: 4, description: "PT owner / stakeholder" },
+  { id: 5, name: "Direksi", hierarchyLevel: 5, description: "Board of directors" },
+  { id: 6, name: "Admin System", hierarchyLevel: 6, description: "System administrator" },
+];
 
 export default function MasterData() {
   const { data: users } = useListUsers();
   const { data: pts } = useListPts();
-  const { data: roles } = useListRoles();
 
   return (
     <div className="space-y-6">
@@ -38,7 +46,7 @@ export default function MasterData() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Total Role</p>
-            <p className="text-2xl font-black">{roles?.length ?? 0}</p>
+            <p className="text-2xl font-black">{ROLES.length}</p>
           </div>
         </div>
       </div>
@@ -98,11 +106,11 @@ export default function MasterData() {
         <div className="bg-card border rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Building className="w-5 h-5 text-emerald-500"/> Daftar PT</h2>
           <div className="space-y-2">
-            {pts?.map(pt => (
+            {(pts as Pt[] | undefined)?.map((pt: Pt) => (
               <div key={pt.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
                 <div>
                   <p className="font-medium text-sm">{pt.name}</p>
-                  <p className="text-xs text-muted-foreground">{pt.legalName ?? ""}</p>
+                  <p className="text-xs text-muted-foreground">Kode: {pt.code}</p>
                 </div>
                 <span className="text-xs font-mono text-muted-foreground">#{pt.id}</span>
               </div>
@@ -113,11 +121,11 @@ export default function MasterData() {
         <div className="bg-card border rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-purple-500"/> Daftar Role</h2>
           <div className="space-y-2">
-            {roles?.map(role => (
+            {ROLES.map(role => (
               <div key={role.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
                 <div>
                   <p className="font-medium text-sm">{role.name}</p>
-                  <p className="text-xs text-muted-foreground">{role.description ?? ""}</p>
+                  <p className="text-xs text-muted-foreground">{role.description}</p>
                 </div>
                 <span className="text-xs font-mono text-muted-foreground">Level {role.hierarchyLevel}</span>
               </div>
