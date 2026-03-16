@@ -141,6 +141,31 @@ router.put("/tasks/:id", authMiddleware, requireRole(...ALL_ROLES), async (req, 
   }
 });
 
+router.get("/tasks/:id/comments", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const [task] = await db.select().from(tasksTable).where(eq(tasksTable.id, Number(req.params.id))).limit(1);
+    if (!task) { res.status(404).json({ error: "Task not found" }); return; }
+    if (req.user!.roleName === "Dealer" && task.assignedTo !== req.user!.userId) {
+      res.status(403).json({ error: "Access denied" }); return;
+    }
+    const comments = await db.select({
+      id: taskCommentsTable.id,
+      taskId: taskCommentsTable.taskId,
+      userId: taskCommentsTable.userId,
+      userName: usersTable.name,
+      message: taskCommentsTable.message,
+      createdAt: taskCommentsTable.createdAt,
+    }).from(taskCommentsTable)
+      .leftJoin(usersTable, eq(taskCommentsTable.userId, usersTable.id))
+      .where(eq(taskCommentsTable.taskId, task.id))
+      .orderBy(desc(taskCommentsTable.createdAt));
+    res.json(comments);
+  } catch (error) {
+    console.error("List task comments error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/tasks/:id/comments", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const [task] = await db.select().from(tasksTable).where(eq(tasksTable.id, Number(req.params.id))).limit(1);

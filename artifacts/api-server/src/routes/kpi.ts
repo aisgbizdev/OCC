@@ -13,6 +13,7 @@ router.get("/kpi/scores", authMiddleware, requireRole(...ALL_ROLES), async (req,
   try {
     const conditions: SQL[] = [];
     if (req.query.userId) conditions.push(eq(kpiScoresTable.userId, Number(req.query.userId)));
+    if (req.query.ptId) conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
     if (req.user!.roleName === "Dealer") {
       conditions.push(eq(kpiScoresTable.userId, req.user!.userId));
     }
@@ -20,6 +21,7 @@ router.get("/kpi/scores", authMiddleware, requireRole(...ALL_ROLES), async (req,
     const scores = await db.select({
       userId: kpiScoresTable.userId,
       userName: usersTable.name,
+      ptId: usersTable.ptId,
       currentDailyScore: kpiScoresTable.currentDailyScore,
       currentWeeklyScore: kpiScoresTable.currentWeeklyScore,
       currentMonthlyScore: kpiScoresTable.currentMonthlyScore,

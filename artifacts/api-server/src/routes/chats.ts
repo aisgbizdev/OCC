@@ -18,9 +18,6 @@ router.get("/chats", authMiddleware, requireRole(...ALL_ROLES), async (req, res)
     const chatIds = memberRows.map((m) => m.chatId);
     if (chatIds.length === 0) { res.json([]); return; }
 
-    const chats = await db.select().from(chatsTable)
-      .where(eq(chatsTable.id, chatIds[0]));
-
     const allChats = [];
     for (const chatId of chatIds) {
       const [chat] = await db.select().from(chatsTable).where(eq(chatsTable.id, chatId)).limit(1);

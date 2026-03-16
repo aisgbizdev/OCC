@@ -160,4 +160,18 @@ router.put("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), asyn
   }
 });
 
+router.delete("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), async (req, res) => {
+  try {
+    const [existing] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, Number(req.params.id))).limit(1);
+    if (!existing) { res.status(404).json({ error: "Complaint not found" }); return; }
+    const [updated] = await db.update(complaintsTable).set({ status: "closed" })
+      .where(eq(complaintsTable.id, Number(req.params.id))).returning();
+    await createAuditLog({ userId: req.user!.userId, actionType: "close", module: "complaint", entityId: String(updated.id) });
+    res.json({ message: "Complaint closed" });
+  } catch (error) {
+    console.error("Delete complaint error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

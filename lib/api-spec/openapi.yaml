@@ -957,6 +957,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ComplaintWithRelations"
+    delete:
+      operationId: deleteComplaint
+      tags: [complaints]
+      summary: Close complaint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Complaint closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
     put:
       operationId: updateComplaint
       tags: [complaints]
