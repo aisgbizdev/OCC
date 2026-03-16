@@ -15,6 +15,13 @@ import bcryptjs from "bcryptjs";
 async function seed() {
   console.log("Seeding OCC database...");
 
+  const existingRoles = await db.select().from(rolesTable).limit(1);
+  if (existingRoles.length > 0) {
+    console.log("Database already seeded. Skipping. (Drop tables first to re-seed.)");
+    await pool.end();
+    return;
+  }
+
   const roles = await db
     .insert(rolesTable)
     .values([

@@ -81,6 +81,8 @@ router.post("/auth/login", async (req, res) => {
 });
 
 router.post("/auth/logout", authMiddleware, (_req, res) => {
+  // Stateless JWT: logout is client-side only (discard the token).
+  // No server-side token revocation is implemented.
   res.json({ message: "Logged out successfully" });
 });
 
