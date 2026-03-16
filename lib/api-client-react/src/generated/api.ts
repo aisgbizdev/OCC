@@ -649,6 +649,90 @@ export function useGetUser<
 }
 
 /**
+ * @summary Delete user (soft)
+ */
+export const getDeleteUserUrl = (id: number) => {
+  return `/api/users/${id}`;
+};
+
+export const deleteUser = async (
+  id: number,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getDeleteUserUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteUserMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUser>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteUser>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteUser>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteUser(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteUser>>
+>;
+
+export type DeleteUserMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete user (soft)
+ */
+export const useDeleteUser = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUser>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteUser>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteUserMutationOptions(options));
+};
+
+/**
  * @summary Update user
  */
 export const getUpdateUserUrl = (id: number) => {
@@ -885,6 +969,78 @@ export const useCreatePt = <
 > => {
   return useMutation(getCreatePtMutationOptions(options));
 };
+
+/**
+ * @summary Get PT by ID
+ */
+export const getGetPtUrl = (id: number) => {
+  return `/api/pts/${id}`;
+};
+
+export const getPt = async (id: number, options?: RequestInit): Promise<Pt> => {
+  return customFetch<Pt>(getGetPtUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPtQueryKey = (id: number) => {
+  return [`/api/pts/${id}`] as const;
+};
+
+export const getGetPtQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPt>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getPt>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPtQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPt>>> = ({
+    signal,
+  }) => getPt(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getPt>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetPtQueryResult = NonNullable<Awaited<ReturnType<typeof getPt>>>;
+export type GetPtQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get PT by ID
+ */
+
+export function useGetPt<
+  TData = Awaited<ReturnType<typeof getPt>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getPt>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPtQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update PT
@@ -1238,6 +1394,91 @@ export const useCreateBranch = <
 };
 
 /**
+ * @summary Get branch by ID
+ */
+export const getGetBranchUrl = (id: number) => {
+  return `/api/branches/${id}`;
+};
+
+export const getBranch = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Branch> => {
+  return customFetch<Branch>(getGetBranchUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBranchQueryKey = (id: number) => {
+  return [`/api/branches/${id}`] as const;
+};
+
+export const getGetBranchQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBranch>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBranch>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBranchQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getBranch>>> = ({
+    signal,
+  }) => getBranch(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getBranch>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetBranchQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBranch>>
+>;
+export type GetBranchQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get branch by ID
+ */
+
+export function useGetBranch<
+  TData = Awaited<ReturnType<typeof getBranch>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBranch>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBranchQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Update branch
  */
 export const getUpdateBranchUrl = (id: number) => {
@@ -1566,6 +1807,91 @@ export const useCreateShift = <
 > => {
   return useMutation(getCreateShiftMutationOptions(options));
 };
+
+/**
+ * @summary Get shift by ID
+ */
+export const getGetShiftUrl = (id: number) => {
+  return `/api/shifts/${id}`;
+};
+
+export const getShift = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Shift> => {
+  return customFetch<Shift>(getGetShiftUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetShiftQueryKey = (id: number) => {
+  return [`/api/shifts/${id}`] as const;
+};
+
+export const getGetShiftQueryOptions = <
+  TData = Awaited<ReturnType<typeof getShift>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getShift>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetShiftQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getShift>>> = ({
+    signal,
+  }) => getShift(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getShift>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetShiftQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getShift>>
+>;
+export type GetShiftQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get shift by ID
+ */
+
+export function useGetShift<
+  TData = Awaited<ReturnType<typeof getShift>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getShift>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetShiftQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update shift
@@ -1899,6 +2225,93 @@ export const useCreateActivityType = <
 > => {
   return useMutation(getCreateActivityTypeMutationOptions(options));
 };
+
+/**
+ * @summary Get activity type by ID
+ */
+export const getGetActivityTypeUrl = (id: number) => {
+  return `/api/activity-types/${id}`;
+};
+
+export const getActivityType = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ActivityType> => {
+  return customFetch<ActivityType>(getGetActivityTypeUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActivityTypeQueryKey = (id: number) => {
+  return [`/api/activity-types/${id}`] as const;
+};
+
+export const getGetActivityTypeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivityType>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivityType>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivityTypeQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityType>>> = ({
+    signal,
+  }) => getActivityType(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivityType>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActivityTypeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActivityType>>
+>;
+export type GetActivityTypeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get activity type by ID
+ */
+
+export function useGetActivityType<
+  TData = Awaited<ReturnType<typeof getActivityType>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivityType>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActivityTypeQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update activity type

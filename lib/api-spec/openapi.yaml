@@ -179,6 +179,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserWithRelations"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete user (soft)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
     put:
       operationId: updateUser
       tags: [users]
@@ -240,6 +259,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Pt"
   /pts/{id}:
+    get:
+      operationId: getPt
+      tags: [pts]
+      summary: Get PT by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: PT details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pt"
     put:
       operationId: updatePt
       tags: [pts]
@@ -325,6 +363,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Branch"
   /branches/{id}:
+    get:
+      operationId: getBranch
+      tags: [branches]
+      summary: Get branch by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Branch details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
     put:
       operationId: updateBranch
       tags: [branches]
@@ -405,6 +462,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Shift"
   /shifts/{id}:
+    get:
+      operationId: getShift
+      tags: [shifts]
+      summary: Get shift by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Shift details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
     put:
       operationId: updateShift
       tags: [shifts]
@@ -485,6 +561,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/ActivityType"
   /activity-types/{id}:
+    get:
+      operationId: getActivityType
+      tags: [activityTypes]
+      summary: Get activity type by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity type details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityType"
     put:
       operationId: updateActivityType
       tags: [activityTypes]

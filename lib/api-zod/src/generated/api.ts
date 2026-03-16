@@ -150,6 +150,17 @@ export const GetUserResponse = zod.object({
 });
 
 /**
+ * @summary Delete user (soft)
+ */
+export const DeleteUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteUserResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
  * @summary Update user
  */
 export const UpdateUserParams = zod.object({
@@ -206,6 +217,21 @@ export const ListPtsResponse = zod.array(ListPtsResponseItem);
 export const CreatePtBody = zod.object({
   code: zod.string(),
   name: zod.string(),
+});
+
+/**
+ * @summary Get PT by ID
+ */
+export const GetPtParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPtResponse = zod.object({
+  id: zod.number(),
+  code: zod.string(),
+  name: zod.string(),
+  activeStatus: zod.boolean(),
+  createdAt: zod.date().optional(),
 });
 
 /**
@@ -267,6 +293,22 @@ export const CreateBranchBody = zod.object({
 });
 
 /**
+ * @summary Get branch by ID
+ */
+export const GetBranchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBranchResponse = zod.object({
+  id: zod.number(),
+  ptId: zod.number(),
+  name: zod.string(),
+  city: zod.string().optional(),
+  activeStatus: zod.boolean(),
+  createdAt: zod.date().optional(),
+});
+
+/**
  * @summary Update branch
  */
 export const UpdateBranchParams = zod.object({
@@ -319,6 +361,22 @@ export const CreateShiftBody = zod.object({
   name: zod.string(),
   startTime: zod.string(),
   endTime: zod.string(),
+});
+
+/**
+ * @summary Get shift by ID
+ */
+export const GetShiftParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetShiftResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  activeStatus: zod.boolean(),
+  createdAt: zod.date().optional(),
 });
 
 /**
@@ -381,6 +439,24 @@ export const CreateActivityTypeBody = zod.object({
   weightPoints: zod.string(),
   noteRequired: zod.boolean().optional(),
   quantityNoteThreshold: zod.number().optional(),
+});
+
+/**
+ * @summary Get activity type by ID
+ */
+export const GetActivityTypeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetActivityTypeResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string().optional(),
+  weightPoints: zod.string(),
+  noteRequired: zod.boolean(),
+  quantityNoteThreshold: zod.number().optional(),
+  activeStatus: zod.boolean(),
+  createdAt: zod.date().optional(),
 });
 
 /**

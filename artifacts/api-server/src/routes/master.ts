@@ -16,6 +16,17 @@ router.get("/pts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealin
   }
 });
 
+router.get("/pts/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+  try {
+    const [pt] = await db.select().from(ptsTable).where(eq(ptsTable.id, Number(req.params.id))).limit(1);
+    if (!pt) { res.status(404).json({ error: "PT not found" }); return; }
+    res.json(pt);
+  } catch (error) {
+    console.error("Get PT error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/pts", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
     const { code, name } = req.body;
@@ -68,6 +79,17 @@ router.get("/branches", authMiddleware, requireRole("Owner", "Direksi", "Chief D
   }
 });
 
+router.get("/branches/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+  try {
+    const [branch] = await db.select().from(branchesTable).where(eq(branchesTable.id, Number(req.params.id))).limit(1);
+    if (!branch) { res.status(404).json({ error: "Branch not found" }); return; }
+    res.json(branch);
+  } catch (error) {
+    console.error("Get branch error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/branches", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
     const { ptId, name, city } = req.body;
@@ -112,6 +134,17 @@ router.get("/shifts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dea
     res.json(shifts);
   } catch (error) {
     console.error("List shifts error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/shifts/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+  try {
+    const [shift] = await db.select().from(shiftsTable).where(eq(shiftsTable.id, Number(req.params.id))).limit(1);
+    if (!shift) { res.status(404).json({ error: "Shift not found" }); return; }
+    res.json(shift);
+  } catch (error) {
+    console.error("Get shift error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -161,6 +194,17 @@ router.get("/activity-types", authMiddleware, requireRole("Owner", "Direksi", "C
     res.json(types);
   } catch (error) {
     console.error("List activity types error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/activity-types/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+  try {
+    const [type] = await db.select().from(activityTypesTable).where(eq(activityTypesTable.id, Number(req.params.id))).limit(1);
+    if (!type) { res.status(404).json({ error: "Activity type not found" }); return; }
+    res.json(type);
+  } catch (error) {
+    console.error("Get activity type error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
