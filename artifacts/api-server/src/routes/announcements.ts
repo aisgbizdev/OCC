@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { announcementsTable, usersTable } from "@workspace/db/schema";
-import { eq, and, desc, gte, lte, type SQL } from "drizzle-orm";
+import { eq, and, desc, gte, lte, or, isNull, sql, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog } from "../helpers/audit";
 
@@ -16,7 +16,26 @@ router.get("/announcements", authMiddleware, requireRole(...ALL_ROLES), async (r
     if (req.query.priority) conditions.push(eq(announcementsTable.priority, req.query.priority as string));
     if (req.query.activeOnly === "true") {
       const now = new Date();
-      conditions.push(lte(announcementsTable.startsAt, now));
+      conditions.push(or(isNull(announcementsTable.startsAt), lte(announcementsTable.startsAt, now))!);
+      conditions.push(or(isNull(announcementsTable.endsAt), gte(announcementsTable.endsAt, now))!);
+    }
+
+    if (!["Owner", "Admin System"].includes(req.user!.roleName)) {
+      const scopeConditions: SQL[] = [
+        isNull(announcementsTable.targetScope),
+        eq(announcementsTable.targetScope, "all"),
+      ];
+      if (req.user!.ptId) {
+        scopeConditions.push(
+          and(eq(announcementsTable.targetScope, "pt"), eq(announcementsTable.ptId, req.user!.ptId))!
+        );
+      }
+      if (req.user!.roleId) {
+        scopeConditions.push(
+          and(eq(announcementsTable.targetScope, "role"), eq(announcementsTable.roleId, req.user!.roleId))!
+        );
+      }
+      conditions.push(or(...scopeConditions)!);
     }
 
     const announcements = await db.select({

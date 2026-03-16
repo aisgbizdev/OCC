@@ -111,8 +111,26 @@ router.put("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), asyn
     const [existing] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, Number(req.params.id))).limit(1);
     if (!existing) { res.status(404).json({ error: "Complaint not found" }); return; }
 
+    const VALID_STATUSES = ["open", "in_progress", "escalated", "resolved", "closed"];
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      open: ["in_progress", "escalated"],
+      in_progress: ["escalated", "resolved"],
+      escalated: ["in_progress", "resolved"],
+      resolved: ["closed", "open"],
+      closed: [],
+    };
+
     const updateData: Partial<typeof complaintsTable.$inferInsert> = {};
-    if (req.body.status !== undefined) updateData.status = req.body.status;
+    if (req.body.status !== undefined) {
+      if (!VALID_STATUSES.includes(req.body.status)) {
+        res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` }); return;
+      }
+      const allowed = VALID_TRANSITIONS[existing.status] ?? [];
+      if (!allowed.includes(req.body.status)) {
+        res.status(400).json({ error: `Cannot transition from '${existing.status}' to '${req.body.status}'. Allowed: ${allowed.join(", ") || "none"}` }); return;
+      }
+      updateData.status = req.body.status;
+    }
     if (req.body.severity !== undefined) updateData.severity = req.body.severity;
     if (req.body.followUp !== undefined) updateData.followUp = req.body.followUp;
     if (req.body.assignedUserId !== undefined) updateData.assignedUserId = req.body.assignedUserId;

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { tasksTable, taskCommentsTable, usersTable, ptsTable, branchesTable } from "@workspace/db/schema";
-import { eq, and, desc, type SQL } from "drizzle-orm";
+import { eq, and, desc, lte, gte, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog, createNotification } from "../helpers/audit";
 
@@ -34,6 +34,8 @@ router.get("/tasks", authMiddleware, requireRole(...ALL_ROLES), async (req, res)
     if (req.query.status) conditions.push(eq(tasksTable.status, req.query.status as string));
     if (req.query.priority) conditions.push(eq(tasksTable.priority, req.query.priority as string));
     if (req.query.ptId) conditions.push(eq(tasksTable.ptId, Number(req.query.ptId)));
+    if (req.query.deadlineBefore) conditions.push(lte(tasksTable.deadline, new Date(req.query.deadlineBefore as string)));
+    if (req.query.deadlineAfter) conditions.push(gte(tasksTable.deadline, new Date(req.query.deadlineAfter as string)));
 
     if (req.user!.roleName === "Dealer") {
       conditions.push(eq(tasksTable.assignedTo, req.user!.userId));

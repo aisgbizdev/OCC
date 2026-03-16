@@ -112,6 +112,14 @@ router.post("/messages/:id/acknowledge", authMiddleware, requireRole(...ALL_ROLE
       .where(eq(messagesTable.id, Number(req.params.id))).limit(1);
     if (!message) { res.status(404).json({ error: "Message not found" }); return; }
 
+    if (req.user!.roleName === "Dealer") {
+      const isTargetedToMe = (message.targetType === "user" && message.targetId === req.user!.userId);
+      const isBroadcast = !message.targetType || message.targetType === "all";
+      if (!isTargetedToMe && !isBroadcast) {
+        res.status(403).json({ error: "Access denied" }); return;
+      }
+    }
+
     const existing = await db.select().from(messageAcknowledgementsTable)
       .where(and(
         eq(messageAcknowledgementsTable.messageId, message.id),
