@@ -135,6 +135,7 @@ router.post("/messages/:id/acknowledge", authMiddleware, requireRole(...ALL_ROLE
       userId: req.user!.userId,
     });
 
+    await createAuditLog({ userId: req.user!.userId, actionType: "acknowledge", module: "message", entityId: String(message.id) });
     res.json({ message: "Message acknowledged" });
   } catch (error) {
     console.error("Acknowledge message error:", error);

@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { chatsTable, chatMembersTable, chatMessagesTable, usersTable } from "@workspace/db/schema";
 import { eq, and, desc, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
-import { createNotification } from "../helpers/audit";
+import { createAuditLog, createNotification } from "../helpers/audit";
 
 const router: IRouter = Router();
 
@@ -78,6 +78,7 @@ router.post("/chats/:id/members", authMiddleware, requireRole("Owner", "Chief De
     if (existing.length > 0) { res.json({ message: "Already a member" }); return; }
 
     await db.insert(chatMembersTable).values({ chatId: Number(req.params.id), userId });
+    await createAuditLog({ userId: req.user!.userId, actionType: "add_member", module: "chat", entityId: String(req.params.id) });
     res.status(201).json({ message: "Member added" });
   } catch (error) {
     console.error("Add chat member error:", error);
@@ -144,6 +145,7 @@ router.post("/chats/:id/messages", authMiddleware, requireRole(...ALL_ROLES), as
       }
     }
 
+    await createAuditLog({ userId: req.user!.userId, actionType: "send_message", module: "chat", entityId: String(chatMsg.id) });
     res.status(201).json(chatMsg);
   } catch (error) {
     console.error("Send chat message error:", error);

@@ -130,6 +130,16 @@ router.post("/kpi/snapshots/generate", authMiddleware, requireRole("Owner", "Adm
       res.status(400).json({ error: "periodType and periodKey are required" }); return;
     }
 
+    const existingSnapshots = await db.select({ userId: kpiSnapshotsTable.userId })
+      .from(kpiSnapshotsTable)
+      .where(and(
+        eq(kpiSnapshotsTable.periodType, periodType),
+        eq(kpiSnapshotsTable.periodKey, periodKey),
+      ));
+    if (existingSnapshots.length > 0) {
+      res.status(409).json({ error: `Snapshots already exist for ${periodType}:${periodKey}. Delete them first to regenerate.` }); return;
+    }
+
     const scores = await db.select().from(kpiScoresTable);
     const snapshots = scores.map((s) => ({
       userId: s.userId,

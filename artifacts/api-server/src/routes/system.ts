@@ -120,7 +120,19 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
         };
       });
 
+    const cooldownHours = 1;
+    const cooldownThreshold = new Date(Date.now() - cooldownHours * 3600000);
     for (const dealer of inactive) {
+      const [recentFlag] = await db.select().from(auditLogsTable)
+        .where(and(
+          eq(auditLogsTable.actionType, "inactivity_flag"),
+          eq(auditLogsTable.module, "system"),
+          eq(auditLogsTable.entityId, String(dealer.userId)),
+        ))
+        .orderBy(desc(auditLogsTable.createdAt))
+        .limit(1);
+      if (recentFlag && new Date(recentFlag.createdAt) > cooldownThreshold) continue;
+
       await createAuditLog({
         userId: _req.user!.userId,
         actionType: "inactivity_flag",
