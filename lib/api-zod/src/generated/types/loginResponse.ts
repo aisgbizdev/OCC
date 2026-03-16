@@ -5,7 +5,9 @@
  * OCC Operational Control Center API
  * OpenAPI spec version: 0.1.0
  */
+import type { UserWithRelations } from "./userWithRelations";
 
-export interface HealthStatus {
-  status: string;
+export interface LoginResponse {
+  token: string;
+  user: UserWithRelations;
 }

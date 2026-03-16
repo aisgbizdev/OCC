@@ -3,20 +3,51 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: OCC Operational Control Center API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: pts
+    description: PT management
+  - name: branches
+    description: Branch management
+  - name: shifts
+    description: Shift management
+  - name: activityTypes
+    description: Activity type management
+  - name: activityLogs
+    description: Activity log operations
+  - name: tasks
+    description: Task management
+  - name: complaints
+    description: Complaint management
+  - name: announcements
+    description: Announcement management
+  - name: messages
+    description: Official messages
+  - name: chats
+    description: Chat system
+  - name: handover
+    description: Shift handover
+  - name: kpi
+    description: KPI and leaderboard
+  - name: notifications
+    description: Notifications
+  - name: systemSettings
+    description: System settings
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +55,1983 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logout success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserWithRelations"
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+        - name: roleId
+          in: query
+          schema:
+            type: integer
+        - name: shiftId
+          in: query
+          schema:
+            type: integer
+        - name: activeStatus
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserWithRelations"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserWithRelations"
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserWithRelations"
+    put:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserWithRelations"
+  /pts:
+    get:
+      operationId: listPts
+      tags: [pts]
+      summary: List PTs
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: PT list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pt"
+    post:
+      operationId: createPt
+      tags: [pts]
+      summary: Create PT
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePtRequest"
+      responses:
+        "201":
+          description: PT created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pt"
+  /pts/{id}:
+    put:
+      operationId: updatePt
+      tags: [pts]
+      summary: Update PT
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePtRequest"
+      responses:
+        "200":
+          description: PT updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pt"
+    delete:
+      operationId: deletePt
+      tags: [pts]
+      summary: Delete PT (soft)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: PT deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /branches:
+    get:
+      operationId: listBranches
+      tags: [branches]
+      summary: List branches
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Branch list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Branch"
+    post:
+      operationId: createBranch
+      tags: [branches]
+      summary: Create branch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBranchRequest"
+      responses:
+        "201":
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+  /branches/{id}:
+    put:
+      operationId: updateBranch
+      tags: [branches]
+      summary: Update branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBranchRequest"
+      responses:
+        "200":
+          description: Branch updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+    delete:
+      operationId: deleteBranch
+      tags: [branches]
+      summary: Delete branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Branch deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /shifts:
+    get:
+      operationId: listShifts
+      tags: [shifts]
+      summary: List shifts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Shift list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Shift"
+    post:
+      operationId: createShift
+      tags: [shifts]
+      summary: Create shift
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShiftRequest"
+      responses:
+        "201":
+          description: Shift created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+  /shifts/{id}:
+    put:
+      operationId: updateShift
+      tags: [shifts]
+      summary: Update shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShiftRequest"
+      responses:
+        "200":
+          description: Shift updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+    delete:
+      operationId: deleteShift
+      tags: [shifts]
+      summary: Delete shift
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Shift deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /activity-types:
+    get:
+      operationId: listActivityTypes
+      tags: [activityTypes]
+      summary: List activity types
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Activity type list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityType"
+    post:
+      operationId: createActivityType
+      tags: [activityTypes]
+      summary: Create activity type
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityTypeRequest"
+      responses:
+        "201":
+          description: Activity type created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityType"
+  /activity-types/{id}:
+    put:
+      operationId: updateActivityType
+      tags: [activityTypes]
+      summary: Update activity type
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateActivityTypeRequest"
+      responses:
+        "200":
+          description: Activity type updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityType"
+    delete:
+      operationId: deleteActivityType
+      tags: [activityTypes]
+      summary: Delete activity type (soft)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /activity-logs:
+    get:
+      operationId: listActivityLogs
+      tags: [activityLogs]
+      summary: List activity logs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+        - name: shiftId
+          in: query
+          schema:
+            type: integer
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Activity logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityLogWithRelations"
+    post:
+      operationId: createActivityLog
+      tags: [activityLogs]
+      summary: Create activity log
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityLogRequest"
+      responses:
+        "201":
+          description: Activity log created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityLog"
+  /activity-logs/batch:
+    post:
+      operationId: createBatchActivityLogs
+      tags: [activityLogs]
+      summary: Create multiple activity logs at once
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchActivityLogRequest"
+      responses:
+        "201":
+          description: Activity logs created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityLog"
+  /activity-logs/{id}:
+    put:
+      operationId: updateActivityLog
+      tags: [activityLogs]
+      summary: Update activity log (time-limited)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateActivityLogRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityLog"
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assignedTo
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaskWithRelations"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskWithRelations"
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get task details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskWithRelations"
+    put:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update task
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskWithRelations"
+  /tasks/{id}/comments:
+    get:
+      operationId: listTaskComments
+      tags: [tasks]
+      summary: List task comments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaskComment"
+    post:
+      operationId: createTaskComment
+      tags: [tasks]
+      summary: Add task comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskCommentRequest"
+      responses:
+        "201":
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskComment"
+  /complaints:
+    get:
+      operationId: listComplaints
+      tags: [complaints]
+      summary: List complaints
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+        - name: severity
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Complaint list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComplaintWithRelations"
+    post:
+      operationId: createComplaint
+      tags: [complaints]
+      summary: Create complaint
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateComplaintRequest"
+      responses:
+        "201":
+          description: Complaint created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplaintWithRelations"
+  /complaints/{id}:
+    put:
+      operationId: updateComplaint
+      tags: [complaints]
+      summary: Update complaint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateComplaintRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplaintWithRelations"
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: List announcements
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      summary: Create announcement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnnouncementRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+  /messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List messages
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MessageWithSender"
+    post:
+      operationId: createMessage
+      tags: [messages]
+      summary: Send official message
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageRequest"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageWithSender"
+  /messages/{id}/acknowledge:
+    post:
+      operationId: acknowledgeMessage
+      tags: [messages]
+      summary: Acknowledge message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      summary: List user chats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Chat list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatWithMembers"
+    post:
+      operationId: createChat
+      tags: [chats]
+      summary: Create chat room
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChatRequest"
+      responses:
+        "201":
+          description: Chat created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatWithMembers"
+  /chats/{id}/messages:
+    get:
+      operationId: listChatMessages
+      tags: [chats]
+      summary: List chat messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendChatMessage
+      tags: [chats]
+      summary: Send chat message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendChatMessageRequest"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+  /handover-logs:
+    get:
+      operationId: listHandoverLogs
+      tags: [handover]
+      summary: List handover logs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Handover logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HandoverLogWithRelations"
+    post:
+      operationId: createHandoverLog
+      tags: [handover]
+      summary: Create handover log
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHandoverLogRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandoverLogWithRelations"
+  /kpi/scores:
+    get:
+      operationId: listKpiScores
+      tags: [kpi]
+      summary: List KPI scores / leaderboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: KPI scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KpiScoreWithUser"
+  /kpi/snapshots:
+    get:
+      operationId: listKpiSnapshots
+      tags: [kpi]
+      summary: List KPI snapshots
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: periodType
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: KPI snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KpiSnapshot"
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/{id}/read:
+    put:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /system-settings:
+    get:
+      operationId: listSystemSettings
+      tags: [systemSettings]
+      summary: List system settings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SystemSetting"
+  /system-settings/{key}:
+    put:
+      operationId: updateSystemSetting
+      tags: [systemSettings]
+      summary: Update system setting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSystemSettingRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemSetting"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserWithRelations"
+      required: [token, user]
+    CreateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        phone:
+          type: string
+        roleId:
+          type: integer
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        shiftId:
+          type: integer
+        positionTitle:
+          type: string
+        supervisorId:
+          type: integer
+      required: [name, email, password, roleId]
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        roleId:
+          type: integer
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        shiftId:
+          type: integer
+        positionTitle:
+          type: string
+        supervisorId:
+          type: integer
+        activeStatus:
+          type: boolean
+    UserWithRelations:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+        roleId:
+          type: integer
+        roleName:
+          type: string
+        ptId:
+          type: integer
+        ptName:
+          type: string
+        branchId:
+          type: integer
+        branchName:
+          type: string
+        shiftId:
+          type: integer
+        shiftName:
+          type: string
+        positionTitle:
+          type: string
+        supervisorId:
+          type: integer
+        activeStatus:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, email, roleId, activeStatus]
+    Pt:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        activeStatus:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, code, name, activeStatus]
+    CreatePtRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required: [code, name]
+    UpdatePtRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        activeStatus:
+          type: boolean
+    Branch:
+      type: object
+      properties:
+        id:
+          type: integer
+        ptId:
+          type: integer
+        name:
+          type: string
+        city:
+          type: string
+        activeStatus:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, ptId, name, activeStatus]
+    CreateBranchRequest:
+      type: object
+      properties:
+        ptId:
+          type: integer
+        name:
+          type: string
+        city:
+          type: string
+      required: [ptId, name]
+    UpdateBranchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        activeStatus:
+          type: boolean
+    Shift:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        activeStatus:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, startTime, endTime, activeStatus]
+    CreateShiftRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+      required: [name, startTime, endTime]
+    UpdateShiftRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        activeStatus:
+          type: boolean
+    ActivityType:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        weightPoints:
+          type: string
+        noteRequired:
+          type: boolean
+        quantityNoteThreshold:
+          type: integer
+        activeStatus:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, weightPoints, noteRequired, activeStatus]
+    CreateActivityTypeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        weightPoints:
+          type: string
+        noteRequired:
+          type: boolean
+        quantityNoteThreshold:
+          type: integer
+      required: [name, weightPoints]
+    UpdateActivityTypeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        weightPoints:
+          type: string
+        noteRequired:
+          type: boolean
+        quantityNoteThreshold:
+          type: integer
+        activeStatus:
+          type: boolean
+    ActivityLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        activityTypeId:
+          type: integer
+        quantity:
+          type: integer
+        note:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        shiftId:
+          type: integer
+        points:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, activityTypeId, quantity, points]
+    ActivityLogWithRelations:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        activityTypeId:
+          type: integer
+        activityTypeName:
+          type: string
+        quantity:
+          type: integer
+        note:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        shiftId:
+          type: integer
+        points:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, activityTypeId, quantity, points]
+    CreateActivityLogRequest:
+      type: object
+      properties:
+        activityTypeId:
+          type: integer
+        quantity:
+          type: integer
+        note:
+          type: string
+      required: [activityTypeId, quantity]
+    BatchActivityLogRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateActivityLogRequest"
+      required: [items]
+    UpdateActivityLogRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+        note:
+          type: string
+    TaskWithRelations:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        assignedTo:
+          type: integer
+        assigneeName:
+          type: string
+        assignedBy:
+          type: integer
+        assignerName:
+          type: string
+        priority:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+        progressPercent:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, priority, progressPercent, status]
+    CreateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        assignedTo:
+          type: integer
+        priority:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+      required: [title]
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        assignedTo:
+          type: integer
+        priority:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+        progressPercent:
+          type: integer
+        status:
+          type: string
+    TaskComment:
+      type: object
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, taskId, userId, message]
+    CreateTaskCommentRequest:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+    ComplaintWithRelations:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        complaintType:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        assignedUserId:
+          type: integer
+        assignedUserName:
+          type: string
+        severity:
+          type: string
+        chronology:
+          type: string
+        followUp:
+          type: string
+        status:
+          type: string
+        createdBy:
+          type: integer
+        creatorName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, complaintType, severity, status]
+    CreateComplaintRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        complaintType:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        assignedUserId:
+          type: integer
+        severity:
+          type: string
+        chronology:
+          type: string
+      required: [title, complaintType, severity]
+    UpdateComplaintRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        severity:
+          type: string
+        status:
+          type: string
+        assignedUserId:
+          type: integer
+        followUp:
+          type: string
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        targetScope:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        shiftId:
+          type: integer
+        roleId:
+          type: integer
+        createdBy:
+          type: integer
+        creatorName:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        priority:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, content, priority]
+    CreateAnnouncementRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        targetScope:
+          type: string
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        shiftId:
+          type: integer
+        roleId:
+          type: integer
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        priority:
+          type: string
+      required: [title, content]
+    MessageWithSender:
+      type: object
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        content:
+          type: string
+        senderId:
+          type: integer
+        senderName:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: integer
+        requireAck:
+          type: boolean
+        acknowledged:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, subject, content, senderId, requireAck]
+    CreateMessageRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+        content:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: integer
+        requireAck:
+          type: boolean
+      required: [subject, content]
+    ChatWithMembers:
+      type: object
+      properties:
+        id:
+          type: integer
+        chatType:
+          type: string
+        name:
+          type: string
+        createdBy:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMember"
+        lastMessage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, chatType]
+    ChatMember:
+      type: object
+      properties:
+        userId:
+          type: integer
+        userName:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+      required: [userId]
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        chatId:
+          type: integer
+        senderId:
+          type: integer
+        senderName:
+          type: string
+        message:
+          type: string
+        attachmentUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, chatId, senderId, message]
+    SendChatMessageRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        attachmentUrl:
+          type: string
+      required: [message]
+    CreateChatRequest:
+      type: object
+      properties:
+        chatType:
+          type: string
+        name:
+          type: string
+        memberIds:
+          type: array
+          items:
+            type: integer
+      required: [chatType, memberIds]
+    HandoverLogWithRelations:
+      type: object
+      properties:
+        id:
+          type: integer
+        ptId:
+          type: integer
+        ptName:
+          type: string
+        branchId:
+          type: integer
+        fromShiftId:
+          type: integer
+        fromShiftName:
+          type: string
+        toShiftId:
+          type: integer
+        toShiftName:
+          type: string
+        createdBy:
+          type: integer
+        creatorName:
+          type: string
+        summary:
+          type: string
+        pendingActivities:
+          type: string
+        pendingTasks:
+          type: string
+        pendingComplaints:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id]
+    CreateHandoverLogRequest:
+      type: object
+      properties:
+        ptId:
+          type: integer
+        branchId:
+          type: integer
+        fromShiftId:
+          type: integer
+        toShiftId:
+          type: integer
+        summary:
+          type: string
+        pendingActivities:
+          type: string
+        pendingTasks:
+          type: string
+        pendingComplaints:
+          type: string
+        notes:
+          type: string
+      required: [fromShiftId, toShiftId]
+    KpiScoreWithUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        ptName:
+          type: string
+        currentDailyScore:
+          type: string
+        currentWeeklyScore:
+          type: string
+        currentMonthlyScore:
+          type: string
+        currentQuarterlyScore:
+          type: string
+        currentYearlyScore:
+          type: string
+        currentRank:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId]
+    KpiSnapshot:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        periodType:
+          type: string
+        periodKey:
+          type: string
+        totalPoints:
+          type: string
+        activityPoints:
+          type: string
+        taskPoints:
+          type: string
+        complaintPenalty:
+          type: string
+        errorPenalty:
+          type: string
+        bonusPoints:
+          type: string
+        rank:
+          type: integer
+        grade:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, periodType, periodKey, totalPoints]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        readStatus:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, type, title, readStatus]
+    SystemSetting:
+      type: object
+      properties:
+        id:
+          type: integer
+        settingKey:
+          type: string
+        settingValue:
+          type: string
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, settingKey]
+    UpdateSystemSettingRequest:
+      type: object
+      properties:
+        settingValue:
+          type: string
+        description:
+          type: string
+      required: [settingValue]

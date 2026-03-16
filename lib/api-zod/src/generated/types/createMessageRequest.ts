@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface CreateMessageRequest {
+  subject: string;
+  content: string;
+  targetType?: string;
+  targetId?: number;
+  requireAck?: boolean;
 }

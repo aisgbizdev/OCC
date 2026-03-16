@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListUsersParams = {
+  ptId?: number;
+  roleId?: number;
+  shiftId?: number;
+  activeStatus?: boolean;
+};

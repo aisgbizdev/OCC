@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface TaskComment {
+  id: number;
+  taskId: number;
+  userId: number;
+  userName?: string;
+  message: string;
+  createdAt?: Date;
 }

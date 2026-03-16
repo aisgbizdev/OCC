@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListActivityLogsParams = {
+  userId?: number;
+  ptId?: number;
+  shiftId?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
+};

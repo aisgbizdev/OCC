@@ -1,0 +1,113 @@
+import { Router, type IRouter } from "express";
+import bcryptjs from "bcryptjs";
+import { db } from "@workspace/db";
+import { usersTable, rolesTable, ptsTable, branchesTable, shiftsTable } from "@workspace/db/schema";
+import { eq, and, type SQL } from "drizzle-orm";
+import { authMiddleware, requireRole } from "../middlewares/auth";
+
+const router: IRouter = Router();
+
+async function enrichUser(user: typeof usersTable.$inferSelect) {
+  const roles = await db.select().from(rolesTable).where(eq(rolesTable.id, user.roleId)).limit(1);
+  const pt = user.ptId ? (await db.select().from(ptsTable).where(eq(ptsTable.id, user.ptId)).limit(1))[0] : null;
+  const branch = user.branchId ? (await db.select().from(branchesTable).where(eq(branchesTable.id, user.branchId)).limit(1))[0] : null;
+  const shift = user.shiftId ? (await db.select().from(shiftsTable).where(eq(shiftsTable.id, user.shiftId)).limit(1))[0] : null;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    avatar: user.avatar,
+    roleId: user.roleId,
+    roleName: roles[0]?.name || "",
+    ptId: user.ptId,
+    ptName: pt?.name || null,
+    branchId: user.branchId,
+    branchName: branch?.name || null,
+    shiftId: user.shiftId,
+    shiftName: shift?.name || null,
+    positionTitle: user.positionTitle,
+    supervisorId: user.supervisorId,
+    activeStatus: user.activeStatus,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+
+router.get("/users", authMiddleware, async (req, res) => {
+  try {
+    const conditions: SQL[] = [];
+    if (req.query.ptId) conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
+    if (req.query.roleId) conditions.push(eq(usersTable.roleId, Number(req.query.roleId)));
+    if (req.query.shiftId) conditions.push(eq(usersTable.shiftId, Number(req.query.shiftId)));
+    if (req.query.activeStatus !== undefined) conditions.push(eq(usersTable.activeStatus, req.query.activeStatus === "true"));
+
+    const users = conditions.length > 0
+      ? await db.select().from(usersTable).where(and(...conditions))
+      : await db.select().from(usersTable);
+
+    const enriched = await Promise.all(users.map(enrichUser));
+    res.json(enriched);
+  } catch (error) {
+    console.error("List users error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/users", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing"), async (req, res) => {
+  try {
+    const { name, email, password, phone, roleId, ptId, branchId, shiftId, positionTitle, supervisorId } = req.body;
+    if (!name || !email || !password || !roleId) {
+      res.status(400).json({ error: "name, email, password, and roleId are required" });
+      return;
+    }
+    const passwordHash = await bcryptjs.hash(password, 10);
+    const [user] = await db.insert(usersTable).values({
+      name, email, passwordHash, phone, roleId, ptId, branchId, shiftId, positionTitle, supervisorId,
+    }).returning();
+    const enriched = await enrichUser(user);
+    res.status(201).json(enriched);
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      res.status(409).json({ error: "Email already exists" });
+      return;
+    }
+    console.error("Create user error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/users/:id", authMiddleware, async (req, res) => {
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    res.json(await enrichUser(user));
+  } catch (error) {
+    console.error("Get user error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing"), async (req, res) => {
+  try {
+    const { name, phone, roleId, ptId, branchId, shiftId, positionTitle, supervisorId, activeStatus } = req.body;
+    const updateData: Record<string, any> = {};
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (roleId !== undefined) updateData.roleId = roleId;
+    if (ptId !== undefined) updateData.ptId = ptId;
+    if (branchId !== undefined) updateData.branchId = branchId;
+    if (shiftId !== undefined) updateData.shiftId = shiftId;
+    if (positionTitle !== undefined) updateData.positionTitle = positionTitle;
+    if (supervisorId !== undefined) updateData.supervisorId = supervisorId;
+    if (activeStatus !== undefined) updateData.activeStatus = activeStatus;
+
+    const [user] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, Number(req.params.id))).returning();
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    res.json(await enrichUser(user));
+  } catch (error) {
+    console.error("Update user error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+export default router;
