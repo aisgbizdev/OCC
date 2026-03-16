@@ -1,0 +1,94 @@
+import { useState } from "react";
+import { useGetKpiLeaderboard } from "@workspace/api-client-react";
+import { Trophy, Medal, Target } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+export default function KPI() {
+  const [period, setPeriod] = useState<"daily"|"weekly"|"monthly"|"yearly">("daily");
+  const { data: leaderboard } = useGetKpiLeaderboard({ period });
+
+  const getScore = (user: any) => {
+    switch(period) {
+      case "daily": return Number(user.currentDailyScore);
+      case "weekly": return Number(user.currentWeeklyScore);
+      case "monthly": return Number(user.currentMonthlyScore);
+      case "yearly": return Number(user.currentYearlyScore);
+      default: return 0;
+    }
+  };
+
+  const chartData = (leaderboard || []).slice(0, 10).map(u => ({
+    name: u.userName.split(" ")[0], // first name
+    score: getScore(u)
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Trophy className="w-8 h-8 text-amber-400" /> Leaderboard
+          </h1>
+          <p className="text-muted-foreground mt-1">Global ranking across all operational teams.</p>
+        </div>
+        
+        <div className="flex bg-muted p-1 rounded-xl">
+          {["daily", "weekly", "monthly", "yearly"].map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p as any)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${period === p ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-card border rounded-2xl p-6 shadow-sm h-[400px]">
+          <h3 className="font-bold mb-6">Top 10 Performers ({period})</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip 
+                cursor={{ fill: 'hsl(var(--muted))' }}
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+              />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={index === 0 ? 'hsl(160 84% 39%)' : 'hsl(217 91% 60%)'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-card border rounded-2xl p-6 shadow-sm overflow-y-auto max-h-[400px]">
+          <h3 className="font-bold mb-4">Rankings</h3>
+          <div className="space-y-4">
+            {leaderboard?.map((u, i) => (
+              <div key={u.id} className="flex items-center gap-4">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                  i === 0 ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]' : 
+                  i === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/30' :
+                  i === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/30' :
+                  'bg-muted text-muted-foreground'
+                }`}>
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{u.userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{u.ptName}</p>
+                </div>
+                <div className="font-mono font-bold text-lg">{getScore(u)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

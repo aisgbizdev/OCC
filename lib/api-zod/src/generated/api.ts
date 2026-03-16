@@ -636,6 +636,17 @@ export const GetTaskResponse = zod.object({
 });
 
 /**
+ * @summary Cancel task
+ */
+export const DeleteTaskParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteTaskResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
  * @summary Update task
  */
 export const UpdateTaskParams = zod.object({
@@ -738,6 +749,41 @@ export const CreateComplaintBody = zod.object({
 });
 
 /**
+ * @summary Get complaint details
+ */
+export const GetComplaintParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetComplaintResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  complaintType: zod.string(),
+  ptId: zod.number().optional(),
+  branchId: zod.number().optional(),
+  assignedUserId: zod.number().optional(),
+  assignedUserName: zod.string().optional(),
+  severity: zod.string(),
+  chronology: zod.string().optional(),
+  followUp: zod.string().optional(),
+  status: zod.string(),
+  createdBy: zod.number().optional(),
+  creatorName: zod.string().optional(),
+  createdAt: zod.date().optional(),
+});
+
+/**
+ * @summary Close complaint
+ */
+export const DeleteComplaintParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteComplaintResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
  * @summary Update complaint
  */
 export const UpdateComplaintParams = zod.object({
@@ -809,6 +855,78 @@ export const CreateAnnouncementBody = zod.object({
 });
 
 /**
+ * @summary Get announcement by ID
+ */
+export const GetAnnouncementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetAnnouncementResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  targetScope: zod.string().optional(),
+  ptId: zod.number().optional(),
+  branchId: zod.number().optional(),
+  shiftId: zod.number().optional(),
+  roleId: zod.number().optional(),
+  createdBy: zod.number().optional(),
+  creatorName: zod.string().optional(),
+  startsAt: zod.date().optional(),
+  endsAt: zod.date().optional(),
+  priority: zod.string(),
+  createdAt: zod.date().optional(),
+});
+
+/**
+ * @summary Update announcement
+ */
+export const UpdateAnnouncementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateAnnouncementBody = zod.object({
+  title: zod.string(),
+  content: zod.string(),
+  targetScope: zod.string().optional(),
+  ptId: zod.number().optional(),
+  branchId: zod.number().optional(),
+  shiftId: zod.number().optional(),
+  roleId: zod.number().optional(),
+  startsAt: zod.date().optional(),
+  endsAt: zod.date().optional(),
+  priority: zod.string().optional(),
+});
+
+export const UpdateAnnouncementResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  targetScope: zod.string().optional(),
+  ptId: zod.number().optional(),
+  branchId: zod.number().optional(),
+  shiftId: zod.number().optional(),
+  roleId: zod.number().optional(),
+  createdBy: zod.number().optional(),
+  creatorName: zod.string().optional(),
+  startsAt: zod.date().optional(),
+  endsAt: zod.date().optional(),
+  priority: zod.string(),
+  createdAt: zod.date().optional(),
+});
+
+/**
+ * @summary Delete announcement
+ */
+export const DeleteAnnouncementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteAnnouncementResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
  * @summary List messages
  */
 export const ListMessagesResponseItem = zod.object({
@@ -834,6 +952,26 @@ export const CreateMessageBody = zod.object({
   targetType: zod.string().optional(),
   targetId: zod.number().optional(),
   requireAck: zod.boolean().optional(),
+});
+
+/**
+ * @summary Get message with acknowledgements
+ */
+export const GetMessageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetMessageResponse = zod.object({
+  id: zod.number(),
+  subject: zod.string(),
+  content: zod.string(),
+  senderId: zod.number(),
+  senderName: zod.string().optional(),
+  targetType: zod.string().optional(),
+  targetId: zod.number().optional(),
+  requireAck: zod.boolean(),
+  acknowledged: zod.boolean().optional(),
+  createdAt: zod.date().optional(),
 });
 
 /**
@@ -876,6 +1014,17 @@ export const CreateChatBody = zod.object({
   chatType: zod.string(),
   name: zod.string().optional(),
   memberIds: zod.array(zod.number()),
+});
+
+/**
+ * @summary Add member to chat
+ */
+export const AddChatMemberParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddChatMemberBody = zod.object({
+  userId: zod.number(),
 });
 
 /**
@@ -951,6 +1100,32 @@ export const CreateHandoverLogBody = zod.object({
 });
 
 /**
+ * @summary Get handover log by ID
+ */
+export const GetHandoverLogParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetHandoverLogResponse = zod.object({
+  id: zod.number(),
+  ptId: zod.number().optional(),
+  ptName: zod.string().optional(),
+  branchId: zod.number().optional(),
+  fromShiftId: zod.number().optional(),
+  fromShiftName: zod.string().optional(),
+  toShiftId: zod.number().optional(),
+  toShiftName: zod.string().optional(),
+  createdBy: zod.number().optional(),
+  creatorName: zod.string().optional(),
+  summary: zod.string().optional(),
+  pendingActivities: zod.string().optional(),
+  pendingTasks: zod.string().optional(),
+  pendingComplaints: zod.string().optional(),
+  notes: zod.string().optional(),
+  createdAt: zod.date().optional(),
+});
+
+/**
  * @summary List KPI scores / leaderboard
  */
 export const ListKpiScoresQueryParams = zod.object({
@@ -971,6 +1146,41 @@ export const ListKpiScoresResponseItem = zod.object({
   updatedAt: zod.date().optional(),
 });
 export const ListKpiScoresResponse = zod.array(ListKpiScoresResponseItem);
+
+/**
+ * @summary Get KPI leaderboard
+ */
+export const GetKpiLeaderboardQueryParams = zod.object({
+  period: zod.coerce.string().optional(),
+  ptId: zod.coerce.number().optional(),
+  limit: zod.coerce.number().optional(),
+});
+
+export const GetKpiLeaderboardResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  userName: zod.string().optional(),
+  ptName: zod.string().optional(),
+  currentDailyScore: zod.string().optional(),
+  currentWeeklyScore: zod.string().optional(),
+  currentMonthlyScore: zod.string().optional(),
+  currentQuarterlyScore: zod.string().optional(),
+  currentYearlyScore: zod.string().optional(),
+  currentRank: zod.number().optional(),
+  updatedAt: zod.date().optional(),
+});
+export const GetKpiLeaderboardResponse = zod.array(
+  GetKpiLeaderboardResponseItem,
+);
+
+/**
+ * @summary Get user KPI details
+ */
+export const GetUserKpiParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const GetUserKpiResponse = zod.object({}).passthrough();
 
 /**
  * @summary List KPI snapshots
@@ -998,20 +1208,36 @@ export const ListKpiSnapshotsResponseItem = zod.object({
 export const ListKpiSnapshotsResponse = zod.array(ListKpiSnapshotsResponseItem);
 
 /**
+ * @summary Generate KPI snapshots
+ */
+export const GenerateKpiSnapshotsBody = zod.object({
+  periodType: zod.string(),
+  periodKey: zod.string(),
+});
+
+/**
  * @summary List notifications
  */
-export const ListNotificationsResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  type: zod.string(),
-  title: zod.string(),
-  content: zod.string().optional(),
-  readStatus: zod.boolean(),
-  createdAt: zod.date().optional(),
+export const ListNotificationsQueryParams = zod.object({
+  unreadOnly: zod.coerce.string().optional(),
 });
-export const ListNotificationsResponse = zod.array(
-  ListNotificationsResponseItem,
-);
+
+export const ListNotificationsResponse = zod.object({
+  notifications: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        userId: zod.number(),
+        type: zod.string(),
+        title: zod.string(),
+        content: zod.string().optional(),
+        readStatus: zod.boolean(),
+        createdAt: zod.date().optional(),
+      }),
+    )
+    .optional(),
+  unreadCount: zod.number().optional(),
+});
 
 /**
  * @summary Mark notification as read
@@ -1023,6 +1249,30 @@ export const MarkNotificationReadParams = zod.object({
 export const MarkNotificationReadResponse = zod.object({
   message: zod.string(),
 });
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary List audit logs
+ */
+export const ListAuditLogsQueryParams = zod.object({
+  module: zod.coerce.string().optional(),
+  actionType: zod.coerce.string().optional(),
+  userId: zod.coerce.number().optional(),
+});
+
+export const ListAuditLogsResponseItem = zod.object({}).passthrough();
+export const ListAuditLogsResponse = zod.array(ListAuditLogsResponseItem);
+
+/**
+ * @summary Check dealer inactivity
+ */
+export const CheckInactivityResponse = zod.object({}).passthrough();
 
 /**
  * @summary List system settings

@@ -1,0 +1,14 @@
+packages:
+  "framer-motion": "Animations for Bottom Sheet and FAB speed dial"
+  "recharts": "Data visualization for KPI dashboards"
+  "date-fns": "Date formatting and relative time calculations for SLA timers"
+  "@hookform/resolvers": "Zod resolver for react-hook-form integration"
+
+images:
+  - path: "artifacts/occ-web/public/images/login-bg.png"
+    description: "Abstract deep dark blue and cyan glowing geometric command center background with subtle grid lines"
+    aspect_ratio: "16:9"
+
+notes:
+  - "Using global fetch interceptor to inject Authorization header from localStorage ('occ_token')"
+  - "Using auto-generated React Query hooks from @workspace/api-client-react"

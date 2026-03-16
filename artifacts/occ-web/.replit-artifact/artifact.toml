@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "OCC — Operational Control Center"
+version = "1.0.0"
+id = "artifacts/occ-web"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 18259
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/occ-web run dev"
+
+[services.env]
+PORT = "18259"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/occ-web", "run", "build"]
+publicDir = "artifacts/occ-web/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

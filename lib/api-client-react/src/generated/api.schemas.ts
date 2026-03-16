@@ -493,6 +493,10 @@ export type ListComplaintsParams = {
   severity?: string;
 };
 
+export type AddChatMemberBody = {
+  userId: number;
+};
+
 export type ListHandoverLogsParams = {
   ptId?: number;
 };
@@ -501,7 +505,39 @@ export type ListKpiScoresParams = {
   ptId?: number;
 };
 
+export type GetKpiLeaderboardParams = {
+  period?: string;
+  ptId?: number;
+  limit?: number;
+};
+
+export type GetUserKpi200 = { [key: string]: unknown };
+
 export type ListKpiSnapshotsParams = {
   userId?: number;
   periodType?: string;
 };
+
+export type GenerateKpiSnapshotsBody = {
+  periodType: string;
+  periodKey: string;
+};
+
+export type ListNotificationsParams = {
+  unreadOnly?: string;
+};
+
+export type ListNotifications200 = {
+  notifications?: Notification[];
+  unreadCount?: number;
+};
+
+export type ListAuditLogsParams = {
+  module?: string;
+  actionType?: string;
+  userId?: number;
+};
+
+export type ListAuditLogs200Item = { [key: string]: unknown };
+
+export type CheckInactivity200 = { [key: string]: unknown };

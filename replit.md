@@ -16,17 +16,32 @@ Internal web application for Solid Group's Dealing department. Monitors operatio
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
-- **Auth**: JWT (jsonwebtoken + bcryptjs)
+- **Auth**: JWT (jsonwebtoken + bcryptjs), stored in localStorage as `occ_token`
 - **Build**: esbuild (CJS bundle)
+- **Frontend**: React + Vite, Tailwind CSS v4, shadcn/ui, TanStack Query, wouter, recharts, framer-motion, date-fns
+- **State**: TanStack Query for server state, React Context for auth
 
 ## Structure
 
 ```text
 artifacts-monorepo/
 ├── artifacts/
-│   └── api-server/           # Express API server
+│   ├── api-server/           # Express API server
+│   └── occ-web/              # React + Vite frontend (served at /)
 │       └── src/
-│           ├── routes/
+│           ├── pages/        # login, dashboard, activity-logs, kpi, tasks, complaints,
+│           │                 # announcements, messages, chats, handover, notifications, system
+│           ├── components/
+│           │   ├── layout.tsx           # Sidebar + mobile bottom nav + header
+│           │   ├── fab.tsx              # Floating Action Button (speed dial)
+│           │   ├── batch-activity-form.tsx  # Batch activity input form
+│           │   ├── responsive-modal.tsx # Dialog on desktop, Bottom Sheet on mobile
+│           │   └── sla-timer.tsx        # Complaint SLA color timer badge
+│           └── lib/
+│               ├── auth.tsx             # AuthProvider + useAuth context
+│               └── fetch-interceptor.ts # JWT token injection on /api requests
+│   └── api-server/src/
+│       ├── routes/
 │           │   ├── index.ts          # Route aggregator (14 routers)
 │           │   ├── health.ts         # Health check
 │           │   ├── auth.ts           # Login/logout/me
