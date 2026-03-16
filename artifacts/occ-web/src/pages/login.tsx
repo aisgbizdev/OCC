@@ -27,8 +27,8 @@ export default function Login() {
         localStorage.setItem("occ_token", data.token);
         window.location.href = "/dashboard"; // hard reload to init AuthContext with token
       },
-      onError: (err: any) => {
-        toast({ title: "Login Failed", description: err?.response?.data?.error || "Invalid credentials", variant: "destructive" });
+      onError: () => {
+        toast({ title: "Login Failed", description: "Kredensial tidak valid. Coba lagi.", variant: "destructive" });
       }
     });
   };

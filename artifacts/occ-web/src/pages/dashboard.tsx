@@ -10,6 +10,7 @@ import {
   type ActivityLogWithRelations,
   type TaskWithRelations,
   type ComplaintWithRelations,
+  type CheckInactivity200,
 } from "@workspace/api-client-react";
 import { Activity, Award, CheckSquare, Target, AlertTriangle, TrendingUp, Users, Clock, Zap, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
@@ -22,9 +23,18 @@ interface InactiveDealer {
   hoursInactive: number;
   severity: string;
 }
-interface InactivityData {
-  inactiveCount?: number;
-  dealers?: InactiveDealer[];
+
+function toInactiveCount(data: CheckInactivity200 | undefined): number {
+  if (!data) return 0;
+  const v = data["inactiveCount"];
+  return typeof v === "number" ? v : 0;
+}
+
+function toDealers(data: CheckInactivity200 | undefined): InactiveDealer[] {
+  if (!data) return [];
+  const arr = data["dealers"];
+  if (!Array.isArray(arr)) return [];
+  return arr as InactiveDealer[];
 }
 
 export default function Dashboard() {
@@ -44,8 +54,8 @@ function DealerDashboard() {
   const { data: tasks } = useListTasks({ assignedTo: user?.id, status: "in_progress" });
   const { data: logs } = useListActivityLogs({ userId: user?.id });
 
-  const myScore = scores?.find((s: KpiScoreWithUser) => s.userId === user?.id);
-  const myRank = scores?.findIndex((s: KpiScoreWithUser) => s.userId === user?.id);
+  const myScore = scores?.find(s => s.userId === user?.id);
+  const myRank = scores?.findIndex(s => s.userId === user?.id);
   const rankDisplay = myRank !== undefined && myRank >= 0 ? myRank + 1 : "-";
 
   return (
@@ -135,15 +145,13 @@ function SupervisorDashboard() {
   const { data: tasks } = useListTasks({ ptId: user?.ptId });
   const { data: complaints } = useListComplaints({ ptId: user?.ptId });
   const { data: logs } = useListActivityLogs({ ptId: user?.ptId });
-  const { data: rawInactivity } = useCheckInactivity();
-  const inactivity = rawInactivity as InactivityData | undefined;
+  const { data: inactivityRaw } = useCheckInactivity();
 
-  const pendingTasks = (tasks as TaskWithRelations[] | undefined)?.filter(t => t.status !== "completed") ?? [];
-  const openComplaints = (complaints as ComplaintWithRelations[] | undefined)?.filter(c => c.status === "open" || c.status === "in_progress") ?? [];
-  const todayLogs = (logs as ActivityLogWithRelations[] | undefined)?.filter(l => {
-    if (!l.createdAt) return false;
-    return new Date(l.createdAt).toDateString() === new Date().toDateString();
-  }) ?? [];
+  const pendingTasks = tasks?.filter(t => t.status !== "completed") ?? [];
+  const openComplaints = complaints?.filter(c => c.status === "open" || c.status === "in_progress") ?? [];
+  const todayLogs = logs?.filter(l => l.createdAt && new Date(l.createdAt).toDateString() === new Date().toDateString()) ?? [];
+  const inactiveCount = toInactiveCount(inactivityRaw);
+  const dealers = toDealers(inactivityRaw);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -197,7 +205,7 @@ function SupervisorDashboard() {
           <div className="bg-card border rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive"/> Inaktivitas Dealer</h2>
             <div className="space-y-3">
-              {inactivity?.dealers?.slice(0, 5).map((d: InactiveDealer) => (
+              {dealers.slice(0, 5).map(d => (
                 <div key={d.userId} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${d.severity === 'critical' ? 'bg-destructive animate-pulse' : 'bg-amber-500'}`} />
@@ -206,7 +214,7 @@ function SupervisorDashboard() {
                   <span className={`text-xs font-mono font-bold ${d.severity === 'critical' ? 'text-destructive' : 'text-amber-500'}`}>{d.hoursInactive}j</span>
                 </div>
               ))}
-              {(inactivity?.inactiveCount ?? 0) === 0 && <p className="text-sm text-muted-foreground text-center py-2">Semua dealer aktif</p>}
+              {inactiveCount === 0 && <p className="text-sm text-muted-foreground text-center py-2">Semua dealer aktif</p>}
             </div>
           </div>
 
@@ -235,45 +243,39 @@ function ManagementDashboard() {
   const { data: leaderboard } = useGetKpiLeaderboard({ period: "daily" });
   const { data: tasks } = useListTasks();
   const { data: complaints } = useListComplaints();
-  const { data: rawInactivity } = useCheckInactivity();
-  const inactivity = rawInactivity as InactivityData | undefined;
+  const { data: inactivityRaw } = useCheckInactivity();
 
-  const allComplaints = complaints as ComplaintWithRelations[] | undefined;
-  const allTasks = tasks as TaskWithRelations[] | undefined;
-  const openComplaints = allComplaints?.filter(c => c.status === "open" || c.status === "in_progress") ?? [];
-  const pendingTasks = allTasks?.filter(t => t.status !== "completed") ?? [];
+  const openComplaints = complaints?.filter(c => c.status === "open" || c.status === "in_progress") ?? [];
+  const pendingTasks = tasks?.filter(t => t.status !== "completed") ?? [];
   const highSeverity = openComplaints.filter(c => c.severity === "high");
+  const inactiveCount = toInactiveCount(inactivityRaw);
+  const dealers = toDealers(inactivityRaw);
 
   const getOperationalPulse = () => {
-    if (highSeverity.length > 3 || (inactivity?.inactiveCount ?? 0) > 5) return { color: "bg-red-500", label: "KRITIS", textColor: "text-red-400" };
-    if (highSeverity.length > 0 || openComplaints.length > 5 || (inactivity?.inactiveCount ?? 0) > 2) return { color: "bg-amber-500", label: "HATI-HATI", textColor: "text-amber-400" };
+    if (highSeverity.length > 3 || inactiveCount > 5) return { color: "bg-red-500", label: "KRITIS", textColor: "text-red-400" };
+    if (highSeverity.length > 0 || openComplaints.length > 5 || inactiveCount > 2) return { color: "bg-amber-500", label: "HATI-HATI", textColor: "text-amber-400" };
     return { color: "bg-emerald-500", label: "NORMAL", textColor: "text-emerald-400" };
   };
   const pulse = getOperationalPulse();
 
-  const ptNameMap: Record<string, string> = {};
-  (leaderboard as KpiScoreWithUser[] | undefined)?.forEach(u => {
-    if (u.ptName) ptNameMap[u.ptName] = u.ptName;
-  });
-
   const ptStats: Record<string, { name: string; complaints: number; tasks: number; topScore: number }> = {};
-  allComplaints?.forEach((c: ComplaintWithRelations) => {
+  complaints?.forEach((c: ComplaintWithRelations) => {
     const key = c.ptId !== undefined ? `PT #${c.ptId}` : "Unknown";
     if (!ptStats[key]) ptStats[key] = { name: key, complaints: 0, tasks: 0, topScore: 0 };
     if (c.status === "open" || c.status === "in_progress") ptStats[key].complaints++;
   });
-  allTasks?.forEach((t: TaskWithRelations) => {
+  tasks?.forEach((t: TaskWithRelations) => {
     const key = t.ptId !== undefined ? `PT #${t.ptId}` : "Unknown";
     if (!ptStats[key]) ptStats[key] = { name: key, complaints: 0, tasks: 0, topScore: 0 };
     if (t.status !== "completed") ptStats[key].tasks++;
   });
-  (leaderboard as KpiScoreWithUser[] | undefined)?.forEach((u: KpiScoreWithUser) => {
+  leaderboard?.forEach((u: KpiScoreWithUser) => {
     const key = u.ptName ?? "Unknown";
     if (!ptStats[key]) ptStats[key] = { name: key, complaints: 0, tasks: 0, topScore: 0 };
     ptStats[key].topScore = Math.max(ptStats[key].topScore, Number(u.currentDailyScore ?? 0));
   });
 
-  const topLeader = (leaderboard as KpiScoreWithUser[] | undefined)?.[0];
+  const topLeader = leaderboard?.[0];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -291,7 +293,7 @@ function ManagementDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" />
         <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" />
-        <StatCard title="Dealer Inaktif" value={String(inactivity?.inactiveCount ?? 0)} icon={Clock} color="text-orange-400" />
+        <StatCard title="Dealer Inaktif" value={String(inactiveCount)} icon={Clock} color="text-orange-400" />
         <StatCard title="Top Skor Harian" value={String(topLeader?.currentDailyScore ?? 0)} icon={TrendingUp} color="text-emerald-400" />
       </div>
 
@@ -354,12 +356,29 @@ function ManagementDashboard() {
               </div>
             </div>
           )}
+
+          {dealers.length > 0 && (
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-500"><Clock className="w-5 h-5"/> Dealer Inaktif</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {dealers.slice(0, 6).map(d => (
+                  <div key={d.userId} className="flex items-center justify-between p-3 rounded-lg bg-card border">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${d.severity === 'critical' ? 'bg-destructive animate-pulse' : 'bg-amber-500'}`} />
+                      <span className="text-sm font-medium">{d.userName}</span>
+                    </div>
+                    <span className={`font-mono text-xs font-bold ${d.severity === 'critical' ? 'text-destructive' : 'text-amber-500'}`}>{d.hoursInactive}j</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-card border rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-amber-400"/> Leaderboard Harian</h2>
           <div className="space-y-3">
-            {(leaderboard as KpiScoreWithUser[] | undefined)?.slice(0, 10).map((u: KpiScoreWithUser, i: number) => (
+            {leaderboard?.slice(0, 10).map((u: KpiScoreWithUser, i: number) => (
               <div key={u.id} className="flex items-center gap-3">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-500' : i === 1 ? 'bg-slate-300/20 text-slate-400' : i === 2 ? 'bg-amber-700/20 text-amber-600' : 'bg-muted text-muted-foreground'}`}>
                   {i + 1}

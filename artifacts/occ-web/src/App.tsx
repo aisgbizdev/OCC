@@ -20,6 +20,7 @@ import Chats from "@/pages/chats";
 import Handover from "@/pages/handover";
 import Notifications from "@/pages/notifications";
 import SystemSettings from "@/pages/system";
+import MasterData from "@/pages/users";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -69,7 +70,7 @@ function Router() {
       <Route path="/handover"><ProtectedRoute component={Handover} /></Route>
       <Route path="/notifications"><ProtectedRoute component={Notifications} /></Route>
       <Route path="/system"><ProtectedRoute component={SystemSettings} /></Route>
-      <Route path="/users"><ProtectedRoute component={() => <div><h1 className="text-3xl font-bold">User Management</h1><p className="mt-2 text-muted-foreground">Module active.</p></div>} /></Route>
+      <Route path="/users"><ProtectedRoute component={MasterData} /></Route>
       <Route path="/"><RootRedirect /></Route>
       <Route component={NotFound} />
     </Switch>
