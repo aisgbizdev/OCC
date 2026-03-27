@@ -109,23 +109,41 @@ roles, permissions, role_permissions, users, pts, branches, shifts, activity_typ
 
 **Superadmin bypass**: `requireRole()` middleware always calls `next()` if `roleName === "Superadmin"`.
 
-## Demo Accounts (password: password123)
+## Demo Accounts (32 users, password: password123)
 
+### Korporat / Divisi (5 — muncul di tab "Semua" login)
 - superadmin@occ.id (Superadmin) — full bypass access
 - owner@occ.id (Owner)
-- direksi@occ.id (Direksi)
-- chief@occ.id (Chief Dealing)
-- spv@occ.id (SPV Dealing)
-- dealer2@occ.id, dealer3@occ.id (Dealer — active)
-- dealer1@occ.id (Dealer — inactive, not shown on login)
-- admin@occ.id (Admin System)
+- dir.utama@occ.id (Direksi — Direktur Utama)
+- dir.kepatuhan@occ.id (Direksi — Direktur Kepatuhan)
+- kiki@occ.id (Chief Dealing — 1 orang untuk seluruh Divisi Operational)
+
+### SGB — nama asli dari KPI-OPR Excel (7)
+- eko.sgb@occ.id (SPV Dealing — Shift Pagi)
+- fahrul.sgb@occ.id (SPV Dealing — Shift Malam)
+- adid.sgb@occ.id (SPV Dealing — Shift Malam)
+- aziz.sgb@occ.id (Dealer — Abdul Aziz, Shift Pagi)
+- amel.sgb@occ.id (Dealer — Shift Siang)
+- dealer.sgb@occ.id (Dealer — Shift Malam)
+- admin.sgb@occ.id (Admin System)
+
+### PT lain — RFB, KPF, BPF, EWF (5 per PT = 20)
+- spv1/spv2.<pt>@occ.id (SPV Dealing — Pagi/Malam)
+- dealer1/dealer2.<pt>@occ.id (Dealer — Pagi/Siang)
+- admin.<pt>@occ.id (Admin System)
+- (ganti <pt> dengan rfb / kpf / bpf / ewf)
 
 ## Login UX
 
 Login page shows a grid of jabatan cards (fetched from `GET /api/auth/users` — public, no auth).
 Clicking a card → password step → backend login using email + password.
-Card order: Superadmin → Owner → Direksi → Chief → SPV → Dealer → Admin System.
+Card order: Superadmin → Owner → Direksi → Chief Dealing → SPV → Dealer → Admin System.
 Only `active_status = true` users appear on login.
+
+**PT Dropdown filter:**
+- "Semua" tab → shows CORPORATE_ROLES: Superadmin, Owner, Direksi, **Chief Dealing** (Kiki)
+- PT tab (SGB/RFB/KPF/BPF/EWF) → shows only that PT's users, excluding corporate roles
+- Chief Dealing is division-level (not per PT) so appears only under "Semua"
 
 ## API Endpoints (all implemented & verified)
 

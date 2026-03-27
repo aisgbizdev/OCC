@@ -31,10 +31,10 @@ const ROLE_CONFIG: Record<string, { color: string; bg: string; border: string; i
 };
 const DEFAULT_CFG = { color: "text-primary", bg: "bg-primary/10", border: "border-primary/30", icon: <Users className="w-5 h-5" />, order: 99 };
 
-const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi"];
+const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi", "Chief Dealing"];
 
 const PT_OPTIONS = [
-  { value: "semua", label: "Semua", sublabel: "Superadmin · Owner · Direksi" },
+  { value: "semua", label: "Semua", sublabel: "Superadmin · Owner · Direksi · Chief Dealing" },
   { value: "SGB",   label: "SGB",   sublabel: "PT Solid Gold Berjangka" },
   { value: "RFB",   label: "RFB",   sublabel: "PT Rifan Financindo Berjangka" },
   { value: "KPF",   label: "KPF",   sublabel: "PT Kontak Perkasa Futures" },
