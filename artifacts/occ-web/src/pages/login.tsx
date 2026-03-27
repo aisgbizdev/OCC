@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Activity, Lock, ChevronLeft, Shield, Crown, Eye,
-  Star, Users, TrendingUp, Settings, Loader2,
+  Star, Users, TrendingUp, Settings, Loader2, ChevronDown, Check,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,14 +32,24 @@ const ROLE_CONFIG: Record<string, { color: string; bg: string; border: string; i
 const DEFAULT_CFG = { color: "text-primary", bg: "bg-primary/10", border: "border-primary/30", icon: <Users className="w-5 h-5" />, order: 99 };
 
 const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi"];
-const PT_TABS = ["SGB", "RFB", "KPF", "BPF", "EWF"] as const;
+
+const PT_OPTIONS = [
+  { value: "semua", label: "Semua", sublabel: "Superadmin · Owner · Direksi" },
+  { value: "SGB",   label: "SGB",   sublabel: "PT Solid Gold Berjangka" },
+  { value: "RFB",   label: "RFB",   sublabel: "PT Rifan Financindo Berjangka" },
+  { value: "KPF",   label: "KPF",   sublabel: "PT Kontak Perkasa Futures" },
+  { value: "BPF",   label: "BPF",   sublabel: "PT Bestprofit Futures" },
+  { value: "EWF",   label: "EWF",   sublabel: "PT Equityworld Futures" },
+] as const;
 
 export default function Login() {
   const [users, setUsers]           = useState<LoginUser[]>([]);
   const [loadingUsers, setLoading]  = useState(true);
-  const [activeTab, setActiveTab]   = useState<"semua" | string>("semua");
+  const [activeTab, setActiveTab]   = useState<string>("semua");
+  const [dropdownOpen, setDropdown] = useState(false);
   const [selected, setSelected]     = useState<LoginUser | null>(null);
   const [password, setPassword]     = useState("");
+  const dropdownRef                 = useRef<HTMLDivElement>(null);
   const login                       = useLogin();
   const { toast }                   = useToast();
   const [, setLocation]             = useLocation();
@@ -50,6 +60,16 @@ export default function Login() {
       .then(r => r.json())
       .then(data => { setUsers(data); setLoading(false); })
       .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   if (isAuthenticated) {
@@ -72,6 +92,8 @@ export default function Login() {
     if (oA !== oB) return oA - oB;
     return a.name.localeCompare(b.name);
   });
+
+  const activePT  = PT_OPTIONS.find(p => p.value === activeTab) ?? PT_OPTIONS[0];
 
   const handleSelect = (u: LoginUser) => { setSelected(u); setPassword(""); };
 
@@ -109,47 +131,43 @@ export default function Login() {
 
         {!selected ? (
           <div className="bg-card/60 backdrop-blur border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
-            {/* PT Filter Tabs */}
-            <div className="flex items-center gap-1 px-4 pt-4 pb-3 overflow-x-auto scrollbar-none border-b border-white/5">
-              {/* Semua (corporate) */}
-              <button
-                onClick={() => setActiveTab("semua")}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  activeTab === "semua"
-                    ? "bg-primary text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                }`}
-              >
-                Semua
-              </button>
-
-              {/* Divider */}
-              <div className="w-px h-5 bg-white/10 mx-1 flex-shrink-0" />
-
-              {/* PT tabs */}
-              {PT_TABS.map(pt => (
+            {/* PT Dropdown */}
+            <div className="px-5 pt-5 pb-4 border-b border-white/5">
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  key={pt}
-                  onClick={() => setActiveTab(pt)}
-                  className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 ${
-                    activeTab === pt
-                      ? "bg-primary text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]"
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
+                  onClick={() => setDropdown(o => !o)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-black/30 border border-white/10 hover:border-primary/40 hover:bg-black/40 transition-all"
                 >
-                  {pt}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-sm font-bold text-primary min-w-[36px]">{activePT.label}</span>
+                    <span className="text-sm text-muted-foreground truncate">{activePT.sublabel}</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
                 </button>
-              ))}
-            </div>
 
-            {/* PT label when a PT tab is active */}
-            {activeTab !== "semua" && (
-              <div className="px-6 pt-3 pb-0">
-                <p className="text-xs text-muted-foreground">
-                  {users.find(u => u.ptCode === activeTab)?.ptName ?? activeTab}
-                </p>
+                {dropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-card border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                    {PT_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setActiveTab(opt.value); setDropdown(false); }}
+                        className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors ${
+                          activeTab === opt.value ? "bg-primary/10" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`text-sm font-bold min-w-[36px] ${activeTab === opt.value ? "text-primary" : "text-foreground"}`}>
+                            {opt.label}
+                          </span>
+                          <span className="text-sm text-muted-foreground truncate">{opt.sublabel}</span>
+                        </div>
+                        {activeTab === opt.value && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* User cards */}
             <div className="p-4">
@@ -178,7 +196,7 @@ export default function Login() {
                         <div>
                           <p className={`text-xs font-bold uppercase tracking-wider ${c.color}`}>{u.roleName}</p>
                           <p className="text-sm font-semibold text-foreground mt-0.5 leading-tight">{u.name}</p>
-                          {u.ptName && (
+                          {u.ptName && activeTab === "semua" && (
                             <p className="text-xs text-muted-foreground mt-1 leading-tight">{u.ptName}</p>
                           )}
                         </div>
