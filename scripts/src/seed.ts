@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { db, pool } from "@workspace/db";
 import {
   rolesTable,
@@ -20,17 +19,22 @@ const SEED_MARKER_EMAIL = "kiki@occ.id";
 async function seed() {
   console.log("Seeding OCC database...");
 
-  // Guard: check for the seed-version marker user, not just user count.
+  // Guard: check for the seed-version marker user via raw SQL (no drizzle-orm import needed).
   // This way old deployments with 28 legacy users will still trigger a reseed.
-  const marker = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.email, SEED_MARKER_EMAIL));
-
-  if (marker.length > 0) {
-    console.log(`Database already up-to-date (marker user '${SEED_MARKER_EMAIL}' found). Skipping.`);
-    await pool.end();
-    return;
+  // Wrap in try/catch in case the users table doesn't exist yet (fresh DB).
+  try {
+    const { rows: markerRows } = await pool.query(
+      `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+      [SEED_MARKER_EMAIL]
+    );
+    if (markerRows.length > 0) {
+      console.log(`Database already up-to-date (marker '${SEED_MARKER_EMAIL}' found). Skipping.`);
+      await pool.end();
+      return;
+    }
+  } catch {
+    // Table doesn't exist yet — proceed with fresh seed
+    console.log("Fresh database detected. Proceeding with seed...");
   }
 
   const existingUsers = await db.select({ id: usersTable.id }).from(usersTable);
