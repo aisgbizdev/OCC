@@ -30,5 +30,4 @@ timeoutMs = 20000
 [userenv.shared]
 JWT_SECRET = "occ-solid-group-jwt-secret-2026-prod-key"
 VAPID_PUBLIC_KEY = "BNYCCXCQFU2R687gwpDHJoKhk3ePt-XWgY93vJ6kC9cut-UqvrfNhSIedIw8nn9k66VbVu5E0LsDlwf99F8jT8M"
-VAPID_PRIVATE_KEY = "zyCRDknJoV30dpKkJL002wKtF-kSfSB2MOLkIvulgEM"
 VAPID_EMAIL = "mailto:admin@occ.id"
