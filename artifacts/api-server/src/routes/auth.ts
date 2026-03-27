@@ -81,6 +81,30 @@ router.post("/auth/login", async (req, res) => {
   }
 });
 
+router.get("/auth/users", async (_req, res) => {
+  try {
+    const users = await db
+      .select({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        roleName: rolesTable.name,
+        ptId: usersTable.ptId,
+        ptName: ptsTable.name,
+        activeStatus: usersTable.activeStatus,
+      })
+      .from(usersTable)
+      .leftJoin(rolesTable, eq(usersTable.roleId, rolesTable.id))
+      .leftJoin(ptsTable, eq(usersTable.ptId, ptsTable.id))
+      .where(eq(usersTable.activeStatus, true))
+      .orderBy(rolesTable.id, usersTable.name);
+    res.json(users);
+  } catch (error) {
+    console.error("Get users for login error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/auth/logout", authMiddleware, (_req, res) => {
   // Stateless JWT: logout is client-side only (discard the token).
   // No server-side token revocation is implemented.
