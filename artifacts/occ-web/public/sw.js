@@ -37,7 +37,10 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      }).catch(() => caches.match("./") ?? new Response("Offline", { status: 503 }));
+      }).catch(async () => {
+        const cached = await caches.match("./");
+        return cached ?? new Response("OCC is offline. Please reconnect.", { status: 503, headers: { "Content-Type": "text/plain" } });
+      });
     })
   );
 });

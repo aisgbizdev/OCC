@@ -4,6 +4,8 @@ import { announcementsTable, usersTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, lte, or, isNull, sql, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog } from "../helpers/audit";
+import { sendPushToRoles } from "../lib/push";
+import { rolesTable } from "@workspace/db/schema";
 
 const router: IRouter = Router();
 
@@ -120,6 +122,22 @@ router.post("/announcements", authMiddleware, requireRole(...CREATE_ROLES), asyn
       endsAt: endsAt ? new Date(endsAt) : null,
       priority: priority ?? "normal",
     }).returning();
+
+    const pushPayload = {
+      title: priority === "urgent" ? `🔴 Pengumuman Urgen: ${title}` : `📢 Pengumuman Baru: ${title}`,
+      body: content?.slice(0, 120) ?? "",
+      url: "/announcements",
+      tag: `announcement-${announcement.id}`,
+    };
+
+    if (!targetScope || targetScope === "all") {
+      sendPushToRoles(ALL_ROLES, pushPayload).catch(console.error);
+    } else if (targetScope === "role" && roleId) {
+      const [role] = await db.select({ name: rolesTable.name }).from(rolesTable).where(eq(rolesTable.id, roleId)).limit(1);
+      if (role) sendPushToRoles([role.name], pushPayload).catch(console.error);
+    } else {
+      sendPushToRoles(ALL_ROLES, pushPayload).catch(console.error);
+    }
 
     await createAuditLog({ userId: req.user!.userId, actionType: "create", module: "announcement", entityId: String(announcement.id) });
     res.status(201).json(announcement);
