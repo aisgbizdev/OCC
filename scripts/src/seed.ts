@@ -15,11 +15,27 @@ import bcryptjs from "bcryptjs";
 async function seed() {
   console.log("Seeding OCC database...");
 
-  const existingRoles = await db.select().from(rolesTable).limit(1);
-  if (existingRoles.length > 0) {
-    console.log("Database already seeded. Skipping. (Drop tables first to re-seed.)");
+  const existingUsers = await db.select({ id: usersTable.id }).from(usersTable);
+  const userCount = existingUsers.length;
+  if (userCount >= 20) {
+    console.log(`Database already seeded with ${userCount} users. Skipping.`);
     await pool.end();
     return;
+  }
+  if (userCount > 0) {
+    console.log(`Found only ${userCount} users (old seed). Resetting and re-seeding...`);
+    await pool.query(`
+      TRUNCATE TABLE
+        system_settings, audit_logs, notifications,
+        kpi_snapshots, kpi_scores, handover_logs,
+        chat_messages, chat_members, chats,
+        message_acknowledgements, messages, announcements,
+        task_comments, tasks, complaints, activity_logs,
+        push_subscriptions, users, activity_types, shifts,
+        branches, pts, role_permissions, permissions, roles
+      CASCADE;
+    `);
+    console.log("Old data cleared. Re-seeding with full PT structure...");
   }
 
   const roles = await db
