@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 
-const ANNOUNCE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System"];
+const ANNOUNCE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 
 export default function Announcements() {
   const { data: announcements } = useListAnnouncements();

@@ -56,7 +56,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) return <>{children}</>;
 
-  const isAdmin = ["Owner", "Admin System"].includes(user.roleName ?? "");
+  const isAdmin = ["Owner", "Admin System", "Superadmin"].includes(user.roleName ?? "");
 
   return (
     <SidebarProvider style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>

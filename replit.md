@@ -97,30 +97,43 @@ artifacts-monorepo/
 
 roles, permissions, role_permissions, users, pts, branches, shifts, activity_types, activity_logs, tasks, task_comments, complaints, announcements, messages, message_acknowledgements, chats, chat_members, chat_messages, handover_logs, kpi_scores, kpi_snapshots, notifications, audit_logs, system_settings, **push_subscriptions**
 
-## Roles (6)
+## Roles (7)
 
-1. Owner — full access
-2. Direksi — view dashboards and PT performance
-3. Chief Dealing — manage team, assign tasks, view KPI
-4. SPV Dealing — monitor shift, assign tasks, create complaints
-5. Dealer — log activities, update tasks, view personal KPI
-6. Admin System — manage configuration and master data
+1. Superadmin — bypasses all role checks; full access to everything (DB role id=7)
+2. Owner — full access
+3. Direksi — view dashboards and PT performance
+4. Chief Dealing — manage team, assign tasks, view KPI
+5. SPV Dealing — monitor shift, assign tasks, create complaints
+6. Dealer — log activities, update tasks, view personal KPI
+7. Admin System — manage configuration and master data
+
+**Superadmin bypass**: `requireRole()` middleware always calls `next()` if `roleName === "Superadmin"`.
 
 ## Demo Accounts (password: password123)
 
+- superadmin@occ.id (Superadmin) — full bypass access
 - owner@occ.id (Owner)
 - direksi@occ.id (Direksi)
 - chief@occ.id (Chief Dealing)
 - spv@occ.id (SPV Dealing)
-- dealer1@occ.id, dealer2@occ.id, dealer3@occ.id (Dealer)
+- dealer2@occ.id, dealer3@occ.id (Dealer — active)
+- dealer1@occ.id (Dealer — inactive, not shown on login)
 - admin@occ.id (Admin System)
+
+## Login UX
+
+Login page shows a grid of jabatan cards (fetched from `GET /api/auth/users` — public, no auth).
+Clicking a card → password step → backend login using email + password.
+Card order: Superadmin → Owner → Direksi → Chief → SPV → Dealer → Admin System.
+Only `active_status = true` users appear on login.
 
 ## API Endpoints (all implemented & verified)
 
 ### Auth
-- `POST /api/auth/login` — JWT login
+- `POST /api/auth/login` — JWT login (accepts email + password)
 - `POST /api/auth/logout` — Logout
 - `GET /api/auth/me` — Current user profile
+- `GET /api/auth/users` — **Public** (no auth) — list active users for login page
 
 ### Master Data
 - `GET/POST /api/users`, `GET/PUT/DELETE /api/users/:id`

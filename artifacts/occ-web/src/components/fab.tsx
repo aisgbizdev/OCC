@@ -19,7 +19,7 @@ export function FAB({
   const { user } = useAuth();
   if (!user) return null;
 
-  const canAnnounce = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System"].includes(user.roleName ?? "");
+  const canAnnounce = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"].includes(user.roleName ?? "");
 
   const actions = [
     { label: "Log Aktivitas", icon: Activity, onClick: onLogActivity, color: "bg-blue-500" },

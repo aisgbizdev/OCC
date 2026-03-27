@@ -44,7 +44,7 @@ export default function Dashboard() {
   const role = user.roleName ?? "";
   if (role === "Dealer") return <DealerDashboard />;
   if (role === "SPV Dealing" || role === "Chief Dealing") return <SupervisorDashboard />;
-  if (role === "Owner" || role === "Direksi") return <ManagementDashboard />;
+  if (role === "Owner" || role === "Direksi" || role === "Superadmin") return <ManagementDashboard />;
   return <DealerDashboard />;
 }
 

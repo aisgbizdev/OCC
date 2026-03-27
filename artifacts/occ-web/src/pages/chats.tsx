@@ -20,7 +20,7 @@ function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Chat Rooms</h1>
-        <p className="text-muted-foreground mt-1">Internal team communications.</p>
+        <p className="text-muted-foreground mt-1">Komunikasi internal tim operasional.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {chats?.map(chat => (
@@ -44,7 +44,7 @@ function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
           </button>
         ))}
         {chats?.length === 0 && (
-          <div className="col-span-3 text-center py-12 text-muted-foreground">No chat rooms available.</div>
+          <div className="col-span-3 text-center py-12 text-muted-foreground">Belum ada chat room yang tersedia.</div>
         )}
       </div>
     </div>
@@ -104,7 +104,7 @@ function ChatRoom({ chatId, onBack }: { chatId: number; onBack: () => void }) {
           );
         })}
         {messages?.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground text-sm">No messages yet. Start the conversation!</div>
+          <div className="text-center py-12 text-muted-foreground text-sm">Belum ada pesan. Mulai percakapan!</div>
         )}
         <div ref={messagesEndRef} />
       </div>
