@@ -85,9 +85,17 @@ artifacts-monorepo/
 └── package.json
 ```
 
-## Database (24 tables)
+## PWA & Push Notifications (Task #4)
 
-roles, permissions, role_permissions, users, pts, branches, shifts, activity_types, activity_logs, tasks, task_comments, complaints, announcements, messages, message_acknowledgements, chats, chat_members, chat_messages, handover_logs, kpi_scores, kpi_snapshots, notifications, audit_logs, system_settings
+- **PWA**: `public/manifest.webmanifest` + `public/sw.js` service worker; icons in `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`; install prompt banner via `PwaInstallBanner` component
+- **Service Worker**: Registers at app load, caches shell offline, handles push events and notification clicks
+- **Push Notifications**: Web Push API + VAPID keys (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` env vars); DB table `push_subscriptions`; backend routes `GET /api/push/vapid-key`, `POST /api/push/subscribe`, `DELETE /api/push/unsubscribe`
+- **Push Triggers**: tasks (new assignment), complaints (new complaint → SPV/Chief/Owner, escalation → Chief/Owner/Direksi), system inactivity check (warning → SPV/Chief, critical → Owner/Direksi)
+- **Mobile Layout**: Hamburger drawer (full nav) + bottom tab bar (5 quick items + "Lainnya" to open drawer)
+
+## Database (25 tables)
+
+roles, permissions, role_permissions, users, pts, branches, shifts, activity_types, activity_logs, tasks, task_comments, complaints, announcements, messages, message_acknowledgements, chats, chat_members, chat_messages, handover_logs, kpi_scores, kpi_snapshots, notifications, audit_logs, system_settings, **push_subscriptions**
 
 ## Roles (6)
 

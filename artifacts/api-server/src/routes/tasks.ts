@@ -4,6 +4,7 @@ import { tasksTable, taskCommentsTable, usersTable, ptsTable, branchesTable } fr
 import { eq, and, desc, lte, gte, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog, createNotification } from "../helpers/audit";
+import { sendPushToUsers } from "../lib/push";
 
 const router: IRouter = Router();
 
@@ -90,6 +91,12 @@ router.post("/tasks", authMiddleware, requireRole(...MGMT_ROLES), async (req, re
         title: `New task assigned: ${title}`,
         content: description ?? undefined,
       });
+      sendPushToUsers([assignedTo], {
+        title: "Tugas Baru Ditugaskan",
+        body: title,
+        url: "/tasks",
+        tag: `task-${task.id}`,
+      }).catch(console.error);
     }
 
     await createAuditLog({ userId: req.user!.userId, actionType: "create", module: "task", entityId: String(task.id) });

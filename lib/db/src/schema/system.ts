@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, boolean, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, boolean, timestamp, integer, index, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -43,6 +43,18 @@ export const systemSettingsTable = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const pushSubscriptionsTable = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  endpoint: text("endpoint").notNull().unique(),
+  keys: jsonb("keys").notNull(),
+  userAgent: varchar("user_agent", { length: 512 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("push_subscriptions_user_id_idx").on(table.userId),
+]);
+
 export const notificationsRelations = relations(notificationsTable, ({ one }) => ({
   user: one(usersTable, { fields: [notificationsTable.userId], references: [usersTable.id] }),
 }));
@@ -66,3 +78,11 @@ export type AuditLog = typeof auditLogsTable.$inferSelect;
 export const insertSystemSettingSchema = createInsertSchema(systemSettingsTable).omit({ id: true, updatedAt: true });
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettingsTable.$inferSelect;
+
+export const pushSubscriptionsRelations = relations(pushSubscriptionsTable, ({ one }) => ({
+  user: one(usersTable, { fields: [pushSubscriptionsTable.userId], references: [usersTable.id] }),
+}));
+
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptionsTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+export type PushSubscription = typeof pushSubscriptionsTable.$inferSelect;

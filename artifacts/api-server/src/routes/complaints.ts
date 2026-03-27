@@ -4,6 +4,7 @@ import { complaintsTable, usersTable, ptsTable, branchesTable } from "@workspace
 import { eq, and, desc, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog, createNotification } from "../helpers/audit";
+import { sendPushToRoles, sendPushToUsers } from "../lib/push";
 
 const router: IRouter = Router();
 
@@ -98,6 +99,13 @@ router.post("/complaints", authMiddleware, requireRole(...CREATE_ROLES), async (
       });
     }
 
+    sendPushToRoles(["SPV Dealing", "Chief Dealing", "Owner"], {
+      title: `Komplain Baru: ${severity === "high" ? "🔴 URGENSI TINGGI" : ""}`,
+      body: title,
+      url: `/complaints`,
+      tag: `complaint-${complaint.id}`,
+    }).catch(console.error);
+
     await createAuditLog({ userId: req.user!.userId, actionType: "create", module: "complaint", entityId: String(complaint.id) });
     res.status(201).json(await enrichComplaint(complaint));
   } catch (error) {
@@ -146,6 +154,25 @@ router.put("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), asyn
 
     const [updated] = await db.update(complaintsTable).set(updateData)
       .where(eq(complaintsTable.id, Number(req.params.id))).returning();
+
+    if (req.body.status === "escalated") {
+      sendPushToRoles(["Chief Dealing", "Owner", "Direksi"], {
+        title: "Komplain Di-eskalasi",
+        body: existing.title,
+        url: `/complaints`,
+        tag: `complaint-escalated-${existing.id}`,
+      }).catch(console.error);
+    }
+
+    if (req.body.assignedUserId && req.body.assignedUserId !== existing.assignedUserId) {
+      sendPushToUsers([req.body.assignedUserId], {
+        title: "Komplain Ditugaskan ke Anda",
+        body: existing.title,
+        url: `/complaints`,
+        tag: `complaint-assign-${existing.id}`,
+      }).catch(console.error);
+    }
+
     await createAuditLog({
       userId: req.user!.userId,
       actionType: "update",

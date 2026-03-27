@@ -13,6 +13,7 @@ import chatsRouter from "./chats";
 import handoverRouter from "./handover";
 import notificationsRouter from "./notifications";
 import systemRouter from "./system";
+import pushRouter from "./push";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(chatsRouter);
 router.use(handoverRouter);
 router.use(notificationsRouter);
 router.use(systemRouter);
+router.use(pushRouter);
 
 export default router;

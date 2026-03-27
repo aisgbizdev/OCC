@@ -4,6 +4,7 @@ import { systemSettingsTable, auditLogsTable, usersTable, activityLogsTable, rol
 import { eq, and, desc, lt, type SQL, sql } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 import { createAuditLog, createNotification } from "../helpers/audit";
+import { sendPushToRoles } from "../lib/push";
 
 const router: IRouter = Router();
 
@@ -145,6 +146,28 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
         title: "Inactivity Warning",
         content: `You have been flagged as inactive (${dealer.hoursInactive}h without activity). Please log your activities.`,
       });
+
+      if (dealer.severity === "critical") {
+        sendPushToRoles(["Owner", "Direksi"], {
+          title: "Dealer Inaktif Kritis",
+          body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
+          url: "/system",
+          tag: `inactive-critical-${dealer.userId}`,
+        }).catch(console.error);
+        sendPushToRoles(["SPV Dealing", "Chief Dealing"], {
+          title: "Dealer Tidak Aktif",
+          body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
+          url: "/system",
+          tag: `inactive-${dealer.userId}`,
+        }).catch(console.error);
+      } else {
+        sendPushToRoles(["SPV Dealing", "Chief Dealing"], {
+          title: "Peringatan Inaktivitas Dealer",
+          body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
+          url: "/system",
+          tag: `inactive-warn-${dealer.userId}`,
+        }).catch(console.error);
+      }
     }
 
     res.json({
