@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { db, pool } from "@workspace/db";
 import {
   rolesTable,
@@ -12,18 +13,29 @@ import {
 } from "@workspace/db/schema";
 import bcryptjs from "bcryptjs";
 
+// Seed version marker — update this email whenever the seed data changes
+// to force a reseed on any environment that still has the old data.
+const SEED_MARKER_EMAIL = "kiki@occ.id";
+
 async function seed() {
   console.log("Seeding OCC database...");
 
-  const existingUsers = await db.select({ id: usersTable.id }).from(usersTable);
-  const userCount = existingUsers.length;
-  if (userCount >= 20) {
-    console.log(`Database already seeded with ${userCount} users. Skipping.`);
+  // Guard: check for the seed-version marker user, not just user count.
+  // This way old deployments with 28 legacy users will still trigger a reseed.
+  const marker = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, SEED_MARKER_EMAIL));
+
+  if (marker.length > 0) {
+    console.log(`Database already up-to-date (marker user '${SEED_MARKER_EMAIL}' found). Skipping.`);
     await pool.end();
     return;
   }
-  if (userCount > 0) {
-    console.log(`Found only ${userCount} users (old seed). Resetting and re-seeding...`);
+
+  const existingUsers = await db.select({ id: usersTable.id }).from(usersTable);
+  if (existingUsers.length > 0) {
+    console.log(`Found ${existingUsers.length} outdated users. Resetting and re-seeding...`);
     await pool.query(`
       TRUNCATE TABLE
         system_settings, audit_logs, notifications,
@@ -35,7 +47,7 @@ async function seed() {
         branches, pts, role_permissions, permissions, roles
       CASCADE;
     `);
-    console.log("Old data cleared. Re-seeding with full PT structure...");
+    console.log("Old data cleared. Re-seeding with updated structure...");
   }
 
   const roles = await db
