@@ -31,6 +31,7 @@ async function seed() {
       { name: "SPV Dealing", description: "Monitor shift, assign tasks, create complaints" },
       { name: "Dealer", description: "Log activities, update tasks, view personal KPI" },
       { name: "Admin System", description: "Manage system configuration and master data" },
+      { name: "Superadmin", description: "Full system bypass access" },
     ])
     .returning();
   console.log(`Created ${roles.length} roles`);
@@ -64,6 +65,7 @@ async function seed() {
   const spvRole = roles.find((r) => r.name === "SPV Dealing")!;
   const dealerRole = roles.find((r) => r.name === "Dealer")!;
   const direksiRole = roles.find((r) => r.name === "Direksi")!;
+  const superadminRole = roles.find((r) => r.name === "Superadmin")!;
 
   const allPerms = permissions.map((p) => p.id);
   const ownerPerms = allPerms.map((pid) => ({ roleId: ownerRole.id, permissionId: pid }));
@@ -135,16 +137,17 @@ async function seed() {
   const passwordHash = await bcryptjs.hash("password123", 10);
 
   await db.insert(usersTable).values([
+    { name: "Super Admin", email: "superadmin@occ.id", passwordHash, roleId: superadminRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Superadmin" },
     { name: "Admin Owner", email: "owner@occ.id", passwordHash, roleId: ownerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Owner" },
     { name: "Direktur Utama", email: "direksi@occ.id", passwordHash, roleId: direksiRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Direktur Utama" },
     { name: "Budi Chief Dealing", email: "chief@occ.id", passwordHash, roleId: chiefRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Chief Dealing" },
     { name: "Andi SPV Pagi", email: "spv@occ.id", passwordHash, roleId: spvRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "SPV Dealing" },
-    { name: "Rina Dealer", email: "dealer1@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Dealer" },
+    { name: "Rina Dealer", email: "dealer1@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Dealer", activeStatus: false },
     { name: "Dedi Dealer", email: "dealer2@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[1].id, positionTitle: "Dealer" },
     { name: "Sinta Dealer", email: "dealer3@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[1].id, branchId: branches[1].id, shiftId: shifts[0].id, positionTitle: "Dealer" },
     { name: "System Admin", email: "admin@occ.id", passwordHash, roleId: adminRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "System Administrator" },
   ]);
-  console.log("Created 8 sample users");
+  console.log("Created 9 sample users (including Superadmin, dealer1 inactive)");
 
   await db.insert(systemSettingsTable).values([
     { settingKey: "daily_target_points", settingValue: "40", description: "Daily KPI target points per dealer" },

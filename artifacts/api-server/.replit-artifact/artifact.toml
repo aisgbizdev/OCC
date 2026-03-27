@@ -13,13 +13,14 @@ paths = ["/api"]
 run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-build = "pnpm --filter @workspace/api-server run build"
+build = "pnpm --filter @workspace/occ-web run build && pnpm --filter @workspace/api-server run build"
 
 [services.production.run]
-args = ["node", "artifacts/api-server/dist/index.cjs"]
+args = ["bash", "artifacts/api-server/start.sh"]
 
 [services.production.run.env]
 PORT = "8080"
+NODE_ENV = "production"
 
 [services.production.health.startup]
 path = "/api/healthz"

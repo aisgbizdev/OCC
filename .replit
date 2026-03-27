@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "postgresql-16"]
 
 [[artifacts]]
 id = "artifacts/api-server"
@@ -31,3 +31,6 @@ timeoutMs = 20000
 JWT_SECRET = "occ-solid-group-jwt-secret-2026-prod-key"
 VAPID_PUBLIC_KEY = "BNYCCXCQFU2R687gwpDHJoKhk3ePt-XWgY93vJ6kC9cut-UqvrfNhSIedIw8nn9k66VbVu5E0LsDlwf99F8jT8M"
 VAPID_EMAIL = "mailto:admin@occ.id"
+
+[nix]
+channel = "stable-25_05"
