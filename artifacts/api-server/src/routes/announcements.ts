@@ -135,8 +135,6 @@ router.post("/announcements", authMiddleware, requireRole(...CREATE_ROLES), asyn
     } else if (targetScope === "role" && roleId) {
       const [role] = await db.select({ name: rolesTable.name }).from(rolesTable).where(eq(rolesTable.id, roleId)).limit(1);
       if (role) sendPushToRoles([role.name], pushPayload).catch(console.error);
-    } else {
-      sendPushToRoles(ALL_ROLES, pushPayload).catch(console.error);
     }
 
     await createAuditLog({ userId: req.user!.userId, actionType: "create", module: "announcement", entityId: String(announcement.id) });
