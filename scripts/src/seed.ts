@@ -59,31 +59,34 @@ async function seed() {
     .returning();
   console.log(`Created ${permissions.length} permissions`);
 
-  const ownerRole = roles.find((r) => r.name === "Owner")!;
-  const adminRole = roles.find((r) => r.name === "Admin System")!;
-  const chiefRole = roles.find((r) => r.name === "Chief Dealing")!;
-  const spvRole = roles.find((r) => r.name === "SPV Dealing")!;
-  const dealerRole = roles.find((r) => r.name === "Dealer")!;
-  const direksiRole = roles.find((r) => r.name === "Direksi")!;
+  const ownerRole     = roles.find((r) => r.name === "Owner")!;
+  const adminRole     = roles.find((r) => r.name === "Admin System")!;
+  const chiefRole     = roles.find((r) => r.name === "Chief Dealing")!;
+  const spvRole       = roles.find((r) => r.name === "SPV Dealing")!;
+  const dealerRole    = roles.find((r) => r.name === "Dealer")!;
+  const direksiRole   = roles.find((r) => r.name === "Direksi")!;
   const superadminRole = roles.find((r) => r.name === "Superadmin")!;
 
   const allPerms = permissions.map((p) => p.id);
-  const ownerPerms = allPerms.map((pid) => ({ roleId: ownerRole.id, permissionId: pid }));
-  const adminPerms = allPerms.map((pid) => ({ roleId: adminRole.id, permissionId: pid }));
-  const chiefPerms = permissions
+  const ownerPerms   = allPerms.map((pid) => ({ roleId: ownerRole.id, permissionId: pid }));
+  const adminPerms   = allPerms.map((pid) => ({ roleId: adminRole.id, permissionId: pid }));
+  const chiefPerms   = permissions
     .filter((p) => !["system.settings", "master.manage"].includes(p.code))
     .map((p) => ({ roleId: chiefRole.id, permissionId: p.id }));
-  const spvPerms = permissions
-    .filter((p) => ["dashboard.view", "activity.create", "activity.edit", "task.create", "task.edit", "task.assign", "complaint.create", "complaint.edit", "kpi.view_all", "announcement.create", "chat.create_group"].includes(p.code))
+  const spvPerms     = permissions
+    .filter((p) => ["dashboard.view","activity.create","activity.edit","task.create","task.edit","task.assign","complaint.create","complaint.edit","kpi.view_all","announcement.create","chat.create_group"].includes(p.code))
     .map((p) => ({ roleId: spvRole.id, permissionId: p.id }));
-  const dealerPerms = permissions
-    .filter((p) => ["dashboard.view", "activity.create", "activity.edit", "kpi.view_own"].includes(p.code))
+  const dealerPerms  = permissions
+    .filter((p) => ["dashboard.view","activity.create","activity.edit","kpi.view_own"].includes(p.code))
     .map((p) => ({ roleId: dealerRole.id, permissionId: p.id }));
   const direksiPerms = permissions
-    .filter((p) => ["dashboard.view", "kpi.view_all"].includes(p.code))
+    .filter((p) => ["dashboard.view","kpi.view_all"].includes(p.code))
     .map((p) => ({ roleId: direksiRole.id, permissionId: p.id }));
 
-  await db.insert(rolePermissionsTable).values([...ownerPerms, ...adminPerms, ...chiefPerms, ...spvPerms, ...dealerPerms, ...direksiPerms]);
+  await db.insert(rolePermissionsTable).values([
+    ...ownerPerms, ...adminPerms, ...chiefPerms,
+    ...spvPerms, ...dealerPerms, ...direksiPerms,
+  ]);
   console.log("Role permissions assigned");
 
   const pts = await db
@@ -113,7 +116,7 @@ async function seed() {
   const shifts = await db
     .insert(shiftsTable)
     .values([
-      { name: "Pagi", startTime: "07:00", endTime: "15:00" },
+      { name: "Pagi",  startTime: "07:00", endTime: "15:00" },
       { name: "Siang", startTime: "15:00", endTime: "23:00" },
       { name: "Malam", startTime: "23:00", endTime: "07:00" },
     ])
@@ -123,50 +126,85 @@ async function seed() {
   const activityTypes = await db
     .insert(activityTypesTable)
     .values([
-      { name: "Validasi Deposit", category: "Transaksi", weightPoints: "3" },
-      { name: "Validasi Withdrawal", category: "Transaksi", weightPoints: "3" },
-      { name: "Pembukaan Akun", category: "Akun", weightPoints: "5" },
-      { name: "Verifikasi Dokumen", category: "Akun", weightPoints: "2" },
-      { name: "Menangani Komplain", category: "Support", weightPoints: "4", noteRequired: true },
-      { name: "Investigasi Transaksi", category: "Support", weightPoints: "6", noteRequired: true },
-      { name: "Monitoring Sistem", category: "Operasional", weightPoints: "1" },
+      { name: "Validasi Deposit",       category: "Transaksi",   weightPoints: "3" },
+      { name: "Validasi Withdrawal",     category: "Transaksi",   weightPoints: "3" },
+      { name: "Pembukaan Akun",          category: "Akun",        weightPoints: "5" },
+      { name: "Verifikasi Dokumen",      category: "Akun",        weightPoints: "2" },
+      { name: "Menangani Komplain",      category: "Support",     weightPoints: "4", noteRequired: true },
+      { name: "Investigasi Transaksi",   category: "Support",     weightPoints: "6", noteRequired: true },
+      { name: "Monitoring Sistem",       category: "Operasional", weightPoints: "1" },
     ])
     .returning();
   console.log(`Created ${activityTypes.length} activity types`);
 
-  const passwordHash = await bcryptjs.hash("password123", 10);
+  const pw = await bcryptjs.hash("password123", 10);
+
+  // Helper to pick indices
+  const sgb = pts[0]; const b0 = branches[0];
+  const rfb = pts[1]; const b1 = branches[1];
+  const kpf = pts[2]; const b2 = branches[2];
+  const bpf = pts[3]; const b3 = branches[3];
+  const ewf = pts[4]; const b4 = branches[4];
+  const [pagi, siang, malam] = shifts;
 
   await db.insert(usersTable).values([
-    { name: "Super Admin", email: "superadmin@occ.id", passwordHash, roleId: superadminRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Superadmin" },
-    { name: "Admin Owner", email: "owner@occ.id", passwordHash, roleId: ownerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Owner" },
-    { name: "Direktur Utama", email: "direksi@occ.id", passwordHash, roleId: direksiRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Direktur Utama" },
-    { name: "Budi Chief Dealing", email: "chief@occ.id", passwordHash, roleId: chiefRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Chief Dealing" },
-    { name: "Andi SPV Pagi", email: "spv@occ.id", passwordHash, roleId: spvRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "SPV Dealing" },
-    { name: "Rina Dealer", email: "dealer1@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "Dealer", activeStatus: false },
-    { name: "Dedi Dealer", email: "dealer2@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[1].id, positionTitle: "Dealer" },
-    { name: "Sinta Dealer", email: "dealer3@occ.id", passwordHash, roleId: dealerRole.id, ptId: pts[1].id, branchId: branches[1].id, shiftId: shifts[0].id, positionTitle: "Dealer" },
-    { name: "System Admin", email: "admin@occ.id", passwordHash, roleId: adminRole.id, ptId: pts[0].id, branchId: branches[0].id, shiftId: shifts[0].id, positionTitle: "System Administrator" },
+    // ── Korporat (tanpa PT spesifik) ──────────────────────────────────
+    { name: "Super Admin",     email: "superadmin@occ.id",   passwordHash: pw, roleId: superadminRole.id, ptId: sgb.id, branchId: b0.id, shiftId: pagi.id, positionTitle: "Superadmin" },
+    { name: "Admin Owner",     email: "owner@occ.id",        passwordHash: pw, roleId: ownerRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id, positionTitle: "Owner" },
+    { name: "Direktur Utama",  email: "direksi@occ.id",      passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id, shiftId: pagi.id, positionTitle: "Direktur Utama" },
+
+    // ── SGB ────────────────────────────────────────────────────────────
+    { name: "Budi Santoso",    email: "chief.sgb@occ.id",    passwordHash: pw, roleId: chiefRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+    { name: "Andi Pratama",    email: "spv.sgb@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+    { name: "Rina Kusuma",     email: "dealer1.sgb@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Dealer", activeStatus: false },
+    { name: "Dedi Hermawan",   email: "dealer2.sgb@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: siang.id, positionTitle: "Dealer" },
+    { name: "Sinta Dewi",      email: "dealer3.sgb@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "Dealer" },
+    { name: "Ahmad Fauzi",     email: "admin.sgb@occ.id",    passwordHash: pw, roleId: adminRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+
+    // ── RFB ────────────────────────────────────────────────────────────
+    { name: "Hendra Wijaya",   email: "chief.rfb@occ.id",    passwordHash: pw, roleId: chiefRole.id,      ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+    { name: "Dewi Lestari",    email: "spv.rfb@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+    { name: "Reza Aditya",     email: "dealer1.rfb@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Dealer" },
+    { name: "Maya Indah",      email: "dealer2.rfb@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id, shiftId: siang.id, positionTitle: "Dealer" },
+    { name: "Fitri Handayani", email: "admin.rfb@occ.id",    passwordHash: pw, roleId: adminRole.id,      ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+
+    // ── KPF ────────────────────────────────────────────────────────────
+    { name: "Agus Suryanto",   email: "chief.kpf@occ.id",    passwordHash: pw, roleId: chiefRole.id,      ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+    { name: "Nita Rahayu",     email: "spv.kpf@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+    { name: "Fajar Nugraha",   email: "dealer1.kpf@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Dealer" },
+    { name: "Indah Permata",   email: "dealer2.kpf@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id, shiftId: siang.id, positionTitle: "Dealer" },
+    { name: "Toni Saputra",    email: "admin.kpf@occ.id",    passwordHash: pw, roleId: adminRole.id,      ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+
+    // ── BPF ────────────────────────────────────────────────────────────
+    { name: "Rizki Permana",   email: "chief.bpf@occ.id",    passwordHash: pw, roleId: chiefRole.id,      ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+    { name: "Yuni Sari",       email: "spv.bpf@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+    { name: "Galih Prakoso",   email: "dealer1.bpf@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Dealer" },
+    { name: "Putri Amalia",    email: "dealer2.bpf@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id, shiftId: siang.id, positionTitle: "Dealer" },
+    { name: "Erwin Setiawan",  email: "admin.bpf@occ.id",    passwordHash: pw, roleId: adminRole.id,      ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+
+    // ── EWF ────────────────────────────────────────────────────────────
+    { name: "Denny Kusuma",    email: "chief.ewf@occ.id",    passwordHash: pw, roleId: chiefRole.id,      ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+    { name: "Sari Wulandari",  email: "spv.ewf@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+    { name: "Bayu Setiabudi",  email: "dealer1.ewf@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Dealer" },
+    { name: "Ayu Ratnasari",   email: "dealer2.ewf@occ.id",  passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id, shiftId: siang.id, positionTitle: "Dealer" },
+    { name: "Widi Hartono",    email: "admin.ewf@occ.id",    passwordHash: pw, roleId: adminRole.id,      ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Admin System" },
   ]);
-  console.log("Created 9 sample users (including Superadmin, dealer1 inactive)");
+  console.log("Created 28 users (3 corporate + 5 per PT × 5 PTs)");
 
   await db.insert(systemSettingsTable).values([
-    { settingKey: "daily_target_points", settingValue: "40", description: "Daily KPI target points per dealer" },
-    { settingKey: "inactivity_warning_hours", settingValue: "2", description: "Hours without activity before warning" },
-    { settingKey: "inactivity_critical_hours", settingValue: "4", description: "Hours without activity before critical alert" },
+    { settingKey: "daily_target_points",         settingValue: "40", description: "Daily KPI target points per dealer" },
+    { settingKey: "inactivity_warning_hours",    settingValue: "2",  description: "Hours without activity before warning" },
+    { settingKey: "inactivity_critical_hours",   settingValue: "4",  description: "Hours without activity before critical alert" },
     { settingKey: "activity_edit_window_minutes", settingValue: "60", description: "Minutes allowed to edit activity after creation" },
     { settingKey: "complaint_sla_warning_hours", settingValue: "24", description: "Hours before complaint SLA warning" },
-    { settingKey: "complaint_sla_critical_hours", settingValue: "72", description: "Hours before complaint SLA critical" },
+    { settingKey: "complaint_sla_critical_hours",settingValue: "72", description: "Hours before complaint SLA critical" },
   ]);
   console.log("Created system settings");
 
-  console.log("\nSeed complete!");
-  console.log("Demo accounts (all password: password123):");
-  console.log("  owner@occ.id     - Owner");
-  console.log("  direksi@occ.id   - Direksi");
-  console.log("  chief@occ.id     - Chief Dealing");
-  console.log("  spv@occ.id       - SPV Dealing");
-  console.log("  dealer1@occ.id   - Dealer");
-  console.log("  admin@occ.id     - Admin System");
+  console.log("\nSeed complete! 28 demo accounts (password: password123)");
+  console.log("Corporate: superadmin@occ.id | owner@occ.id | direksi@occ.id");
+  console.log("Per PT: chief.sgb@occ.id, spv.sgb@occ.id, dealer2.sgb@occ.id, admin.sgb@occ.id");
+  console.log("(Replace .sgb with .rfb / .kpf / .bpf / .ewf for other PTs)");
 
   await pool.end();
 }

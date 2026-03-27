@@ -90,6 +90,7 @@ router.get("/auth/users", async (_req, res) => {
         email: usersTable.email,
         roleName: rolesTable.name,
         ptId: usersTable.ptId,
+        ptCode: ptsTable.code,
         ptName: ptsTable.name,
         activeStatus: usersTable.activeStatus,
       })
