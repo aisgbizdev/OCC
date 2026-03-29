@@ -60,7 +60,11 @@ router.get("/wallboard", async (req, res) => {
       };
     });
 
-    const leaderboardConditions = targetPtId ? [eq(usersTable.ptId, targetPtId)] : [];
+    const leaderboardConditions = [
+      eq(usersTable.roleId, dealerRoleId ?? 0),
+      eq(usersTable.activeStatus, true),
+    ];
+    if (targetPtId) leaderboardConditions.push(eq(usersTable.ptId, targetPtId));
     const leaderboard = await db.select({
       userId: kpiScoresTable.userId,
       userName: usersTable.name,
@@ -70,7 +74,7 @@ router.get("/wallboard", async (req, res) => {
       currentRank: kpiScoresTable.currentRank,
     }).from(kpiScoresTable)
       .innerJoin(usersTable, eq(kpiScoresTable.userId, usersTable.id))
-      .where(leaderboardConditions.length > 0 ? and(...leaderboardConditions) : undefined)
+      .where(and(...leaderboardConditions))
       .orderBy(desc(kpiScoresTable.currentDailyScore))
       .limit(10);
 
@@ -83,10 +87,13 @@ router.get("/wallboard", async (req, res) => {
       };
     });
 
-    const complaintsResult = await db.select({
+    const complaintsQuery = db.select({
       status: complaintsTable.status,
       severity: complaintsTable.severity,
     }).from(complaintsTable);
+    const complaintsResult = targetPtId
+      ? await complaintsQuery.where(eq(complaintsTable.ptId, targetPtId))
+      : await complaintsQuery;
 
     const openComplaints = complaintsResult.filter(c => c.status === "open" || c.status === "in_progress");
     const highSeverity = openComplaints.filter(c => c.severity === "high");
