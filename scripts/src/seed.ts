@@ -262,6 +262,33 @@ async function seed() {
     console.log("  (ganti <pt> dengan rfb / kpf / bpf / ewf)");
   } // end if (!skipMainSeed)
 
+  // ── Error Activity Types (idempotent, always runs) ───────────────────────
+  // Ensures Error-category activity types exist even in upgraded environments.
+  try {
+    const ERROR_TYPES = [
+      { name: "Koreksi Entri Data",     category: "Error", weight_points: "0", note_required: true },
+      { name: "Kesalahan Prosedur SOP", category: "Error", weight_points: "0", note_required: true },
+      { name: "Kesalahan Pelaporan",    category: "Error", weight_points: "0", note_required: true },
+    ];
+    for (const et of ERROR_TYPES) {
+      const { rows } = await pool.query(
+        `SELECT id FROM activity_types WHERE name = $1 AND category = $2 LIMIT 1`,
+        [et.name, et.category]
+      );
+      if (rows.length === 0) {
+        await pool.query(
+          `INSERT INTO activity_types (name, category, weight_points, note_required, active_status)
+           VALUES ($1, $2, $3, $4, true)`,
+          [et.name, et.category, et.weight_points, et.note_required]
+        );
+        console.log(`Inserted error activity type: ${et.name}`);
+      }
+    }
+    console.log("Error activity types backfill complete.");
+  } catch (err) {
+    console.error("Failed to backfill error activity types:", err);
+  }
+
   // ── Quality Error Types (idempotent, always runs) ─────────────────────────
   try {
     const existing = await db.select({ id: qualityErrorTypesTable.id }).from(qualityErrorTypesTable).limit(1);
