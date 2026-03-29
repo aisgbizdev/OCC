@@ -263,7 +263,9 @@ export interface ComplaintWithRelations {
   title: string;
   complaintType: string;
   ptId?: number;
+  ptName?: string | null;
   branchId?: number;
+  branchName?: string | null;
   assignedUserId?: number;
   assignedUserName?: string;
   severity: string;

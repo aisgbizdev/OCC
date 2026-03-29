@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { useListComplaints, useCreateComplaint } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  useListComplaints, useCreateComplaint,
+  useListPts, listBranches, getListBranchesQueryKey,
+  type Branch,
+} from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle, Plus, Building2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SlaTimer } from "@/components/sla-timer";
@@ -18,7 +23,7 @@ export default function Complaints() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Komplain & SLA</h1>
-          <p className="text-muted-foreground mt-1">Monitor masalah operasional dan waktu resolusi.</p>
+          <p className="text-muted-foreground mt-1">Catat dan monitor keluhan masuk dari cabang maupun internal.</p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="gap-2">
           <Plus className="w-4 h-4" /> Komplain Baru
@@ -37,6 +42,20 @@ export default function Complaints() {
                 <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-muted text-muted-foreground">{comp.complaintType}</span>
                 <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md ${comp.severity === 'high' ? 'bg-destructive/20 text-destructive' : 'bg-amber-500/20 text-amber-500'}`}>{comp.severity}</span>
               </div>
+              {(comp.ptName || comp.branchName) && (
+                <div className="flex flex-wrap items-center gap-3 mb-1">
+                  {comp.ptName && (
+                    <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                      <Building2 className="w-3 h-3" />{comp.ptName}
+                    </span>
+                  )}
+                  {comp.branchName && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3" />{comp.branchName}
+                    </span>
+                  )}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground line-clamp-1">{comp.chronology ?? ""}</p>
               <div className="text-xs text-muted-foreground mt-2 flex items-center gap-3">
                 <span>Oleh {comp.creatorName ?? "-"}</span>
@@ -67,7 +86,25 @@ function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
   const createComplaint = useCreateComplaint();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: "", complaintType: "internal", severity: "medium", chronology: "" });
+  const [form, setForm] = useState({
+    title: "",
+    complaintType: "external",
+    severity: "medium",
+    chronology: "",
+    ptId: "" as string,
+    branchId: "" as string,
+  });
+
+  const { data: pts } = useListPts();
+  const { data: branches } = useQuery({
+    queryKey: [...getListBranchesQueryKey({ ptId: Number(form.ptId) }), form.ptId],
+    queryFn: () => listBranches({ ptId: Number(form.ptId) }),
+    enabled: !!form.ptId,
+  });
+
+  const handlePtChange = (ptId: string) => {
+    setForm({ ...form, ptId, branchId: "" });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +112,9 @@ function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
       title: form.title,
       complaintType: form.complaintType,
       severity: form.severity,
-      chronology: form.chronology || undefined
+      chronology: form.chronology || undefined,
+      ptId: form.ptId ? Number(form.ptId) : undefined,
+      branchId: form.branchId ? Number(form.branchId) : undefined,
     }}, {
       onSuccess: () => {
         toast({ title: "Komplain Dicatat", description: "Timer SLA telah dimulai" });
@@ -92,12 +131,43 @@ function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
         <label className="text-sm font-medium">Judul *</label>
         <Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} required placeholder="Deskripsi singkat masalah..." />
       </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />PT</label>
+          <select
+            className="w-full h-10 px-3 rounded-md bg-background border text-sm"
+            value={form.ptId}
+            onChange={e => handlePtChange(e.target.value)}
+          >
+            <option value="">— Pilih PT —</option>
+            {pts?.map(pt => (
+              <option key={pt.id} value={pt.id}>{pt.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />Cabang</label>
+          <select
+            className="w-full h-10 px-3 rounded-md bg-background border text-sm disabled:opacity-50"
+            value={form.branchId}
+            onChange={e => setForm({...form, branchId: e.target.value})}
+            disabled={!form.ptId}
+          >
+            <option value="">— Pilih Cabang —</option>
+            {branches?.map((branch: Branch) => (
+              <option key={branch.id} value={branch.id}>{branch.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Tipe</label>
           <select className="w-full h-10 px-3 rounded-md bg-background border text-sm" value={form.complaintType} onChange={e => setForm({...form, complaintType: e.target.value})}>
-            <option value="internal">Internal</option>
             <option value="external">Eksternal</option>
+            <option value="internal">Internal</option>
             <option value="system">Sistem</option>
           </select>
         </div>
@@ -110,10 +180,12 @@ function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
           </select>
         </div>
       </div>
+
       <div className="space-y-2">
         <label className="text-sm font-medium">Kronologi</label>
         <textarea className="w-full min-h-[100px] px-3 py-2 rounded-md bg-background border text-sm resize-none" value={form.chronology} onChange={e => setForm({...form, chronology: e.target.value})} placeholder="Ceritakan apa yang terjadi, kapan, dan siapa yang terlibat..." />
       </div>
+
       <div className="flex justify-end pt-4 border-t">
         <Button type="submit" disabled={createComplaint.isPending} className="px-8">
           {createComplaint.isPending ? "Mengirim..." : "Kirim Komplain"}
