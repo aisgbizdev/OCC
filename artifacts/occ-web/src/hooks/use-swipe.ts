@@ -11,8 +11,8 @@ interface SwipeOptions {
   disabled?: boolean;
 }
 
-export function useSwipe(
-  element: React.RefObject<HTMLElement | null>,
+export function useSwipe<T extends HTMLElement>(
+  element: React.RefObject<T | null>,
   { onSwipeRight, onSwipeLeft }: SwipeHandlers,
   { threshold = 60, edgeThreshold = 40, disabled = false }: SwipeOptions = {}
 ) {

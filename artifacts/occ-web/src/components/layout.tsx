@@ -328,7 +328,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <PwaInstallBanner />
 
-        <CommandPalette open={commandOpen} onClose={closeCommand} isAdmin={isAdmin} />
+        <CommandPalette
+          open={commandOpen}
+          onClose={closeCommand}
+          isAdmin={isAdmin}
+          onLogActivity={() => setActivityModalOpen(true)}
+          onNewTask={() => setLocation("/tasks")}
+          onNewComplaint={() => setLocation("/complaints")}
+        />
 
         <ResponsiveModal open={activityModalOpen} onOpenChange={setActivityModalOpen} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
           <BatchActivityForm onSuccess={() => setActivityModalOpen(false)} />

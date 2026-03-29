@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useListTasks, useUpdateTask, useCreateTask, useListUsers, type TaskWithRelations, type UserWithRelations } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { CheckCircle2, Circle, Clock, Plus } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Plus, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ResponsiveModal } from "@/components/responsive-modal";
+import { cn } from "@/lib/utils";
 
 export default function Tasks() {
   const { data: tasks } = useListTasks();
@@ -14,6 +15,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [detailTask, setDetailTask] = useState<TaskWithRelations | null>(null);
 
   const handleStatusToggle = (id: number, currentStatus: string) => {
     const nextStatus = currentStatus === "new" ? "in_progress" : currentStatus === "in_progress" ? "completed" : "new";
@@ -28,6 +30,17 @@ export default function Tasks() {
     });
   };
 
+  const handleComplete = useCallback((task: TaskWithRelations) => {
+    if (task.status === "completed") return;
+    updateTask.mutate({ id: task.id, data: { status: "completed", progressPercent: 100 } }, {
+      onSuccess: () => {
+        toast({ title: "Tugas Selesai", description: `"${task.title}" ditandai selesai` });
+        qc.invalidateQueries({ queryKey: ["/api/tasks"] });
+      },
+      onError: () => toast({ title: "Error", description: "Gagal memperbarui tugas", variant: "destructive" })
+    });
+  }, [updateTask, toast, qc]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -40,35 +53,19 @@ export default function Tasks() {
         </Button>
       </div>
 
+      <p className="text-xs text-muted-foreground md:hidden -mt-2">
+        Geser kanan untuk selesaikan · Geser kiri untuk detail
+      </p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {(tasks as TaskWithRelations[] | undefined)?.map((task: TaskWithRelations) => (
-          <div key={task.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full relative group">
-            <div className="flex justify-between items-start mb-3">
-              <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                task.priority === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                task.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                'bg-blue-500/10 text-blue-400 border-blue-500/20'
-              }`}>
-                {task.priority.toUpperCase()}
-              </div>
-              <button onClick={() => handleStatusToggle(task.id, task.status)} className="text-muted-foreground hover:text-primary transition-colors">
-                {task.status === "completed" ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
-                 task.status === "in_progress" ? <Clock className="w-6 h-6 text-amber-500" /> :
-                 <Circle className="w-6 h-6" />}
-              </button>
-            </div>
-            <h3 className="font-bold text-lg mb-1">{task.title}</h3>
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">{task.description ?? ""}</p>
-            <div className="mt-auto space-y-3">
-              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                <div className={`h-full transition-all duration-500 ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${task.progressPercent}%` }} />
-              </div>
-              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5"/> {task.deadline ? `Tenggat ${format(new Date(task.deadline), "MMM d")}` : "Tanpa tenggat"}</span>
-                <span>{task.assigneeName ?? "-"}</span>
-              </div>
-            </div>
-          </div>
+          <SwipeableTaskCard
+            key={task.id}
+            task={task}
+            onStatusToggle={handleStatusToggle}
+            onComplete={handleComplete}
+            onDetail={setDetailTask}
+          />
         ))}
         {!tasks?.length && (
           <div className="col-span-3 text-center py-12 text-muted-foreground">Belum ada tugas.</div>
@@ -78,6 +75,226 @@ export default function Tasks() {
       <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Buat Tugas" description="Assign tugas baru ke anggota tim.">
         <CreateTaskForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!detailTask}
+        onOpenChange={(open) => { if (!open) setDetailTask(null); }}
+        title="Detail Tugas"
+        description={detailTask?.title}
+      >
+        {detailTask && <TaskDetail task={detailTask} onComplete={handleComplete} onClose={() => setDetailTask(null)} />}
+      </ResponsiveModal>
+    </div>
+  );
+}
+
+interface SwipeableTaskCardProps {
+  task: TaskWithRelations;
+  onStatusToggle: (id: number, currentStatus: string) => void;
+  onComplete: (task: TaskWithRelations) => void;
+  onDetail: (task: TaskWithRelations) => void;
+}
+
+function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: SwipeableTaskCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef<number | null>(null);
+  const startYRef = useRef<number | null>(null);
+  const currentXRef = useRef(0);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [swipeAction, setSwipeAction] = useState<"complete" | "detail" | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const THRESHOLD = 80;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isAnimating) return;
+    const touch = e.touches[0];
+    startXRef.current = touch.clientX;
+    startYRef.current = touch.clientY;
+    currentXRef.current = 0;
+  }, [isAnimating]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (startXRef.current === null || startYRef.current === null) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startXRef.current;
+    const dy = touch.clientY - startYRef.current;
+
+    if (Math.abs(dy) > Math.abs(dx) * 1.2 && Math.abs(dx) < 15) {
+      startXRef.current = null;
+      return;
+    }
+
+    currentXRef.current = dx;
+    const clamped = Math.max(-120, Math.min(120, dx));
+    setSwipeOffset(clamped);
+
+    if (clamped > 30) setSwipeAction("complete");
+    else if (clamped < -30) setSwipeAction("detail");
+    else setSwipeAction(null);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (startXRef.current === null) return;
+    const dx = currentXRef.current;
+
+    if (dx > THRESHOLD && task.status !== "completed") {
+      setIsAnimating(true);
+      setSwipeOffset(200);
+      setTimeout(() => {
+        onComplete(task);
+        setSwipeOffset(0);
+        setSwipeAction(null);
+        setIsAnimating(false);
+      }, 300);
+    } else if (dx < -THRESHOLD) {
+      setSwipeOffset(0);
+      setSwipeAction(null);
+      onDetail(task);
+    } else {
+      setSwipeOffset(0);
+      setSwipeAction(null);
+    }
+
+    startXRef.current = null;
+    startYRef.current = null;
+    currentXRef.current = 0;
+  }, [task, onComplete, onDetail]);
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl" ref={cardRef}>
+      <div
+        className={cn(
+          "absolute inset-0 flex items-center px-6 transition-opacity duration-150",
+          swipeAction === "complete" ? "opacity-100" : "opacity-0"
+        )}
+        style={{ background: "linear-gradient(90deg, #10b981 0%, #059669 100%)" }}
+      >
+        <Check className="w-7 h-7 text-white" />
+        <span className="ml-2 text-white font-bold text-sm">Selesai</span>
+      </div>
+
+      <div
+        className={cn(
+          "absolute inset-0 flex items-center justify-end px-6 transition-opacity duration-150",
+          swipeAction === "detail" ? "opacity-100" : "opacity-0"
+        )}
+        style={{ background: "linear-gradient(270deg, #3b82f6 0%, #2563eb 100%)" }}
+      >
+        <span className="mr-2 text-white font-bold text-sm">Detail</span>
+        <ChevronRight className="w-7 h-7 text-white" />
+      </div>
+
+      <div
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isAnimating ? "transform 0.3s ease" : swipeOffset === 0 ? "transform 0.2s ease" : "none",
+          touchAction: "pan-y",
+          cursor: "grab",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full relative group"
+      >
+        <div className="flex justify-between items-start mb-3">
+          <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+            task.priority === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+            task.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+            'bg-blue-500/10 text-blue-400 border-blue-500/20'
+          }`}>
+            {task.priority.toUpperCase()}
+          </div>
+          <button onClick={() => onStatusToggle(task.id, task.status)} className="text-muted-foreground hover:text-primary transition-colors">
+            {task.status === "completed" ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
+             task.status === "in_progress" ? <Clock className="w-6 h-6 text-amber-500" /> :
+             <Circle className="w-6 h-6" />}
+          </button>
+        </div>
+        <button
+          className="text-left"
+          onClick={() => onDetail(task)}
+          aria-label={`Lihat detail: ${task.title}`}
+        >
+          <h3 className="font-bold text-lg mb-1">{task.title}</h3>
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{task.description ?? ""}</p>
+        </button>
+        <div className="mt-auto space-y-3">
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div className={`h-full transition-all duration-500 ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${task.progressPercent}%` }} />
+          </div>
+          <div className="flex justify-between items-center text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5"/> {task.deadline ? `Tenggat ${format(new Date(task.deadline), "MMM d")}` : "Tanpa tenggat"}</span>
+            <span>{task.assigneeName ?? "-"}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onDetail(task)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors mt-2 md:absolute md:bottom-4 md:right-4 md:opacity-0 md:group-hover:opacity-100"
+        >
+          Detail <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TaskDetail({ task, onComplete, onClose }: { task: TaskWithRelations; onComplete: (t: TaskWithRelations) => void; onClose: () => void }) {
+  const priorityLabel: Record<string, string> = { low: "Rendah", medium: "Sedang", high: "Tinggi" };
+  const statusLabel: Record<string, string> = { new: "Baru", in_progress: "Sedang Berjalan", completed: "Selesai" };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+          task.priority === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+          task.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+          'bg-blue-500/10 text-blue-400 border-blue-500/20'
+        }`}>
+          Prioritas: {priorityLabel[task.priority] ?? task.priority}
+        </span>
+        <span className="px-2.5 py-1 rounded-full text-xs font-semibold border bg-muted text-muted-foreground border-border">
+          {statusLabel[task.status] ?? task.status}
+        </span>
+      </div>
+
+      {task.description && (
+        <p className="text-sm text-muted-foreground">{task.description}</p>
+      )}
+
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Ditugaskan ke</span>
+          <span className="font-medium">{task.assigneeName ?? "Tidak di-assign"}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Tenggat</span>
+          <span className="font-medium">{task.deadline ? format(new Date(task.deadline), "dd MMM yyyy") : "Tanpa tenggat"}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Progress</span>
+          <span className="font-medium">{task.progressPercent}%</span>
+        </div>
+      </div>
+
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+        <div
+          className={`h-full transition-all duration-500 ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
+          style={{ width: `${task.progressPercent}%` }}
+        />
+      </div>
+
+      {task.status !== "completed" && (
+        <div className="pt-2 border-t flex gap-2 justify-end">
+          <Button variant="outline" onClick={onClose}>Tutup</Button>
+          <Button
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => { onComplete(task); onClose(); }}
+          >
+            <Check className="w-4 h-4" /> Tandai Selesai
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

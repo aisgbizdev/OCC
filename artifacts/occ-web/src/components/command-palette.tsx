@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import {
   LayoutDashboard, Activity, BarChart2, CheckSquare, AlertTriangle,
   Repeat, MessageSquare, MessageCircle, Megaphone, Bell,
-  Users, Settings, Search, ArrowRight, Command, X
+  Users, Settings, Search, ArrowRight, Command, X,
+  Plus, ClipboardList, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +12,12 @@ interface CommandItem {
   id: string;
   label: string;
   description?: string;
-  href: string;
+  href?: string;
   icon: React.ElementType;
   keywords: string[];
   adminOnly?: boolean;
   group: string;
+  action?: "log-activity" | "new-task" | "new-complaint";
 }
 
 const COMMAND_ITEMS: CommandItem[] = [
@@ -31,15 +33,21 @@ const COMMAND_ITEMS: CommandItem[] = [
   { id: "notifications", label: "Notifikasi", href: "/notifications", icon: Bell, keywords: ["notifikasi", "notification", "alert", "pemberitahuan"], group: "Komunikasi" },
   { id: "users", label: "Master Data Users", href: "/users", icon: Users, keywords: ["users", "pengguna", "akun", "user", "master"], group: "Admin", adminOnly: true },
   { id: "system", label: "System Settings", href: "/system", icon: Settings, keywords: ["system", "settings", "konfigurasi", "pengaturan"], group: "Admin", adminOnly: true },
+  { id: "action-log", label: "Log Aktivitas Baru", description: "Tambah entri log aktivitas", icon: Activity, keywords: ["log", "aktivitas", "tambah", "catat", "input"], group: "Quick Action", action: "log-activity" },
+  { id: "action-task", label: "Buat Tugas Baru", description: "Assign tugas baru ke anggota", icon: ClipboardList, keywords: ["tugas", "buat", "task", "tambah", "assign", "baru"], group: "Quick Action", action: "new-task" },
+  { id: "action-complaint", label: "Lapor Komplain", description: "Catat komplain pelanggan", icon: Plus, keywords: ["komplain", "lapor", "keluhan", "complaint", "tambah"], group: "Quick Action", action: "new-complaint" },
 ];
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   isAdmin: boolean;
+  onLogActivity?: () => void;
+  onNewTask?: () => void;
+  onNewComplaint?: () => void;
 }
 
-export function CommandPalette({ open, onClose, isAdmin }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, isAdmin, onLogActivity, onNewTask, onNewComplaint }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -53,7 +61,8 @@ export function CommandPalette({ open, onClose, isAdmin }: CommandPaletteProps) 
     return (
       item.label.toLowerCase().includes(q) ||
       item.keywords.some(k => k.includes(q)) ||
-      item.group.toLowerCase().includes(q)
+      item.group.toLowerCase().includes(q) ||
+      (item.description ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -66,9 +75,19 @@ export function CommandPalette({ open, onClose, isAdmin }: CommandPaletteProps) 
   const flatItems = Object.values(groupedItems).flat();
 
   const handleSelect = useCallback((item: CommandItem) => {
-    setLocation(item.href);
     onClose();
-  }, [setLocation, onClose]);
+    if (item.action === "log-activity") {
+      setTimeout(() => onLogActivity?.(), 100);
+    } else if (item.action === "new-task") {
+      setLocation("/tasks");
+      setTimeout(() => onNewTask?.(), 300);
+    } else if (item.action === "new-complaint") {
+      setLocation("/complaints");
+      setTimeout(() => onNewComplaint?.(), 300);
+    } else if (item.href) {
+      setLocation(item.href);
+    }
+  }, [setLocation, onClose, onLogActivity, onNewTask, onNewComplaint]);
 
   useEffect(() => {
     if (open) {
@@ -149,12 +168,14 @@ export function CommandPalette({ open, onClose, isAdmin }: CommandPaletteProps) 
 
           {groups.map(([group, groupItems]) => (
             <div key={group}>
-              <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
+                {group === "Quick Action" && <Zap className="w-3 h-3 text-amber-500" />}
                 {group}
               </p>
               {groupItems.map((item) => {
                 const idx = flatIndex++;
                 const isSelected = selectedIndex === idx;
+                const isAction = !!item.action;
                 return (
                   <button
                     key={item.id}
@@ -162,12 +183,32 @@ export function CommandPalette({ open, onClose, isAdmin }: CommandPaletteProps) 
                     onClick={() => handleSelect(item)}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left",
-                      isSelected ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                      isSelected
+                        ? isAction ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-muted"
                     )}
                   >
-                    <item.icon className={cn("w-4 h-4 shrink-0", isSelected ? "text-primary" : "text-muted-foreground")} />
-                    <span className="flex-1 font-medium">{item.label}</span>
-                    <ArrowRight className={cn("w-3.5 h-3.5 transition-opacity", isSelected ? "opacity-70 text-primary" : "opacity-0")} />
+                    <item.icon className={cn(
+                      "w-4 h-4 shrink-0",
+                      isSelected
+                        ? isAction ? "text-amber-500" : "text-primary"
+                        : isAction ? "text-amber-500/70" : "text-muted-foreground"
+                    )} />
+                    <span className="flex-1">
+                      <span className="font-medium">{item.label}</span>
+                      {item.description && (
+                        <span className="ml-2 text-xs text-muted-foreground">{item.description}</span>
+                      )}
+                    </span>
+                    {isAction && (
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded font-mono border",
+                        isSelected ? "bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-muted border-border text-muted-foreground"
+                      )}>
+                        aksi
+                      </span>
+                    )}
+                    <ArrowRight className={cn("w-3.5 h-3.5 transition-opacity", isSelected ? "opacity-70" : "opacity-0")} />
                   </button>
                 );
               })}
