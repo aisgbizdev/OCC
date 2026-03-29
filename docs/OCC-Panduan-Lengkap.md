@@ -229,20 +229,25 @@ Tabel ini mencerminkan implementasi aktual di backend (berdasarkan `requireRole`
 
 Semua role memiliki akses penuh ke notifikasi, halaman profil diri sendiri, dan chat.
 
-### Master Data & Pengaturan Sistem
+### Master Data — Manajemen User
 
 | Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Tambah user baru | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Lihat daftar user | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Tambah user baru | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
 | Edit data user | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| Edit role & PT user | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Nonaktifkan user | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Hapus user | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Reset password user lain | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+> **Catatan UI:** Link menu "Master Data > Users" di sidebar hanya tampil bagi Owner, Admin System, dan Superadmin. Chief Dealing, SPV Dealing, dan Direksi dapat mengakses endpoint API `/users` namun **tidak mendapat link menu di UI saat ini**. Chief Dealing yang ingin mengelola user perlu mengakses URL `/users` secara langsung.
+
+### Master Data — PT, Branch, Shift, Tipe Aktivitas & Pengaturan Sistem
+
+| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Kelola PT/Branch/Shift/Tipe Aktivitas | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Edit parameter sistem | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Lihat audit log | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-
-> **Chief Dealing** bisa **mengedit data user** (nama, kontak) dan **mengubah role/PT** user, tetapi tidak bisa menambah user baru, menonaktifkan, atau reset password.
 
 ---
 
@@ -747,22 +752,23 @@ Field berikut hanya bisa diubah melalui halaman Master Data oleh Owner, Chief De
 
 ## 17. Master Data (Admin & Owner)
 
-Halaman ini dapat diakses oleh: **Superadmin, Owner, Admin System**  
-Chief Dealing dapat **mengedit data user** (termasuk role/PT), tapi tidak bisa menambah user baru, menonaktifkan, atau reset password.
+Halaman `/users` dapat diakses oleh: **Superadmin, Owner, Admin System, Chief Dealing, SPV Dealing, dan Direksi** (berdasarkan backend API).
+
+> **Catatan UI saat ini:** Link menu "Master Data" di sidebar hanya muncul untuk Owner, Admin System, dan Superadmin. Chief Dealing, SPV Dealing, dan Direksi perlu mengakses URL `/users` secara langsung.
 
 ### 17.1 Manajemen User
 
 **Tampilan:** Tabel semua user — Nama | Email | Role | PT | Shift | Status | Aksi
 
-**Aksi per role:**
+**Aksi per role (berdasarkan backend API):**
 
-| Aksi | Superadmin | Owner | Chief | Admin |
-|---|:---:|:---:|:---:|:---:|
-| Tambah User | ✅ | ✅ | ❌ | ✅ |
-| Edit data user | ✅ | ✅ | ✅ | ✅ |
-| Edit Role & PT | ✅ | ✅ | ✅ | ❌ |
-| Nonaktifkan | ✅ | ❌ | ❌ | ✅ |
-| Reset Password | ✅ | ✅ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Chief | SPV | Direksi | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat daftar user | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Tambah User | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Edit data user | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Hapus user | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Reset Password | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
 
 **Form Tambah/Edit User:**
 
