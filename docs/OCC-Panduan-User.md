@@ -1,6 +1,6 @@
 # OCC — Panduan Singkat Penggunaan
 **Untuk:** Tim Dealing — Solid Group  
-**Versi:** 1.0 | Maret 2026
+**Versi:** 1.1 | Maret 2026
 
 ---
 
@@ -77,9 +77,13 @@
 
 ### 3. Input / Pantau Keluhan
 1. Buka menu **Keluhan** → klik **"+ Komplain Baru"**
-2. Isi judul, tipe, urgensi, kronologi
-3. Klik **"Kirim Komplain"** → timer SLA mulai berjalan
-4. Update status keluhan sesuai perkembangan
+2. Isi **Judul**
+3. Pilih **PT** dan **Cabang** asal keluhan (opsional)
+4. Pilih **Tipe** (Eksternal / Internal) dan **Urgensi**
+5. Isi **Kronologi** → klik **"Kirim Komplain"** → timer SLA mulai berjalan
+6. Update status keluhan sesuai perkembangan
+
+> Pilih PT → Cabang muncul otomatis sesuai PT yang dipilih
 
 **Status keluhan:** Open → In Progress → Escalated → Resolved → Closed
 
@@ -111,6 +115,17 @@ Sama seperti Dealer — SPV **wajib** mengisi handover di akhir setiap shift.
 ### KPI & Leaderboard
 - Buka menu **KPI** → lihat ranking semua dealer per PT
 - Filter periode: Harian / Mingguan / Bulanan / Tahunan
+- Filter berdasarkan **PT** dan **Cabang** untuk tampilan lebih spesifik
+
+### Filter Cabang di Seluruh Modul
+Chief / Owner / Superadmin dapat memfilter data berdasarkan **Cabang** di:
+- Activity Log
+- KPI Leaderboard
+- Daftar Tugas
+- Daftar Keluhan
+- Handover
+
+> Pilih PT terlebih dahulu → pilihan Cabang muncul otomatis
 
 ---
 
@@ -166,4 +181,5 @@ Sama seperti Dealer — SPV **wajib** mengisi handover di akhir setiap shift.
 
 ---
 
-*OCC — Solid Group | Maret 2026*
+*OCC — Solid Group | v1.1 — Maret 2026*  
+*Update v1.1: Form Keluhan + PT/Cabang, Filter Cabang di semua modul (Chief/Owner/Superadmin)*
