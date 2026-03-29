@@ -7,7 +7,7 @@ import { createAuditLog } from "../helpers/audit";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System", "Superadmin"];
 
 async function enrichLog(log: typeof activityLogsTable.$inferSelect) {
   const [actType] = await db.select().from(activityTypesTable).where(eq(activityTypesTable.id, log.activityTypeId)).limit(1);
@@ -103,7 +103,7 @@ router.get("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (r
   }
 });
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 
 async function resolveTargetUser(
   req: { user?: { userId: number; roleName: string; ptId?: number | null } },
@@ -132,7 +132,7 @@ async function resolveTargetUser(
   return { userId: caller.userId, ptId: caller.ptId };
 }
 
-router.post("/activity-logs", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.post("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const { activityTypeId, quantity, note, targetUserId } = req.body;
     if (!activityTypeId) { res.status(400).json({ error: "activityTypeId is required" }); return; }
@@ -162,7 +162,7 @@ router.post("/activity-logs", authMiddleware, requireRole("Owner", "Chief Dealin
   }
 });
 
-router.post("/activity-logs/batch", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.post("/activity-logs/batch", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const { items } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
@@ -204,7 +204,7 @@ router.post("/activity-logs/batch", authMiddleware, requireRole("Owner", "Chief 
   }
 });
 
-router.put("/activity-logs/:id", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.put("/activity-logs/:id", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const [existing] = await db.select().from(activityLogsTable).where(eq(activityLogsTable.id, Number(req.params.id))).limit(1);
     if (!existing) { res.status(404).json({ error: "Activity log not found" }); return; }
