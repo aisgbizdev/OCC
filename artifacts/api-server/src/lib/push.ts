@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { db } from "@workspace/db";
-import { pushSubscriptionsTable } from "@workspace/db/schema";
+import { pushSubscriptionsTable, usersTable } from "@workspace/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { isUserInDnd } from "../routes/notifications";
 
@@ -15,14 +15,28 @@ export interface PushPayload {
   body: string;
   url?: string;
   tag?: string;
+  type?: string;
 }
+
+const CRITICAL_TYPES = ["escalation", "critical"];
 
 export async function sendPushToUsers(userIds: number[], payload: PushPayload): Promise<void> {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
   if (userIds.length === 0) return;
 
-  const dndChecks = await Promise.all(userIds.map(id => isUserInDnd(id).then(dnd => ({ id, dnd }))));
-  const activeIds = dndChecks.filter(u => !u.dnd).map(u => u.id);
+  const isCritical = payload.type ? CRITICAL_TYPES.includes(payload.type) : false;
+
+  let activeIds = userIds;
+  if (!isCritical) {
+    const dndUserRows = await db.select({ id: usersTable.id, dndEnabled: usersTable.dndEnabled })
+      .from(usersTable)
+      .where(inArray(usersTable.id, userIds));
+
+    const dndSystemChecks = await Promise.all(
+      dndUserRows.map(u => isUserInDnd(u.id).then(sysDnd => ({ id: u.id, dnd: u.dndEnabled || sysDnd })))
+    );
+    activeIds = dndSystemChecks.filter(u => !u.dnd).map(u => u.id);
+  }
   if (activeIds.length === 0) return;
 
   const subscriptions = await db

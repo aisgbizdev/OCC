@@ -134,7 +134,7 @@ async function resolveTargetUser(
 
 router.post("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
-    const { activityTypeId, quantity, note, targetUserId } = req.body;
+    const { activityTypeId, quantity, note, targetUserId, confirmDuplicate } = req.body;
     if (!activityTypeId) { res.status(400).json({ error: "activityTypeId is required" }); return; }
     const qty = Number(quantity) || 1;
     if (qty < 1 || !Number.isInteger(qty)) { res.status(400).json({ error: "quantity must be a positive integer" }); return; }
@@ -148,6 +148,28 @@ router.post("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (
       .where(and(eq(activityLogsTable.userId, resolved.userId), gte(activityLogsTable.createdAt, oneMinAgo)));
     if ((rateCheck?.count ?? 0) >= 20) {
       res.status(429).json({ error: "Terlalu banyak aktivitas dalam 1 menit. Harap tunggu sebentar." }); return;
+    }
+
+    if (!confirmDuplicate) {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60000);
+      const [recentLog] = await db.select({ id: activityLogsTable.id, createdAt: activityLogsTable.createdAt })
+        .from(activityLogsTable)
+        .where(and(
+          eq(activityLogsTable.userId, resolved.userId),
+          eq(activityLogsTable.activityTypeId, Number(activityTypeId)),
+          gte(activityLogsTable.createdAt, fiveMinAgo)
+        ))
+        .orderBy(desc(activityLogsTable.createdAt))
+        .limit(1);
+      if (recentLog) {
+        const minutesAgo = Math.round((Date.now() - new Date(recentLog.createdAt).getTime()) / 60000);
+        res.status(200).json({
+          recentDuplicate: true,
+          minutesAgo,
+          message: `Kamu baru saja log aktivitas ini ${minutesAgo} menit lalu. Lanjutkan?`,
+        });
+        return;
+      }
     }
 
     const points = await calculatePoints(activityTypeId, qty);
@@ -186,6 +208,44 @@ router.post("/activity-logs/batch", authMiddleware, requireRole(...ALL_ROLES), a
     if ((rateCheckBatch?.count ?? 0) + items.length > 20) {
       res.status(429).json({ error: "Terlalu banyak aktivitas dalam 1 menit. Harap tunggu sebentar." }); return;
     }
+    const { confirmDuplicates } = req.body;
+
+    if (!confirmDuplicates) {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60000);
+      const duplicateWarnings: Array<{ index: number; activityTypeId: number; minutesAgo: number; message: string }> = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const resolved = await resolveTargetUser(req, item.targetUserId ? Number(item.targetUserId) : undefined, item.activityTypeId);
+        if ("error" in resolved) continue;
+
+        const [recentLog] = await db.select({ id: activityLogsTable.id, createdAt: activityLogsTable.createdAt })
+          .from(activityLogsTable)
+          .where(and(
+            eq(activityLogsTable.userId, resolved.userId),
+            eq(activityLogsTable.activityTypeId, Number(item.activityTypeId)),
+            gte(activityLogsTable.createdAt, fiveMinAgo)
+          ))
+          .orderBy(desc(activityLogsTable.createdAt))
+          .limit(1);
+
+        if (recentLog) {
+          const minutesAgo = Math.round((Date.now() - new Date(recentLog.createdAt).getTime()) / 60000);
+          duplicateWarnings.push({
+            index: i,
+            activityTypeId: item.activityTypeId,
+            minutesAgo,
+            message: `Baris ${i + 1}: Kamu baru saja log aktivitas ini ${minutesAgo} menit lalu. Lanjutkan?`,
+          });
+        }
+      }
+
+      if (duplicateWarnings.length > 0) {
+        res.status(200).json({ recentDuplicates: duplicateWarnings });
+        return;
+      }
+    }
+
     const results: Array<typeof activityLogsTable.$inferSelect> = [];
     const affectedUserIds = new Set<number>();
 
@@ -218,6 +278,24 @@ router.post("/activity-logs/batch", authMiddleware, requireRole(...ALL_ROLES), a
     res.status(201).json(enriched);
   } catch (error) {
     console.error("Batch create activity logs error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/activity-logs/:id/flag", authMiddleware, requireRole(...SPV_AND_ABOVE), async (req, res) => {
+  try {
+    const [existing] = await db.select().from(activityLogsTable).where(eq(activityLogsTable.id, Number(req.params.id))).limit(1);
+    if (!existing) { res.status(404).json({ error: "Activity log not found" }); return; }
+
+    const newFlagged = !existing.flagged;
+    const [updated] = await db.update(activityLogsTable)
+      .set({ flagged: newFlagged })
+      .where(eq(activityLogsTable.id, Number(req.params.id)))
+      .returning();
+    await createAuditLog({ userId: req.user!.userId, actionType: newFlagged ? "flag" : "unflag", module: "activity_log", entityId: String(updated.id) });
+    res.json(await enrichLog(updated));
+  } catch (error) {
+    console.error("Flag activity log error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

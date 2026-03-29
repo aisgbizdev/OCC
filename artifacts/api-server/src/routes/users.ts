@@ -29,6 +29,7 @@ async function enrichUser(user: typeof usersTable.$inferSelect) {
     positionTitle: user.positionTitle,
     supervisorId: user.supervisorId,
     activeStatus: user.activeStatus,
+    dndEnabled: user.dndEnabled,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -97,6 +98,23 @@ router.put("/users/me", authMiddleware, async (req, res) => {
     res.json(await enrichUser(user));
   } catch (error) {
     console.error("Update own profile error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Toggle DND for self ──────────────────────────────────────────────────────
+router.put("/users/me/dnd", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    const { dndEnabled } = req.body;
+    if (typeof dndEnabled !== "boolean") {
+      res.status(400).json({ error: "dndEnabled (boolean) is required" }); return;
+    }
+    const [user] = await db.update(usersTable).set({ dndEnabled }).where(eq(usersTable.id, userId)).returning();
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    res.json({ dndEnabled: user.dndEnabled });
+  } catch (error) {
+    console.error("Toggle DND error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

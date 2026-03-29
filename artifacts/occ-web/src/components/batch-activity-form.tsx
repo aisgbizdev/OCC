@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Plus, Trash2, Save, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Save, AlertCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useListActivityTypes, useCreateBatchActivityLogs, useListUsers } from "@workspace/api-client-react";
+import { useListActivityTypes, useListUsers } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
@@ -15,11 +15,17 @@ type RowItem = {
   targetUserId: string;
 };
 
+type DuplicateWarning = {
+  index: number;
+  activityTypeId: number;
+  minutesAgo: number;
+  message: string;
+};
+
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 
 export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: types } = useListActivityTypes();
-  const createBatch = useCreateBatchActivityLogs();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -35,6 +41,8 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
     : [];
 
   const [rows, setRows] = useState<RowItem[]>([{ activityTypeId: "", quantity: 1, note: "", targetUserId: "" }]);
+  const [isPending, setIsPending] = useState(false);
+  const [duplicateWarnings, setDuplicateWarnings] = useState<DuplicateWarning[] | null>(null);
 
   const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "" }]);
   const handleRemove = (index: number) => setRows(rows.filter((_, i) => i !== index));
@@ -54,8 +62,7 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
     return (found as { category?: string | null } | undefined)?.category === "Error";
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  async function submitBatch(confirmDuplicates: boolean) {
     const validRows = rows.filter(r => r.activityTypeId && r.quantity > 0).map(r => ({
       activityTypeId: Number(r.activityTypeId),
       quantity: Number(r.quantity),
@@ -68,19 +75,79 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
 
-    createBatch.mutate({ data: { items: validRows } }, {
-      onSuccess: () => {
-        toast({ title: "Berhasil", description: `${validRows.length} aktivitas dicatat` });
-        qc.invalidateQueries({ queryKey: ["/api/activity-logs"] });
-        qc.invalidateQueries({ queryKey: ["/api/kpi/scores"] });
-        onSuccess();
-      },
-      onError: (err: unknown) => {
-        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-        toast({ title: "Gagal", description: msg ?? "Terjadi kesalahan", variant: "destructive" });
-      },
-    });
+    setIsPending(true);
+    try {
+      const res = await fetch("/api/activity-logs/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: validRows, confirmDuplicates }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.recentDuplicates) {
+        setDuplicateWarnings(data.recentDuplicates as DuplicateWarning[]);
+        return;
+      }
+
+      if (!res.ok) {
+        const msg = data?.error ?? "Terjadi kesalahan";
+        toast({ title: "Gagal", description: msg, variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Berhasil", description: `${validRows.length} aktivitas dicatat` });
+      qc.invalidateQueries({ queryKey: ["/api/activity-logs"] });
+      qc.invalidateQueries({ queryKey: ["/api/kpi/scores"] });
+      setDuplicateWarnings(null);
+      onSuccess();
+    } catch {
+      toast({ title: "Gagal menghubungi server", variant: "destructive" });
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDuplicateWarnings(null);
+    submitBatch(false);
   };
+
+  const handleConfirmDuplicates = () => {
+    submitBatch(true);
+  };
+
+  const handleCancelDuplicates = () => {
+    setDuplicateWarnings(null);
+  };
+
+  if (duplicateWarnings && duplicateWarnings.length > 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-amber-700 dark:text-amber-400">Aktivitas baru-baru ini sudah dicatat</p>
+            <ul className="mt-2 space-y-1">
+              {duplicateWarnings.map((w) => (
+                <li key={w.index} className="text-sm text-amber-600 dark:text-amber-300">• {w.message}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">Apakah kamu ingin melanjutkan dan menyimpan semua aktivitas?</p>
+        <div className="flex gap-3 pt-2">
+          <Button variant="outline" onClick={handleCancelDuplicates} className="flex-1">
+            Batalkan
+          </Button>
+          <Button onClick={handleConfirmDuplicates} disabled={isPending} className="flex-1">
+            {isPending ? "Menyimpan..." : "Ya, Lanjutkan"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -153,8 +220,8 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
         <Button type="button" variant="outline" onClick={handleAdd} className="gap-2">
           <Plus className="w-4 h-4" /> Tambah Baris
         </Button>
-        <Button type="submit" disabled={createBatch.isPending} className="gap-2 px-8">
-          <Save className="w-4 h-4" /> {createBatch.isPending ? "Menyimpan..." : "Simpan"}
+        <Button type="submit" disabled={isPending} className="gap-2 px-8">
+          <Save className="w-4 h-4" /> {isPending ? "Menyimpan..." : "Simpan"}
         </Button>
       </div>
     </form>

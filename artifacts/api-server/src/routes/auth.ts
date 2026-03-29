@@ -72,6 +72,7 @@ router.post("/auth/login", async (req, res) => {
         positionTitle: user.positionTitle,
         supervisorId: user.supervisorId,
         activeStatus: user.activeStatus,
+        dndEnabled: user.dndEnabled,
         createdAt: user.createdAt.toISOString(),
       },
     });
@@ -143,6 +144,7 @@ router.get("/auth/me", authMiddleware, async (req, res) => {
       positionTitle: user.positionTitle,
       supervisorId: user.supervisorId,
       activeStatus: user.activeStatus,
+      dndEnabled: user.dndEnabled,
       createdAt: user.createdAt.toISOString(),
     });
   } catch (error) {

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat, Bell,
-  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle, Monitor, Search
+  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle, Monitor, Search, Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -275,6 +275,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <Search className="w-5 h-5" />
               </button>
+              {(user as { dndEnabled?: boolean })?.dndEnabled && (
+                <Link href="/profile" className="p-1.5 rounded-lg text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-colors" title="Mode Jangan Ganggu aktif">
+                  <Moon className="w-4 h-4" />
+                </Link>
+              )}
               <Link href="/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted">
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (

@@ -153,12 +153,14 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
           body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
           url: "/system",
           tag: `inactive-critical-${dealer.userId}`,
+          type: "critical",
         }).catch(console.error);
         sendPushToRoles(["SPV Dealing", "Chief Dealing"], {
           title: "Dealer Tidak Aktif",
           body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
           url: "/system",
           tag: `inactive-${dealer.userId}`,
+          type: "critical",
         }).catch(console.error);
       } else {
         sendPushToRoles(["SPV Dealing", "Chief Dealing"], {

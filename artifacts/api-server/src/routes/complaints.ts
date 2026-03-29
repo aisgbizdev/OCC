@@ -161,6 +161,7 @@ router.put("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), asyn
         body: existing.title,
         url: `/complaints`,
         tag: `complaint-escalated-${existing.id}`,
+        type: "escalation",
       }).catch(console.error);
     }
 

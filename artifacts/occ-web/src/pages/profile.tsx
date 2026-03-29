@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Lock, Building2, Clock, Shield } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { User, Lock, Building2, Clock, Shield, Moon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 async function apiPut(url: string, body: object) {
@@ -39,6 +40,17 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // ── Mutations ────────────────────────────────────────────────────────────
+  const dndMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiPut("/api/users/me/dnd", { dndEnabled: enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message, variant: "destructive" });
+    },
+  });
+
   const profileMutation = useMutation({
     mutationFn: () =>
       apiPut("/api/users/me", { name: name.trim(), phone: phone.trim(), positionTitle: positionTitle.trim() }),
@@ -197,6 +209,36 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* ── Do Not Disturb ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Moon className="w-4 h-4 text-primary" /> Jangan Ganggu (DND)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Mode Jangan Ganggu</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Saat aktif, push notifikasi tidak akan dikirim ke perangkat kamu (kecuali eskalasi/kritis).
+              </p>
+            </div>
+            <Switch
+              checked={(user as { dndEnabled?: boolean })?.dndEnabled ?? false}
+              onCheckedChange={(checked) => dndMutation.mutate(checked)}
+              disabled={dndMutation.isPending}
+            />
+          </div>
+          {(user as { dndEnabled?: boolean })?.dndEnabled && (
+            <div className="mt-3 flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+              <Moon className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <p className="text-xs text-amber-600 dark:text-amber-400">DND aktif — push notifikasi dihentikan sementara</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -27,6 +27,7 @@ export const activityLogsTable = pgTable("activity_logs", {
   branchId: integer("branch_id").references(() => branchesTable.id),
   shiftId: integer("shift_id").references(() => shiftsTable.id),
   points: numeric("points", { precision: 10, scale: 2 }).notNull().default("0"),
+  flagged: boolean("flagged").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

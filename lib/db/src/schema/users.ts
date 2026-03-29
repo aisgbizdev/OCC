@@ -19,6 +19,7 @@ export const usersTable = pgTable("users", {
   positionTitle: varchar("position_title", { length: 100 }),
   supervisorId: integer("supervisor_id"),
   activeStatus: boolean("active_status").notNull().default(true),
+  dndEnabled: boolean("dnd_enabled").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

@@ -31,63 +31,113 @@ function typeIcon(type: string, unread: boolean) {
   return <div className={base}><Bell className={cls} /></div>;
 }
 
-function GroupedNotifications({ notifications }: { notifications: Notification[] }) {
-  const grouped = notifications.reduce<Record<string, Notification[]>>((acc, n) => {
-    const k = n.type ?? "system";
-    if (!acc[k]) acc[k] = [];
-    acc[k].push(n);
-    return acc;
-  }, {});
+interface NotifGroup {
+  key: string;
+  type: string;
+  items: Notification[];
+  isGrouped: boolean;
+}
 
-  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(Object.keys(grouped).map(k => [k, true]))
-  );
+function buildGroups(notifications: Notification[]): NotifGroup[] {
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  const now = Date.now();
 
-  const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
+  const recent = notifications.filter(n => n.createdAt && (now - new Date(n.createdAt).getTime()) <= ONE_HOUR_MS);
+  const older = notifications.filter(n => !n.createdAt || (now - new Date(n.createdAt).getTime()) > ONE_HOUR_MS);
 
-  const sortedGroups = Object.entries(grouped).sort((a, b) => {
-    const aUnread = a[1].filter(n => !n.readStatus).length;
-    const bUnread = b[1].filter(n => !n.readStatus).length;
-    return bUnread - aUnread;
+  const recentByType: Record<string, Notification[]> = {};
+  for (const n of recent) {
+    const t = n.type ?? "system";
+    if (!recentByType[t]) recentByType[t] = [];
+    recentByType[t].push(n);
+  }
+
+  const groups: NotifGroup[] = [];
+
+  for (const [type, items] of Object.entries(recentByType)) {
+    if (items.length >= 2) {
+      groups.push({ key: `grouped_${type}`, type, items, isGrouped: true });
+    } else {
+      groups.push({ key: `single_${items[0].id}`, type, items, isGrouped: false });
+    }
+  }
+
+  for (const n of older) {
+    groups.push({ key: `old_${n.id}`, type: n.type ?? "system", items: [n], isGrouped: false });
+  }
+
+  groups.sort((a, b) => {
+    const aUnread = a.items.filter(n => !n.readStatus).length;
+    const bUnread = b.items.filter(n => !n.readStatus).length;
+    if (bUnread !== aUnread) return bUnread - aUnread;
+    const aTime = a.items[0]?.createdAt ? new Date(a.items[0].createdAt).getTime() : 0;
+    const bTime = b.items[0]?.createdAt ? new Date(b.items[0].createdAt).getTime() : 0;
+    return bTime - aTime;
   });
+
+  return groups;
+}
+
+function NotifItem({ notif }: { notif: Notification }) {
+  return (
+    <div className={cn("p-4 flex gap-3 transition-colors", !notif.readStatus ? "bg-primary/5" : "hover:bg-muted/30")}>
+      {typeIcon(notif.type ?? "system", !notif.readStatus)}
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start gap-2">
+          <h4 className={cn("text-sm truncate", !notif.readStatus ? "font-bold" : "font-medium text-foreground")}>
+            {notif.title}
+          </h4>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {notif.createdAt ? format(new Date(notif.createdAt), "d MMM, HH:mm", { locale: localeId }) : ""}
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{notif.content}</p>
+      </div>
+    </div>
+  );
+}
+
+function GroupedNotifications({ notifications }: { notifications: Notification[] }) {
+  const groups = buildGroups(notifications);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
 
   return (
     <div className="bg-card border rounded-2xl shadow-sm overflow-hidden divide-y divide-border">
-      {sortedGroups.map(([type, items]) => {
-        const unreadCount = items.filter(n => !n.readStatus).length;
-        const isOpen = expanded[type] ?? true;
+      {groups.map((group) => {
+        if (!group.isGrouped) {
+          return <NotifItem key={group.key} notif={group.items[0]} />;
+        }
+
+        const unreadCount = group.items.filter(n => !n.readStatus).length;
+        const isOpen = expanded[group.key] ?? false;
+
         return (
-          <div key={type}>
+          <div key={group.key}>
             <button
-              onClick={() => toggle(type)}
+              onClick={() => toggle(group.key)}
               className="w-full flex items-center gap-3 px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
             >
               {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-              <span className="font-semibold text-sm flex-1">{typeLabel(type)}</span>
+              <div className={cn("mt-1 p-2 rounded-full h-fit flex-shrink-0", unreadCount > 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
+                <Bell className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="font-semibold text-sm block">
+                  {group.items.length} {typeLabel(group.type).toLowerCase()} baru
+                </span>
+                <span className="text-xs text-muted-foreground">Dalam 1 jam terakhir — klik untuk lihat detail</span>
+              </div>
               {unreadCount > 0 && (
-                <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 font-bold">
-                  {unreadCount} baru
+                <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 font-bold shrink-0">
+                  {unreadCount} belum dibaca
                 </span>
               )}
-              <span className="text-xs text-muted-foreground ml-1">{items.length} total</span>
             </button>
             {isOpen && (
               <div className="divide-y divide-border">
-                {items.map((notif) => (
-                  <div key={notif.id} className={cn("p-4 flex gap-3 transition-colors", !notif.readStatus ? "bg-primary/5" : "hover:bg-muted/30")}>
-                    {typeIcon(notif.type ?? "system", !notif.readStatus)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className={cn("text-sm truncate", !notif.readStatus ? "font-bold" : "font-medium text-foreground")}>
-                          {notif.title}
-                        </h4>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {notif.createdAt ? format(new Date(notif.createdAt), "d MMM, HH:mm", { locale: localeId }) : ""}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{notif.content}</p>
-                    </div>
-                  </div>
+                {group.items.map((notif) => (
+                  <NotifItem key={notif.id} notif={notif} />
                 ))}
               </div>
             )}
