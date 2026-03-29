@@ -5,17 +5,47 @@ import {
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { AlertTriangle, Plus, Building2, MapPin } from "lucide-react";
+import { AlertTriangle, Plus, Building2, MapPin, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SlaTimer } from "@/components/sla-timer";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+
+const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export default function Complaints() {
-  const { data: complaints } = useListComplaints();
+  const { user } = useAuth();
+  const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+
   const [createOpen, setCreateOpen] = useState(false);
+  const [filterPtId, setFilterPtId] = useState("");
+  const [filterBranchId, setFilterBranchId] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const { data: pts } = useListPts();
+  const { data: filterBranches } = useListBranches(
+    filterPtId ? { ptId: Number(filterPtId) } : undefined
+  );
+
+  const { data: complaints } = useListComplaints({
+    ptId: isChief && filterPtId ? Number(filterPtId) : undefined,
+    status: filterStatus || undefined,
+  });
+
+  const filteredComplaints = (complaints ?? []).filter(comp => {
+    if (isChief && filterBranchId && comp.branchId !== Number(filterBranchId)) return false;
+    return true;
+  });
+
+  const handlePtChange = (ptId: string) => {
+    setFilterPtId(ptId);
+    setFilterBranchId("");
+  };
+
+  const hasFilters = filterPtId || filterBranchId || filterStatus;
 
   return (
     <div className="space-y-6">
@@ -29,8 +59,60 @@ export default function Complaints() {
         </Button>
       </div>
 
+      <div className="flex flex-wrap gap-3 items-center">
+        <select
+          className="h-9 px-3 rounded-md bg-background border text-sm"
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+        >
+          <option value="">Semua Status</option>
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+
+        {isChief && (
+          <>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px]"
+                value={filterPtId}
+                onChange={e => handlePtChange(e.target.value)}
+              >
+                <option value="">Semua PT</option>
+                {pts?.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px] disabled:opacity-50"
+                value={filterBranchId}
+                onChange={e => setFilterBranchId(e.target.value)}
+                disabled={!filterPtId}
+              >
+                <option value="">Semua Cabang</option>
+                {(filterBranches as Branch[] | undefined)?.map((b: Branch) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {hasFilters && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); setFilterStatus(""); }}>
+            <Filter className="w-3.5 h-3.5" /> Reset Filter
+          </Button>
+        )}
+      </div>
+
       <div className="space-y-4">
-        {complaints?.map(comp => (
+        {filteredComplaints.map(comp => (
           <div key={comp.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:border-primary/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="p-3 rounded-xl bg-destructive/10 text-destructive shrink-0">
               <AlertTriangle className="w-6 h-6" />
@@ -69,7 +151,7 @@ export default function Complaints() {
             </div>
           </div>
         ))}
-        {complaints?.length === 0 && (
+        {filteredComplaints.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">Belum ada komplain.</div>
         )}
       </div>

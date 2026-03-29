@@ -1,21 +1,56 @@
 import { useState, useRef, useCallback } from "react";
-import { useListTasks, useUpdateTask, useCreateTask, useListUsers, type TaskWithRelations, type UserWithRelations } from "@workspace/api-client-react";
+import { useListTasks, useUpdateTask, useCreateTask, useListUsers, useListPts, useListBranches, type TaskWithRelations, type UserWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { CheckCircle2, Circle, Clock, Plus, ChevronRight, Check } from "lucide-react";
+
+import { CheckCircle2, Circle, Clock, Plus, ChevronRight, Check, Building2, MapPin, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+
+type TaskEnriched = TaskWithRelations & {
+  ptName?: string | null;
+  branchName?: string | null;
+};
+
+const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export default function Tasks() {
-  const { data: tasks } = useListTasks();
+  const { user } = useAuth();
+  const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+
+  const [filterPtId, setFilterPtId] = useState("");
+  const [filterBranchId, setFilterBranchId] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const { data: pts } = useListPts();
+  const { data: filterBranches } = useListBranches(
+    filterPtId ? { ptId: Number(filterPtId) } : undefined
+  );
+
+  const { data: tasks } = useListTasks({
+    ptId: isChief && filterPtId ? Number(filterPtId) : undefined,
+    status: filterStatus || undefined,
+  });
+
+  const filteredTasks = (tasks as TaskEnriched[] | undefined)?.filter(task => {
+    if (isChief && filterBranchId && task.branchId !== Number(filterBranchId)) return false;
+    return true;
+  });
+
   const updateTask = useUpdateTask();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailTask, setDetailTask] = useState<TaskWithRelations | null>(null);
+  const [detailTask, setDetailTask] = useState<TaskEnriched | null>(null);
+
+  const handlePtChange = (ptId: string) => {
+    setFilterPtId(ptId);
+    setFilterBranchId("");
+  };
 
   const handleStatusToggle = (id: number, currentStatus: string) => {
     const nextStatus = currentStatus === "new" ? "in_progress" : currentStatus === "in_progress" ? "completed" : "new";
@@ -30,7 +65,7 @@ export default function Tasks() {
     });
   };
 
-  const handleComplete = useCallback((task: TaskWithRelations) => {
+  const handleComplete = useCallback((task: TaskEnriched) => {
     if (task.status === "completed") return;
     updateTask.mutate({ id: task.id, data: { status: "completed", progressPercent: 100 } }, {
       onSuccess: () => {
@@ -40,6 +75,8 @@ export default function Tasks() {
       onError: () => toast({ title: "Error", description: "Gagal memperbarui tugas", variant: "destructive" })
     });
   }, [updateTask, toast, qc]);
+
+  const hasFilters = filterPtId || filterBranchId || filterStatus;
 
   return (
     <div className="space-y-6">
@@ -53,12 +90,64 @@ export default function Tasks() {
         </Button>
       </div>
 
+      <div className="flex flex-wrap gap-3 items-center">
+        <select
+          className="h-9 px-3 rounded-md bg-background border text-sm"
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+        >
+          <option value="">Semua Status</option>
+          <option value="new">Baru</option>
+          <option value="in_progress">Sedang Berjalan</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
+        </select>
+
+        {isChief && (
+          <>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px]"
+                value={filterPtId}
+                onChange={e => handlePtChange(e.target.value)}
+              >
+                <option value="">Semua PT</option>
+                {pts?.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px] disabled:opacity-50"
+                value={filterBranchId}
+                onChange={e => setFilterBranchId(e.target.value)}
+                disabled={!filterPtId}
+              >
+                <option value="">Semua Cabang</option>
+                {(filterBranches as Branch[] | undefined)?.map((b: Branch) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {hasFilters && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); setFilterStatus(""); }}>
+            <Filter className="w-3.5 h-3.5" /> Reset Filter
+          </Button>
+        )}
+      </div>
+
       <p className="text-xs text-muted-foreground md:hidden -mt-2">
         Geser kanan untuk selesaikan · Geser kiri untuk detail
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(tasks as TaskWithRelations[] | undefined)?.map((task: TaskWithRelations) => (
+        {filteredTasks?.map((task: TaskEnriched) => (
           <SwipeableTaskCard
             key={task.id}
             task={task}
@@ -67,7 +156,7 @@ export default function Tasks() {
             onDetail={setDetailTask}
           />
         ))}
-        {!tasks?.length && (
+        {!filteredTasks?.length && (
           <div className="col-span-3 text-center py-12 text-muted-foreground">Belum ada tugas.</div>
         )}
       </div>
@@ -89,10 +178,10 @@ export default function Tasks() {
 }
 
 interface SwipeableTaskCardProps {
-  task: TaskWithRelations;
+  task: TaskEnriched;
   onStatusToggle: (id: number, currentStatus: string) => void;
-  onComplete: (task: TaskWithRelations) => void;
-  onDetail: (task: TaskWithRelations) => void;
+  onComplete: (task: TaskEnriched) => void;
+  onDetail: (task: TaskEnriched) => void;
 }
 
 function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: SwipeableTaskCardProps) {
@@ -216,8 +305,24 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
           aria-label={`Lihat detail: ${task.title}`}
         >
           <h3 className="font-bold text-lg mb-1">{task.title}</h3>
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{task.description ?? ""}</p>
+          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{task.description ?? ""}</p>
         </button>
+
+        {(task.ptName || task.branchName) && (
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {task.ptName && (
+              <span className="flex items-center gap-1 text-xs text-primary font-medium bg-primary/5 border border-primary/15 px-2 py-0.5 rounded-full">
+                <Building2 className="w-3 h-3 shrink-0" />{task.ptName}
+              </span>
+            )}
+            {task.branchName && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                <MapPin className="w-3 h-3 shrink-0" />{task.branchName}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="mt-auto space-y-3">
           <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div className={`h-full transition-all duration-500 ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${task.progressPercent}%` }} />
@@ -239,7 +344,7 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
   );
 }
 
-function TaskDetail({ task, onComplete, onClose }: { task: TaskWithRelations; onComplete: (t: TaskWithRelations) => void; onClose: () => void }) {
+function TaskDetail({ task, onComplete, onClose }: { task: TaskEnriched; onComplete: (t: TaskEnriched) => void; onClose: () => void }) {
   const priorityLabel: Record<string, string> = { low: "Rendah", medium: "Sedang", high: "Tinggi" };
   const statusLabel: Record<string, string> = { new: "Baru", in_progress: "Sedang Berjalan", completed: "Selesai" };
 
@@ -263,6 +368,16 @@ function TaskDetail({ task, onComplete, onClose }: { task: TaskWithRelations; on
       )}
 
       <div className="space-y-2 text-sm">
+        {(task.ptName || task.branchName) && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Cabang</span>
+            <span className="font-medium flex items-center gap-1.5">
+              {task.ptName && <span className="text-primary">{task.ptName}</span>}
+              {task.ptName && task.branchName && <span className="text-muted-foreground">·</span>}
+              {task.branchName && <span>{task.branchName}</span>}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted-foreground">Ditugaskan ke</span>
           <span className="font-medium">{task.assigneeName ?? "Tidak di-assign"}</span>

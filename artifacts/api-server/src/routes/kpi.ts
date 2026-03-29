@@ -55,10 +55,15 @@ router.get("/kpi/leaderboard", authMiddleware, requireRole(...ALL_ROLES), async 
       conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
     }
 
+    if (req.query.branchId) {
+      conditions.push(eq(usersTable.branchId, Number(req.query.branchId)));
+    }
+
     const leaderboard = await db.select({
       userId: kpiScoresTable.userId,
       userName: usersTable.name,
       ptId: usersTable.ptId,
+      branchId: usersTable.branchId,
       score: orderCol,
       rank: sql<number>`ROW_NUMBER() OVER (ORDER BY ${orderCol} DESC)`,
     }).from(kpiScoresTable)

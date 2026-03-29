@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { useGetKpiLeaderboard, type KpiScoreWithUser } from "@workspace/api-client-react";
-import { Trophy } from "lucide-react";
+import { useGetKpiLeaderboard, useListPts, useListBranches, type KpiScoreWithUser, type Branch } from "@workspace/api-client-react";
+import { Trophy, Building2, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useAuth } from "@/lib/auth";
 
 type Period = "daily" | "weekly" | "monthly" | "yearly";
+
+const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 function getScore(user: KpiScoreWithUser, period: Period): number {
   switch (period) {
@@ -15,10 +18,37 @@ function getScore(user: KpiScoreWithUser, period: Period): number {
 }
 
 export default function KPI() {
-  const [period, setPeriod] = useState<Period>("daily");
-  const { data: leaderboard } = useGetKpiLeaderboard({ period });
+  const { user } = useAuth();
+  const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
 
-  const chartData = (leaderboard ?? []).slice(0, 10).map((u: KpiScoreWithUser) => ({
+  const [period, setPeriod] = useState<Period>("daily");
+  const [filterPtId, setFilterPtId] = useState("");
+  const [filterBranchId, setFilterBranchId] = useState("");
+
+  const { data: pts } = useListPts();
+  const { data: filterBranches } = useListBranches(
+    filterPtId ? { ptId: Number(filterPtId) } : undefined
+  );
+
+  const { data: leaderboard } = useGetKpiLeaderboard({
+    period,
+    ptId: isChief && filterPtId ? Number(filterPtId) : undefined,
+  });
+
+  const filteredLeaderboard = (leaderboard ?? []).filter((u: KpiScoreWithUser) => {
+    if (isChief && filterBranchId) {
+      const uWithBranch = u as KpiScoreWithUser & { branchId?: number };
+      return uWithBranch.branchId === Number(filterBranchId);
+    }
+    return true;
+  });
+
+  const handlePtChange = (ptId: string) => {
+    setFilterPtId(ptId);
+    setFilterBranchId("");
+  };
+
+  const chartData = filteredLeaderboard.slice(0, 10).map((u: KpiScoreWithUser) => ({
     name: (u.userName ?? "?").split(" ")[0],
     score: getScore(u, period)
   }));
@@ -41,6 +71,46 @@ export default function KPI() {
         </div>
       </div>
 
+      {isChief && (
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+            <select
+              className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px]"
+              value={filterPtId}
+              onChange={e => handlePtChange(e.target.value)}
+            >
+              <option value="">Semua PT</option>
+              {pts?.map(pt => (
+                <option key={pt.id} value={pt.id}>{pt.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+            <select
+              className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px] disabled:opacity-50"
+              value={filterBranchId}
+              onChange={e => setFilterBranchId(e.target.value)}
+              disabled={!filterPtId}
+            >
+              <option value="">Semua Cabang</option>
+              {(filterBranches as Branch[] | undefined)?.map((b: Branch) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          {(filterPtId || filterBranchId) && (
+            <button
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+              onClick={() => { setFilterPtId(""); setFilterBranchId(""); }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-card border rounded-2xl p-6 shadow-sm h-[400px]">
           <h3 className="font-bold mb-6">Top 10 Performer</h3>
@@ -62,8 +132,8 @@ export default function KPI() {
         <div className="bg-card border rounded-2xl p-6 shadow-sm overflow-y-auto max-h-[400px]">
           <h3 className="font-bold mb-4">Peringkat</h3>
           <div className="space-y-4">
-            {leaderboard?.map((u: KpiScoreWithUser, i: number) => (
-              <div key={u.id} className="flex items-center gap-4">
+            {filteredLeaderboard.map((u: KpiScoreWithUser, i: number) => (
+              <div key={u.userId} className="flex items-center gap-4">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                   i === 0 ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]' :
                   i === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/30' :
@@ -79,6 +149,9 @@ export default function KPI() {
                 <div className="font-mono font-bold text-lg">{getScore(u, period)}</div>
               </div>
             ))}
+            {filteredLeaderboard.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">Tidak ada data</p>
+            )}
           </div>
         </div>
       </div>

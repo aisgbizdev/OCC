@@ -5,21 +5,51 @@ import {
   useListShifts,
   useListTasks,
   useListComplaints,
+  useListPts,
+  useListBranches,
   type HandoverLogWithRelations,
   type TaskWithRelations,
-  type ComplaintWithRelations
+  type ComplaintWithRelations,
+  type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2 } from "lucide-react";
+import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+
+const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export default function Handover() {
-  const { data: logs } = useListHandoverLogs();
+  const { user } = useAuth();
+  const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+
+  const [filterPtId, setFilterPtId] = useState("");
+  const [filterBranchId, setFilterBranchId] = useState("");
+
+  const { data: pts } = useListPts();
+  const { data: filterBranches } = useListBranches(
+    filterPtId ? { ptId: Number(filterPtId) } : undefined
+  );
+
+  const { data: logs } = useListHandoverLogs({
+    ptId: isChief && filterPtId ? Number(filterPtId) : undefined,
+  });
+
+  const filteredLogs = (logs ?? []).filter((log: HandoverLogWithRelations) => {
+    if (isChief && filterBranchId && (log as HandoverLogWithRelations & { branchId?: number }).branchId !== Number(filterBranchId)) return false;
+    return true;
+  });
+
   const [createOpen, setCreateOpen] = useState(false);
   const { toast } = useToast();
+
+  const handlePtChange = (ptId: string) => {
+    setFilterPtId(ptId);
+    setFilterBranchId("");
+  };
 
   const buildHandoverText = (log: HandoverLogWithRelations) =>
     `SHIFT HANDOVER REPORT
@@ -55,6 +85,8 @@ NOTES: ${log.notes ?? "-"}`;
     }
   };
 
+  const hasFilters = filterPtId || filterBranchId;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -67,54 +99,108 @@ NOTES: ${log.notes ?? "-"}`;
         </Button>
       </div>
 
+      {isChief && (
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+            <select
+              className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px]"
+              value={filterPtId}
+              onChange={e => handlePtChange(e.target.value)}
+            >
+              <option value="">Semua PT</option>
+              {pts?.map(pt => (
+                <option key={pt.id} value={pt.id}>{pt.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+            <select
+              className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px] disabled:opacity-50"
+              value={filterBranchId}
+              onChange={e => setFilterBranchId(e.target.value)}
+              disabled={!filterPtId}
+            >
+              <option value="">Semua Cabang</option>
+              {(filterBranches as Branch[] | undefined)?.map((b: Branch) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          {hasFilters && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); }}>
+              <Filter className="w-3.5 h-3.5" /> Reset Filter
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6">
-        {logs?.map((log: HandoverLogWithRelations) => (
-          <div key={log.id} className="bg-card border rounded-2xl p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-6 border-b pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                  <Repeat className="w-5 h-5" />
+        {filteredLogs.map((log: HandoverLogWithRelations) => {
+          const logWithBranch = log as HandoverLogWithRelations & { ptName?: string | null; branchName?: string | null };
+          return (
+            <div key={log.id} className="bg-card border rounded-2xl p-6 shadow-sm">
+              <div className="flex justify-between items-start mb-6 border-b pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                    <Repeat className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Handover dari {log.creatorName ?? "-"}</h3>
+                    <p className="text-sm text-muted-foreground">{log.fromShiftName ?? "-"} → {log.toShiftName ?? "-"}</p>
+                    {(logWithBranch.ptName || logWithBranch.branchName) && (
+                      <div className="flex items-center gap-2 mt-1">
+                        {logWithBranch.ptName && (
+                          <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                            <Building2 className="w-3 h-3" />{logWithBranch.ptName}
+                          </span>
+                        )}
+                        {logWithBranch.branchName && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="w-3 h-3" />{logWithBranch.branchName}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => handleShare(log)} title="Bagikan laporan">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Salin ke clipboard">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <div className="text-right">
+                    <p className="font-mono text-sm font-medium">{log.createdAt ? format(new Date(log.createdAt), "MMM d, yyyy") : "-"}</p>
+                    <p className="text-xs text-muted-foreground">{log.createdAt ? format(new Date(log.createdAt), "HH:mm") : ""}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5"/> Ringkasan</h4>
+                  <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.summary ?? "-"}</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Handover dari {log.creatorName ?? "-"}</h3>
-                  <p className="text-sm text-muted-foreground">{log.fromShiftName ?? "-"} → {log.toShiftName ?? "-"}</p>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Catatan</h4>
+                  <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.notes ?? "-"}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleShare(log)} title="Bagikan laporan">
-                  <Share2 className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Salin ke clipboard">
-                  <Copy className="w-4 h-4" />
-                </Button>
-                <div className="text-right">
-                  <p className="font-mono text-sm font-medium">{log.createdAt ? format(new Date(log.createdAt), "MMM d, yyyy") : "-"}</p>
-                  <p className="text-xs text-muted-foreground">{log.createdAt ? format(new Date(log.createdAt), "HH:mm") : ""}</p>
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Tugas Tertunda</h4>
+                  <p className="text-sm font-mono bg-amber-500/5 p-3 rounded-lg border border-amber-500/20 whitespace-pre-line">{log.pendingTasks ?? "None"}</p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-destructive mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Komplain Terbuka</h4>
+                  <p className="text-sm font-mono bg-destructive/5 p-3 rounded-lg border border-destructive/20 whitespace-pre-line">{log.pendingComplaints ?? "None"}</p>
                 </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5"/> Ringkasan</h4>
-                <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.summary ?? "-"}</p>
-              </div>
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Catatan</h4>
-                <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.notes ?? "-"}</p>
-              </div>
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Tugas Tertunda</h4>
-                <p className="text-sm font-mono bg-amber-500/5 p-3 rounded-lg border border-amber-500/20 whitespace-pre-line">{log.pendingTasks ?? "None"}</p>
-              </div>
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-destructive mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Komplain Terbuka</h4>
-                <p className="text-sm font-mono bg-destructive/5 p-3 rounded-lg border border-destructive/20 whitespace-pre-line">{log.pendingComplaints ?? "None"}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-        {logs?.length === 0 && (
+          );
+        })}
+        {filteredLogs.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">Belum ada log handover.</div>
         )}
       </div>

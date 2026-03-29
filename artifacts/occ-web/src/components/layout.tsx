@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat, Bell,
-  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle, Monitor, Search, Moon
+  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle, Monitor, Search, Moon, Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/tasks", label: "Tugas", icon: CheckSquare },
   { href: "/complaints", label: "Komplain", icon: AlertTriangle },
   { href: "/handover", label: "Handover", icon: Repeat },
+  { href: "/branches", label: "Branch Overview", icon: Building2, minRole: ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"] },
   { href: "/messages", label: "Pesan", icon: MessageSquare },
   { href: "/chats", label: "Chat", icon: MessageCircle },
   { href: "/announcements", label: "Pengumuman", icon: Megaphone },

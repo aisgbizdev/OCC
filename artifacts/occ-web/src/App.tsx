@@ -24,11 +24,12 @@ import MasterData from "@/pages/users";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import Wallboard from "@/pages/wallboard";
+import Branches from "@/pages/branches";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading } = useAuth();
+function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
 
   React.useEffect(() => {
@@ -49,6 +50,17 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!isAuthenticated) return null;
+
+  if (allowedRoles && user && !allowedRoles.includes(user.roleName ?? "")) {
+    return (
+      <AppLayout>
+        <div className="flex h-full items-center justify-center py-24 text-muted-foreground flex-col gap-3">
+          <p className="text-lg font-semibold">Akses Ditolak</p>
+          <p className="text-sm">Halaman ini hanya tersedia untuk {allowedRoles.join(", ")}.</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -74,6 +86,7 @@ function Router() {
       <Route path="/system"><ProtectedRoute component={SystemSettings} /></Route>
       <Route path="/users"><ProtectedRoute component={MasterData} /></Route>
       <Route path="/wallboard" component={Wallboard} />
+      <Route path="/branches"><ProtectedRoute component={Branches} allowedRoles={["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"]} /></Route>
       <Route path="/quality"><QualityRedirect /></Route>
       <Route path="/profile"><ProtectedRoute component={Profile} /></Route>
       <Route path="/"><RootRedirect /></Route>

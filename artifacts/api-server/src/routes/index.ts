@@ -15,12 +15,14 @@ import notificationsRouter from "./notifications";
 import systemRouter from "./system";
 import pushRouter from "./push";
 import wallboardRouter from "./wallboard";
+import branchesAnalyticsRouter from "./branches-analytics";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
 router.use(usersRouter);
+router.use(branchesAnalyticsRouter);
 router.use(masterRouter);
 router.use(activityLogsRouter);
 router.use(kpiRouter);
