@@ -14,7 +14,14 @@ import { BatchActivityForm } from "@/components/batch-activity-form";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  minRole?: string[];
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activity-logs", label: "Aktivitas", icon: Activity },
   { href: "/kpi", label: "KPI & Rank", icon: BarChart2 },

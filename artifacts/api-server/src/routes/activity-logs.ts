@@ -103,24 +103,57 @@ router.get("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (r
   }
 });
 
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System"];
+
+async function resolveTargetUser(
+  req: { user?: { userId: number; roleName: string; ptId?: number | null } },
+  targetUserId: number | undefined,
+  activityTypeId: number,
+): Promise<{ userId: number; ptId: number | null | undefined } | { error: string; status: number }> {
+  const caller = req.user!;
+
+  if (targetUserId && targetUserId !== caller.userId) {
+    if (!SPV_AND_ABOVE.includes(caller.roleName)) {
+      return { error: "Hanya SPV ke atas yang boleh mencatat aktivitas untuk anggota lain", status: 403 };
+    }
+    const [actType] = await db.select({ category: activityTypesTable.category }).from(activityTypesTable)
+      .where(eq(activityTypesTable.id, activityTypeId)).limit(1);
+    if (!actType || actType.category !== "Error") {
+      return { error: "targetUserId hanya diperbolehkan untuk tipe aktivitas berkategori Error", status: 400 };
+    }
+    const [target] = await db.select({ id: usersTable.id, ptId: usersTable.ptId, roleName: usersTable.roleId })
+      .from(usersTable).where(eq(usersTable.id, targetUserId)).limit(1);
+    if (!target) return { error: "Target user tidak ditemukan", status: 404 };
+    if (caller.roleName === "SPV Dealing" && caller.ptId && target.ptId !== caller.ptId) {
+      return { error: "SPV hanya bisa mencatat error untuk anggota di PT yang sama", status: 403 };
+    }
+    return { userId: targetUserId, ptId: target.ptId };
+  }
+  return { userId: caller.userId, ptId: caller.ptId };
+}
+
 router.post("/activity-logs", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
-    const { activityTypeId, quantity, note } = req.body;
+    const { activityTypeId, quantity, note, targetUserId } = req.body;
     if (!activityTypeId) { res.status(400).json({ error: "activityTypeId is required" }); return; }
     const qty = Number(quantity) || 1;
     if (qty < 1 || !Number.isInteger(qty)) { res.status(400).json({ error: "quantity must be a positive integer" }); return; }
+
+    const resolved = await resolveTargetUser(req, targetUserId ? Number(targetUserId) : undefined, activityTypeId);
+    if ("error" in resolved) { res.status(resolved.status).json({ error: resolved.error }); return; }
+
     const points = await calculatePoints(activityTypeId, qty);
     const [log] = await db.insert(activityLogsTable).values({
-      userId: req.user!.userId,
+      userId: resolved.userId,
       activityTypeId,
       quantity: qty,
       note: note ?? null,
-      ptId: req.user!.ptId,
+      ptId: resolved.ptId,
       branchId: req.body.branchId ?? null,
       shiftId: req.body.shiftId ?? null,
       points,
     }).returning();
-    await updateKpiScores(req.user!.userId);
+    await updateKpiScores(resolved.userId);
     await createAuditLog({ userId: req.user!.userId, actionType: "create", module: "activity_log", entityId: String(log.id) });
     res.status(201).json(await enrichLog(log));
   } catch (error) {
@@ -136,25 +169,32 @@ router.post("/activity-logs/batch", authMiddleware, requireRole("Owner", "Chief 
       res.status(400).json({ error: "items array is required" }); return;
     }
     const results: Array<typeof activityLogsTable.$inferSelect> = [];
+    const affectedUserIds = new Set<number>();
+
     for (const item of items) {
       const qty = Number(item.quantity) || 1;
       if (qty < 1 || !Number.isInteger(qty)) {
         res.status(400).json({ error: "All quantities must be positive integers" }); return;
       }
+      const resolved = await resolveTargetUser(req, item.targetUserId ? Number(item.targetUserId) : undefined, item.activityTypeId);
+      if ("error" in resolved) { res.status(resolved.status).json({ error: resolved.error }); return; }
+
       const points = await calculatePoints(item.activityTypeId, qty);
       const [log] = await db.insert(activityLogsTable).values({
-        userId: req.user!.userId,
+        userId: resolved.userId,
         activityTypeId: item.activityTypeId,
         quantity: qty,
         note: item.note ?? null,
-        ptId: req.user!.ptId,
+        ptId: resolved.ptId,
         branchId: item.branchId ?? null,
         shiftId: item.shiftId ?? null,
         points,
       }).returning();
       results.push(log);
+      affectedUserIds.add(resolved.userId);
     }
-    await updateKpiScores(req.user!.userId);
+
+    await Promise.all([...affectedUserIds].map(uid => updateKpiScores(uid)));
     await createAuditLog({ userId: req.user!.userId, actionType: "batch_create", module: "activity_log", entityId: String(results.length) });
     const enriched = await Promise.all(results.map(enrichLog));
     res.status(201).json(enriched);
