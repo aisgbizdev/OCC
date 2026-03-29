@@ -8,3 +8,4 @@ export * from "./communication";
 export * from "./operations";
 export * from "./kpi";
 export * from "./system";
+export * from "./quality";

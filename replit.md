@@ -30,7 +30,7 @@ artifacts-monorepo/
 │   └── occ-web/              # React + Vite frontend (served at /)
 │       └── src/
 │           ├── pages/        # login, dashboard, activity-logs, kpi, tasks, complaints,
-│           │                 # announcements, messages, chats, handover, notifications, system
+│           │                 # announcements, messages, chats, handover, notifications, system, quality
 │           ├── components/
 │           │   ├── layout.tsx           # Sidebar + mobile bottom nav + header
 │           │   ├── fab.tsx              # Floating Action Button (speed dial)
@@ -56,7 +56,8 @@ artifacts-monorepo/
 │           │   ├── chats.ts          # Chat rooms + messages
 │           │   ├── handover.ts       # Shift handover logs
 │           │   ├── notifications.ts  # User notifications + read/read-all
-│           │   └── system.ts         # System settings, audit logs, inactivity
+│           │   ├── system.ts         # System settings, audit logs, inactivity
+│           │   └── quality.ts        # Quality/error records, error types, summary
 │           ├── helpers/
 │           │   └── audit.ts          # createAuditLog, createNotification helpers
 │           └── middlewares/

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat, Bell,
-  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle
+  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/kpi", label: "KPI & Rank", icon: BarChart2 },
   { href: "/tasks", label: "Tugas", icon: CheckSquare },
   { href: "/complaints", label: "Komplain", icon: AlertTriangle },
+  { href: "/quality", label: "Quality", icon: ShieldCheck, minRole: ["Owner","Direksi","Chief Dealing","SPV Dealing","Admin System","Superadmin"] },
   { href: "/handover", label: "Handover", icon: Repeat },
   { href: "/messages", label: "Pesan", icon: MessageSquare },
   { href: "/chats", label: "Chat", icon: MessageCircle },
@@ -83,7 +84,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter(item => !item.minRole || item.minRole.includes(user.roleName ?? "")).map((item) => {
               const isActive = location === item.href;
               return (
                 <Link key={item.href} href={item.href} className={cn(
@@ -153,7 +154,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
-                {NAV_ITEMS.map((item) => {
+                {NAV_ITEMS.filter(item => !item.minRole || item.minRole.includes(user.roleName ?? "")).map((item) => {
                   const isActive = location === item.href;
                   return (
                     <Link key={item.href} href={item.href} className={cn(
