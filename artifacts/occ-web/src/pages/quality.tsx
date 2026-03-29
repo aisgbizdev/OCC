@@ -92,12 +92,12 @@ export default function Quality() {
   // ── Master data ───────────────────────────────────────────────────────────
   const { data: pts = [] }    = useListPts();
   const { data: shifts = [] } = useListShifts();
-  const { data: errorTypes = [] } = useListQualityErrorTypes({ query: { enabled: tab === "types" || showForm } });
+  const { data: errorTypes = [] } = useListQualityErrorTypes({ query: { queryKey: ["quality-error-types"], enabled: tab === "types" || showForm } });
 
   // Fetch users: SPV gets only their PT's users; management can see all
   const { data: usersRaw = [] } = useListUsers(
     isSPV && myPtId ? { ptId: myPtId } : {},
-    { query: { enabled: showForm || tab === "records" } }
+    { query: { queryKey: ["users-for-quality", myPtId], enabled: showForm || tab === "records" } }
   );
   const teamUsers = (usersRaw as UserWithRelations[]).filter(u =>
     ["SPV Dealing", "Dealer"].includes(u.roleName ?? "")

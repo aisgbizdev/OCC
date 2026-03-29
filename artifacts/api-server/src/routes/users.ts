@@ -77,6 +77,79 @@ router.post("/users", authMiddleware, requireRole("Owner", "Admin System", "Chie
   }
 });
 
+// ── Self-profile update (all authenticated users) ── MUST come before /users/:id ──
+router.put("/users/me", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    const { name, phone, positionTitle } = req.body;
+
+    const updateData: Partial<typeof usersTable.$inferInsert> = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (phone !== undefined) updateData.phone = String(phone).trim() || null;
+    if (positionTitle !== undefined) updateData.positionTitle = String(positionTitle).trim() || null;
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: "No fields to update" }); return;
+    }
+
+    const [user] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, userId)).returning();
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    res.json(await enrichUser(user));
+  } catch (error) {
+    console.error("Update own profile error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Change own password ──────────────────────────────────────────────────────
+router.put("/users/me/password", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: "currentPassword dan newPassword wajib diisi" }); return;
+    }
+    if (String(newPassword).length < 6) {
+      res.status(400).json({ error: "Password baru minimal 6 karakter" }); return;
+    }
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    const valid = await bcryptjs.compare(String(currentPassword), user.passwordHash);
+    if (!valid) { res.status(401).json({ error: "Password lama tidak sesuai" }); return; }
+
+    const passwordHash = await bcryptjs.hash(String(newPassword), 10);
+    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, userId));
+    res.json({ message: "Password berhasil diubah" });
+  } catch (error) {
+    console.error("Change own password error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Admin reset another user's password ─────────────────────────────────────
+router.put("/users/:id/password", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || String(newPassword).length < 6) {
+      res.status(400).json({ error: "newPassword wajib diisi, minimal 6 karakter" }); return;
+    }
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    const passwordHash = await bcryptjs.hash(String(newPassword), 10);
+    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, Number(req.params.id)));
+    res.json({ message: "Password user berhasil direset" });
+  } catch (error) {
+    console.error("Admin reset password error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Generic :id routes — MUST come AFTER all /users/me routes ────────────────
 router.get("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Direksi"), async (req, res) => {
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);

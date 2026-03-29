@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Users, Building, Shield, CheckCircle2, XCircle, Plus, X,
-  Crown, Eye, Star, TrendingUp, Settings, Loader2, Pencil, UserX, UserCheck,
+  Crown, Eye, Star, TrendingUp, Settings, Loader2, Pencil, UserX, UserCheck, KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,6 +103,10 @@ export default function MasterData() {
     name: "", roleId: 0, ptId: "", shiftId: "", positionTitle: "", activeStatus: true,
   });
   const [deactivatingId, setDeactivatingId] = useState<number | null>(null);
+  const [resetTarget, setResetTarget] = useState<UserWithRelations | null>(null);
+  const [resetNewPw, setResetNewPw] = useState("");
+  const [resetConfirmPw, setResetConfirmPw] = useState("");
+  const [resettingPw, setResettingPw] = useState(false);
 
   const isSuperAdmin = me?.roleName === "Superadmin";
   const isAdminSystem = me?.roleName === "Admin System";
@@ -113,6 +117,7 @@ export default function MasterData() {
   const canEditUser = isSuperAdmin || isAdminSystem || isOwner || isChiefDealing;
   const canDeactivate = isSuperAdmin || isAdminSystem;
   const canEditRolePt = isSuperAdmin || isOwner || isChiefDealing;
+  const canResetPassword = isSuperAdmin || isAdminSystem || isOwner;
 
   const defaultRoleId = roles.length > 0 ? (roles.find(r => r.name === "Dealer")?.id ?? roles[0]?.id ?? 0) : 0;
 
@@ -238,6 +243,35 @@ export default function MasterData() {
   };
 
   const closeAddForm = () => { setShowForm(false); setForm(EMPTY_FORM); setErrors({}); };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget) return;
+    if (!resetNewPw || resetNewPw.length < 6) {
+      toast({ title: "Password minimal 6 karakter", variant: "destructive" }); return;
+    }
+    if (resetNewPw !== resetConfirmPw) {
+      toast({ title: "Konfirmasi password tidak cocok", variant: "destructive" }); return;
+    }
+    setResettingPw(true);
+    try {
+      const res = await fetch(`/api/users/${resetTarget.id}/password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: resetNewPw }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mereset password");
+      toast({ title: `Password ${resetTarget.name} berhasil direset` });
+      setResetTarget(null);
+      setResetNewPw("");
+      setResetConfirmPw("");
+    } catch (err: unknown) {
+      toast({ title: (err as Error).message, variant: "destructive" });
+    } finally {
+      setResettingPw(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -586,6 +620,16 @@ export default function MasterData() {
                               )}
                             </Button>
                           )}
+                          {canResetPassword && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setResetTarget(u); setResetNewPw(""); setResetConfirmPw(""); }}
+                              className="h-8 gap-1.5 text-xs text-amber-600 border-amber-400/40 hover:bg-amber-50 hover:text-amber-700"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" /> Reset PW
+                            </Button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -641,6 +685,61 @@ export default function MasterData() {
           </div>
         </div>
       </div>
+
+      {/* ── Reset Password Modal ── */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setResetTarget(null)}>
+          <div className="bg-card border rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-amber-500" />
+                <h2 className="font-bold text-base">Reset Password</h2>
+              </div>
+              <button onClick={() => setResetTarget(null)} className="p-1 rounded-md hover:bg-muted transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Atur ulang password untuk <span className="font-semibold text-foreground">{resetTarget.name}</span> ({resetTarget.roleName})
+            </p>
+            <form onSubmit={handleResetPassword} className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Password Baru <span className="text-red-500">*</span></label>
+                <Input
+                  type="password"
+                  value={resetNewPw}
+                  onChange={e => setResetNewPw(e.target.value)}
+                  placeholder="Minimal 6 karakter"
+                  autoFocus
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Konfirmasi Password <span className="text-red-500">*</span></label>
+                <Input
+                  type="password"
+                  value={resetConfirmPw}
+                  onChange={e => setResetConfirmPw(e.target.value)}
+                  placeholder="Ulangi password baru"
+                  autoComplete="new-password"
+                />
+                {resetConfirmPw && resetNewPw !== resetConfirmPw && (
+                  <p className="text-xs text-destructive">Password tidak cocok</p>
+                )}
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="outline" onClick={() => setResetTarget(null)} className="flex-1">
+                  Batal
+                </Button>
+                <Button type="submit" disabled={resettingPw} className="flex-1 gap-1.5">
+                  {resettingPw ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                  {resettingPw ? "Menyimpan..." : "Reset Password"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

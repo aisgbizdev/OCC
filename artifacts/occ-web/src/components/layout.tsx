@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat, Bell,
-  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, ShieldCheck
+  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, ShieldCheck, UserCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -72,15 +72,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="px-4 pb-4">
-            <div className="bg-card border rounded-xl p-4 shadow-sm flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0">
-                {user.name.charAt(0)}
+            <Link href="/profile" className="block">
+              <div className="bg-card border rounded-xl p-4 shadow-sm flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer group">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0">
+                  {user.name.charAt(0)}
+                </div>
+                <div className="overflow-hidden flex-1">
+                  <p className="font-semibold text-sm truncate">{user.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.roleName}</p>
+                </div>
+                <UserCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
               </div>
-              <div className="overflow-hidden">
-                <p className="font-semibold text-sm truncate">{user.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.roleName}</p>
-              </div>
-            </div>
+            </Link>
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
@@ -142,15 +145,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="px-4 pb-4">
-                <div className="bg-card border rounded-xl p-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0 text-sm">
-                    {user.name.charAt(0)}
+                <Link href="/profile" className="block">
+                  <div className="bg-card border rounded-xl p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors group">
+                    <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0 text-sm">
+                      {user.name.charAt(0)}
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                      <p className="font-semibold text-sm truncate">{user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.roleName} · {(user as { ptName?: string })?.ptName ?? "Korporat"}</p>
+                    </div>
+                    <UserCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                   </div>
-                  <div className="overflow-hidden">
-                    <p className="font-semibold text-sm truncate">{user.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.roleName} · {user.ptName}</p>
-                  </div>
-                </div>
+                </Link>
               </div>
 
               <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
@@ -220,9 +226,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-background animate-pulse" />
                 )}
               </Link>
-              <div className="hidden md:block w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs border border-primary/20">
+              <Link href="/profile" className="hidden md:flex w-8 h-8 rounded-full bg-primary/20 items-center justify-center text-primary font-bold text-xs border border-primary/20 hover:ring-2 hover:ring-primary/40 transition-all" title="Profil Saya">
                 {user.name.charAt(0)}
-              </div>
+              </Link>
             </div>
           </header>
 

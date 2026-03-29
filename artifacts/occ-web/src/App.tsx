@@ -22,6 +22,7 @@ import Notifications from "@/pages/notifications";
 import SystemSettings from "@/pages/system";
 import MasterData from "@/pages/users";
 import Quality from "@/pages/quality";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/system"><ProtectedRoute component={SystemSettings} /></Route>
       <Route path="/users"><ProtectedRoute component={MasterData} /></Route>
       <Route path="/quality"><ProtectedRoute component={Quality} /></Route>
+      <Route path="/profile"><ProtectedRoute component={Profile} /></Route>
       <Route path="/"><RootRedirect /></Route>
       <Route component={NotFound} />
     </Switch>
