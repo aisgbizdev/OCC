@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat, Bell,
-  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, ShieldCheck, UserCircle
+  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -20,7 +20,6 @@ const NAV_ITEMS = [
   { href: "/kpi", label: "KPI & Rank", icon: BarChart2 },
   { href: "/tasks", label: "Tugas", icon: CheckSquare },
   { href: "/complaints", label: "Komplain", icon: AlertTriangle },
-  { href: "/quality", label: "Quality", icon: ShieldCheck, minRole: ["Owner","Direksi","Chief Dealing","SPV Dealing","Superadmin"] },
   { href: "/handover", label: "Handover", icon: Repeat },
   { href: "/messages", label: "Pesan", icon: MessageSquare },
   { href: "/chats", label: "Chat", icon: MessageCircle },

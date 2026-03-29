@@ -21,7 +21,6 @@ import Handover from "@/pages/handover";
 import Notifications from "@/pages/notifications";
 import SystemSettings from "@/pages/system";
 import MasterData from "@/pages/users";
-import Quality from "@/pages/quality";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
@@ -73,12 +72,18 @@ function Router() {
       <Route path="/notifications"><ProtectedRoute component={Notifications} /></Route>
       <Route path="/system"><ProtectedRoute component={SystemSettings} /></Route>
       <Route path="/users"><ProtectedRoute component={MasterData} /></Route>
-      <Route path="/quality"><ProtectedRoute component={Quality} /></Route>
+      <Route path="/quality"><QualityRedirect /></Route>
       <Route path="/profile"><ProtectedRoute component={Profile} /></Route>
       <Route path="/"><RootRedirect /></Route>
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+function QualityRedirect() {
+  const [, setLocation] = useLocation();
+  React.useEffect(() => { setLocation("/dashboard"); }, [setLocation]);
+  return null;
 }
 
 function RootRedirect() {

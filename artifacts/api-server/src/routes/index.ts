@@ -14,7 +14,6 @@ import handoverRouter from "./handover";
 import notificationsRouter from "./notifications";
 import systemRouter from "./system";
 import pushRouter from "./push";
-import qualityRouter from "./quality";
 
 const router: IRouter = Router();
 
@@ -33,6 +32,5 @@ router.use(handoverRouter);
 router.use(notificationsRouter);
 router.use(systemRouter);
 router.use(pushRouter);
-router.use(qualityRouter);
 
 export default router;
