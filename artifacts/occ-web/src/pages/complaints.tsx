@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   useListComplaints, useCreateComplaint,
-  useListPts, listBranches, getListBranchesQueryKey,
+  useListPts, useListBranches,
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
@@ -96,11 +95,9 @@ function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const { data: pts } = useListPts();
-  const { data: branches } = useQuery({
-    queryKey: [...getListBranchesQueryKey({ ptId: Number(form.ptId) }), form.ptId],
-    queryFn: () => listBranches({ ptId: Number(form.ptId) }),
-    enabled: !!form.ptId,
-  });
+  const { data: branches } = useListBranches(
+    form.ptId ? { ptId: Number(form.ptId) } : undefined
+  );
 
   const handlePtChange = (ptId: string) => {
     setForm({ ...form, ptId, branchId: "" });
