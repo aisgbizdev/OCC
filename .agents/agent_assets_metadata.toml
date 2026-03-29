@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "zLUekpSDAlHHXu3yg5NuB"
+uri = "file://docs/OCC-Panduan-Lengkap.md"
+type = "text"
+title = "OCC — Panduan Lengkap (972 halaman)"
