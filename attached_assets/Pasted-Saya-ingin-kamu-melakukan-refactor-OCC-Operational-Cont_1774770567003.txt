@@ -1,0 +1,159 @@
+Saya ingin kamu melakukan **refactor OCC (Operational Control Center)** berdasarkan dokumen terlampir.
+
+⚠️ PENTING — BACA INI DULU:
+OCC bukan sistem ERP, bukan sistem audit, dan bukan sistem kompleks.
+
+OCC adalah:
+👉 Command Center Operasional Harian
+👉 Digunakan setiap hari oleh tim dealing
+👉 Fokus pada kecepatan, kesederhanaan, dan kontrol real-time
+
+---
+
+## 🎯 TUJUAN REFACTOR
+
+Refactor sistem agar:
+
+* Lebih sederhana
+* Lebih cepat digunakan
+* Lebih fokus ke workflow operasional harian
+* Tidak over-engineered
+
+---
+
+## 🧱 PRIORITAS UTAMA (WAJIB DIPATUHI)
+
+Fokus hanya pada 6 core module:
+
+1. Activity Log (INTI SISTEM)
+2. KPI Real-Time
+3. Task (simple)
+4. Complaint (dengan SLA sederhana)
+5. Handover Shift
+6. Chat & Message
+
+Jangan menambah modul baru di luar ini.
+
+---
+
+## 🔥 RULE PENTING
+
+### 1. Activity Log adalah pusat sistem
+
+* Harus bisa batch input
+* Harus sangat cepat (target < 5 detik input)
+* Harus mobile friendly
+* Harus ada quick template
+
+---
+
+### 2. KPI harus real-time dan meaningful
+
+* KPI update otomatis dari activity
+* Harus ada ranking
+* Harus ada anti-spam logic (hindari manipulasi activity)
+* Jangan hanya berdasarkan qty mentah
+
+---
+
+### 3. Sederhanakan semua flow
+
+Jika ada fitur yang:
+
+* jarang dipakai
+* membingungkan user
+* terlalu teknis
+
+👉 HAPUS atau SIMPLIFY
+
+---
+
+### 4. Quality Control
+
+* JANGAN dibuat sebagai modul terpisah
+* Masukkan ke:
+
+  * activity (sebagai tipe error)
+  * atau complaint (jika serius)
+
+---
+
+### 5. Dashboard harus operasional, bukan dekoratif
+
+WAJIB ada:
+
+* Operational Pulse (🟢🟡🔴)
+* Dealer inactivity indicator
+* KPI trend (bukan hanya angka)
+
+---
+
+### 6. UX adalah prioritas utama
+
+Wajib ada:
+
+* Floating button “+ Log Aktivitas”
+* Batch input
+* Mobile usage < 3 tap
+* Tidak boleh banyak klik
+
+---
+
+## ❌ YANG HARUS DIHINDARI
+
+Jangan membuat:
+
+* Sistem seperti ERP
+* Modul terlalu banyak
+* Logic terlalu kompleks
+* Hal teknis seperti API/endpoint di dokumentasi user
+* KPI snapshot system (tidak perlu sekarang)
+* Audit log UI (tidak prioritas)
+
+---
+
+## ⚙️ ROLE SIMPLIFICATION
+
+Gunakan hanya struktur ini:
+
+* Dealer → input & execute
+* SPV → monitor & assign
+* Chief → control & escalation
+* Owner/Direksi → monitoring only
+* Admin → system setting
+
+Jangan buat role logic yang membingungkan atau terlalu teknis.
+
+---
+
+## 🧠 PRINSIP UTAMA
+
+Sistem ini harus:
+
+* Dipakai setiap hari
+* Cepat dipahami tanpa training panjang
+* Tidak membebani user
+* Membantu kerja, bukan menambah kerja
+
+Kalau ragu antara:
+👉 fitur canggih vs fitur sederhana
+
+Pilih:
+👉 fitur sederhana
+
+---
+
+## 🎯 OUTPUT YANG DIHARAPKAN
+
+1. Versi sistem yang sudah disederhanakan
+2. Struktur module yang clean
+3. UX flow yang cepat dan jelas
+4. Tidak ada fitur yang tidak relevan
+
+---
+
+Jika ada bagian yang menurut kamu perlu dipertahankan atau dihapus,
+jelaskan alasannya secara singkat.
+
+Fokus utama:
+👉 buat OCC ini hidup dan dipakai setiap hari, bukan hanya bagus di konsep.
