@@ -1,7 +1,7 @@
 # OCC — Operational Control Center
 ## Dokumen Panduan Lengkap
 
-**Versi:** 1.0  
+**Versi:** 1.5  
 **Tanggal:** Maret 2026  
 **Untuk:** Tim Dealing, Divisi Operasional, Solid Group  
 
@@ -28,7 +28,8 @@
 17. [Master Data (Admin & Owner)](#17-master-data-admin--owner)
 18. [Pengaturan Sistem](#18-pengaturan-sistem)
 19. [PWA & Penggunaan Mobile](#19-pwa--penggunaan-mobile)
-20. [Daftar Akun Demo](#20-daftar-akun-demo)
+20. [TV Wallboard](#20-tv-wallboard)
+21. [Daftar Akun Demo](#21-daftar-akun-demo)
 
 ---
 
@@ -265,9 +266,18 @@ Tampil untuk role: **Dealer**
 | Skor Mingguan | Total poin minggu ini |
 | Ranking Saya | Posisi dalam leaderboard PT |
 | Tugas Aktif | Jumlah tugas yang sedang berjalan |
+| **Tren KPI 7 Hari** | Grafik sparkline poin harian 7 hari terakhir |
 | Daftar Tugas Aktif | 5 tugas terbaru dengan progress bar |
 | Aktivitas Terkini | 5 aktivitas terakhir yang di-log |
 | Leaderboard PT | Peringkat dealer di PT yang sama |
+
+#### KPI Trend Sparkline
+
+Widget **Tren KPI 7 Hari** menampilkan grafik garis mini (sparkline) poin harian selama 7 hari ke belakang. Grafik ini membantu dealer memantau konsistensi performa harian mereka — apakah sedang naik, turun, atau stabil.
+
+- Tampil di dashboard Dealer dan SPV Dealing
+- Titik data = total poin per hari
+- Hover/tap titik untuk melihat nilai poin di hari tertentu
 
 ### 5.2 Dashboard Operasional (SPV & Chief Dealing)
 
@@ -279,6 +289,7 @@ Tampil untuk role: **SPV Dealing** dan **Chief Dealing**
 | Dealer Aktif | Jumlah dealer terdaftar di PT |
 | Tugas Tertunda | Tugas yang belum selesai |
 | Komplain Terbuka | Keluhan yang belum resolved |
+| **Tren KPI 7 Hari** | Grafik sparkline poin harian per dealer (7 hari) |
 | Tabel Aktivitas Tim | Log aktivitas tim hari ini (10 terbaru) |
 | Dealer Inaktif | Dealer yang melewati batas waktu tanpa log aktivitas |
 
@@ -624,8 +635,14 @@ Laporan menampilkan:
 - Daftar **komplain terbuka** (diambil otomatis dari sistem)
 - Catatan khusus
 
-### Fitur Salin Laporan
-Klik ikon 📋 di kartu handover untuk menyalin laporan sebagai teks ke clipboard.
+### Fitur Salin & Bagikan Laporan
+
+| Tombol | Fungsi |
+|---|---|
+| **📋 Salin** | Menyalin isi laporan handover sebagai teks ke clipboard |
+| **🔗 Bagikan** | Membuka dialog berbagi native (Web Share) di HP/tablet; di desktop otomatis menyalin teks ke clipboard |
+
+> Fitur "Bagikan" menggunakan **Web Share API** yang tersedia di browser modern (Chrome, Safari). Di HP Android/iOS yang terinstall PWA, tombol ini membuka sheet berbagi native — bisa dikirim langsung via WhatsApp, Telegram, email, atau aplikasi lain.
 
 ---
 
@@ -691,14 +708,37 @@ Informasi real-time tentang kejadian penting yang relevan untuk pengguna.
 | Dealer inaktif melewati batas kritis | Owner, Direksi |
 | Pesan masuk ke chat room | Anggota room |
 
-### Tampilan Notifikasi
+### Tampilan Notifikasi — Grouped by Type
+
+Notifikasi ditampilkan **dikelompokkan berdasarkan tipe** (misalnya: Tugas, Keluhan, Chat, Sistem). Setiap kelompok bisa diklik untuk memperluas atau menyembunyikan isinya.
+
 - Notifikasi belum dibaca: latar biru muda
 - Klik **"Tandai Semua Dibaca"** untuk membaca semua sekaligus
+- Badge merah di sidebar/bottom nav menampilkan jumlah notifikasi belum dibaca
+- Kelompok dengan notifikasi baru ditampilkan **expanded** secara default
 
 ### Push Notification (Browser/HP)
 1. Saat pertama login, browser meminta izin notifikasi
 2. Klik **"Allow"** / **"Izinkan"**
 3. Notifikasi penting muncul otomatis di sistem operasi
+
+### Do Not Disturb (DND) — Jangan Ganggu
+
+Fitur **DND** memblokir pengiriman push notification ke perangkat dalam jangka waktu yang ditentukan. Notifikasi tetap masuk ke sistem OCC (bisa dilihat di halaman Notifikasi), namun **tidak mengeluarkan bunyi/getaran/pop-up** di HP atau browser.
+
+**Cara Mengaktifkan DND:**
+
+1. Buka halaman **Notifikasi** (`/notifications`)
+2. Di bagian atas, temukan card **"Pengaturan Do Not Disturb"**
+3. Pilih rentang waktu DND (jam mulai → jam selesai)
+4. Toggle **"Aktifkan DND"**
+5. Klik **Simpan**
+
+**Contoh penggunaan:**
+- Dealer shift malam ingin nonaktifkan notifikasi jam 07:00–14:00 saat tidur
+- SPV ingin tenang rapat tanpa gangguan push notification
+
+> Saat DND aktif, ikon 🔕 muncul di sidebar sebagai pengingat. DND tidak mempengaruhi notifikasi in-app (halaman Notifikasi tetap terupdate).
 
 ---
 
@@ -889,6 +929,36 @@ Terdiri dari **5 shortcut** dan **1 tombol "Lainnya"**:
 
 **Tombol "Lainnya"** membuka drawer menu lengkap yang berisi semua halaman termasuk Pengumuman, Chat, Handover, Quality, Notifikasi, Profil, dan lain-lain. Jika ada notifikasi belum dibaca, muncul titik merah di atas tombol ini.
 
+### Swipe Gesture pada Tugas (Mobile)
+
+Di halaman **Tugas** (mobile), kartu tugas mendukung **gestur geser horizontal**:
+
+| Gestur | Aksi |
+|---|---|
+| **Geser ke kanan** →  | Tandai tugas sebagai **Selesai** (Completed) |
+| **Geser ke kiri** ← | Buka **Detail** tugas |
+
+> Fitur swipe ini hanya aktif di layar sentuh (HP/tablet). Di desktop menggunakan klik seperti biasa.
+
+### Command Palette
+
+**Command Palette** adalah panel pencarian cepat untuk navigasi antar halaman tanpa perlu menyentuh menu.
+
+**Cara membuka:**
+
+| Platform | Shortcut |
+|---|---|
+| Desktop (Windows/Linux) | `Ctrl + K` |
+| Desktop (Mac) | `Cmd + K` |
+| Mobile | Ketuk ikon 🔍 di header |
+
+**Cara menggunakan:**
+1. Tekan shortcut / tap ikon pencarian
+2. Mulai ketik nama halaman (misal: "kpi", "handover", "notif")
+3. Hasil navigasi muncul secara real-time
+4. Klik item atau tekan Enter untuk berpindah halaman
+5. Tekan **Escape** untuk menutup
+
 ### Offline Mode
 Jika koneksi terputus: halaman yang sudah dimuat sebelumnya tetap bisa dilihat. Input data baru memerlukan koneksi internet.
 
@@ -897,7 +967,70 @@ Setelah diinstall sebagai PWA, push notification muncul di notifikasi sistem HP 
 
 ---
 
-## 20. Daftar Akun Demo
+## 20. TV Wallboard
+
+### Tujuan
+
+**TV Wallboard** adalah tampilan khusus yang dirancang untuk **dipasang di layar besar** (TV/monitor di ruang dealing) sebagai papan pantau operasional secara real-time.
+
+### Cara Mengakses
+
+| Cara | Detail |
+|---|---|
+| **URL langsung** | Buka `/wallboard?pt=SGB` (ganti SGB dengan kode PT yang diinginkan) |
+| **Tanpa login** | Wallboard dapat diakses **tanpa autentikasi** — cocok untuk layar publik/TV |
+
+Parameter `?pt=` menentukan PT mana yang ditampilkan. Contoh:
+- `/wallboard?pt=SGB` — tampilkan data PT SGB
+- `/wallboard?pt=RFB` — tampilkan data PT RFB
+- `/wallboard` — tanpa filter PT (semua PT)
+
+### Tampilan Wallboard
+
+Wallboard tampil **full-screen tanpa sidebar** dan terdiri dari beberapa panel:
+
+#### Panel Pulse Status
+Indikator besar di bagian atas menampilkan status kondisi operasional saat ini:
+
+| Warna | Status | Kondisi |
+|---|---|---|
+| 🟢 Hijau | **NORMAL** | Semua kondisi baik |
+| 🟡 Kuning | **HATI-HATI** | Ada komplain mendesak atau terlalu banyak dealer inaktif |
+| 🔴 Merah | **KRITIS** | Lebih dari 3 komplain urgensi tinggi atau lebih dari 5 dealer inaktif |
+
+Indikator ini berkedip sesuai level severity.
+
+#### Panel Top 10 Dealer (Leaderboard)
+Menampilkan **10 dealer dengan skor KPI harian tertinggi** di PT yang dipilih.
+
+- Hanya menampilkan dealer dengan status **aktif**
+- Urut berdasarkan skor harian tertinggi
+- Tampil: peringkat, nama, skor poin
+
+#### Panel Status Dealer
+Daftar dealer aktif beserta status aktivitasnya:
+- **Aktif** — dealer yang baru-baru ini melakukan log aktivitas
+- **Inaktif** — dealer yang melewati batas waktu tanpa aktivitas
+
+#### Panel Komplain Terbuka
+Daftar keluhan yang belum resolved, lengkap dengan urgensi dan SLA timer.
+
+#### Jam Real-Time
+Jam digital di sudut layar terus berputar — berguna sebagai referensi waktu di ruang dealing.
+
+### Auto-Refresh
+
+Data wallboard **diperbarui otomatis setiap 30 detik** tanpa perlu reload manual.
+
+### Tips Penggunaan
+
+- Pasang di TV/monitor menggunakan browser mode kiosk atau full-screen (tekan F11)
+- Gunakan URL dengan parameter `?pt=` spesifik supaya leaderboard menampilkan PT yang relevan
+- Karena tidak perlu login, URL ini aman dibagikan ke personil di ruang dealing
+
+---
+
+## 21. Daftar Akun Demo
 
 Semua akun menggunakan password: **`password123`**  
 Total: **32 akun aktif**
@@ -968,5 +1101,6 @@ Semua akun berikut muncul di tab **"Semua PT"**, termasuk semua Admin System kar
 
 ---
 
-*Dokumen ini dibuat dari source code OCC versi Maret 2026.*  
+*Dokumen ini dibuat dari source code OCC versi 1.5 — Maret 2026.*  
+*Fitur yang dicakup: Log Aktivitas, KPI, Tugas, Keluhan, Pengumuman, Pesan, Chat, Handover, Quality Control, Notifikasi (Grouped + DND), TV Wallboard, Command Palette, Swipe Mobile, KPI Trend Sparkline.*  
 *Untuk pertanyaan teknis, hubungi tim pengembang.*
