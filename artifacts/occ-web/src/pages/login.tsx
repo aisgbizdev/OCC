@@ -34,16 +34,7 @@ const ROLE_ORDER: Record<string, number> = {
   "SPV Dealing": 4, "Dealer": 5, "Admin System": 6,
 };
 
-const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi", "Chief Dealing"];
-
-const PT_OPTIONS = [
-  { value: "semua", label: "Semua PT",  sublabel: "Korporat & Divisi" },
-  { value: "SGB",   label: "SGB",       sublabel: "PT Solid Gold Berjangka" },
-  { value: "RFB",   label: "RFB",       sublabel: "PT Rifan Financindo Berjangka" },
-  { value: "KPF",   label: "KPF",       sublabel: "PT Kontak Perkasa Futures" },
-  { value: "BPF",   label: "BPF",       sublabel: "PT Bestprofit Futures" },
-  { value: "EWF",   label: "EWF",       sublabel: "PT Equityworld Futures" },
-] as const;
+const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi", "Chief Dealing", "Admin System"];
 
 export default function Login() {
   const [users, setUsers]          = useState<LoginUser[]>([]);
@@ -67,6 +58,22 @@ export default function Login() {
     setLocation("/dashboard");
     return null;
   }
+
+  const ptOptions = (() => {
+    const seen = new Map<string, string>();
+    for (const u of users) {
+      if (!CORPORATE_ROLES.includes(u.roleName ?? "") && u.ptCode && u.ptName) {
+        if (!seen.has(u.ptCode)) seen.set(u.ptCode, u.ptName);
+      }
+    }
+    const sorted = Array.from(seen.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([code, name]) => ({ value: code, label: code, sublabel: name }));
+    return [
+      { value: "semua", label: "Semua PT", sublabel: "Korporat & Divisi" },
+      ...sorted,
+    ];
+  })();
 
   const filteredUsers = (() => {
     if (activePT === "semua") {
@@ -136,7 +143,7 @@ export default function Login() {
                 onChange={e => handlePTChange(e.target.value)}
                 className="w-full appearance-none bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:border-primary/60 transition-colors cursor-pointer"
               >
-                {PT_OPTIONS.map(opt => (
+                {ptOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label} — {opt.sublabel}
                   </option>
