@@ -146,9 +146,11 @@ Tabel ini mencerminkan implementasi aktual di backend (berdasarkan `requireRole`
 
 | Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat semua log | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Lihat log | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
 | Input / Log baru | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Edit log (dalam jendela waktu) | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Edit log (dalam jendela waktu) | ✅ | ✅ | ❌ | ✅ | ✅ | ⚠️ | ✅ |
+
+> ⚠️ **Dealer** hanya bisa melihat log aktivitas **milik diri sendiri**. Log dealer lain tidak tampil.
 
 ### KPI & Leaderboard
 
@@ -306,6 +308,8 @@ Mencatat aktivitas kerja operasional harian. Setiap aktivitas yang dilog **otoma
 - **Dealer, SPV Dealing, Chief Dealing, Owner, Admin System**
 - Direksi hanya bisa melihat
 
+> **Penting — Dealer:** Dealer hanya bisa melihat log aktivitas **milik diri sendiri**. Log dealer lain tidak tampil. Dealer juga hanya bisa mengedit log miliknya sendiri (dalam jendela waktu yang berlaku).
+
 ### Cara Input Aktivitas (Batch)
 
 1. Klik tombol **"Log Aktivitas"** (desktop: pojok kanan atas, mobile: tombol FAB)
@@ -443,6 +447,8 @@ Mencatat, memonitor, dan mengelola masalah operasional dengan timer SLA.
 
 ### Sistem SLA Timer
 
+Sistem menghitung durasi sejak keluhan dibuat dan menampilkan status:
+
 | Status SLA | Durasi | Indikator |
 |---|---|---|
 | **Normal** | Kurang dari 24 jam | 🟢 Hijau |
@@ -451,17 +457,26 @@ Mencatat, memonitor, dan mengelola masalah operasional dengan timer SLA.
 
 Timer SLA berhenti saat status keluhan diubah ke **"Resolved"** atau **"Closed"**.
 
-> **Catatan:** Ambang batas SLA (24 jam dan 72 jam) saat ini bersifat tetap di dalam sistem.
+> **Catatan:** Ambang batas SLA (24 jam dan 72 jam) saat ini bersifat tetap di dalam sistem, tidak dapat diubah melalui Pengaturan Sistem.
 
-### Status Keluhan
-- **Open** — baru dibuat, belum ditangani
-- **In Progress** — sedang ditangani
-- **Resolved** — sudah diselesaikan
-- **Closed** — ditutup
+### Status Keluhan & Alur Transisi
+
+Sistem memberlakukan alur status yang ketat — tidak semua perubahan status diizinkan:
+
+| Status | Keterangan | Dapat Berubah Ke |
+|---|---|---|
+| **Open** | Baru dibuat, belum ditangani | In Progress, **Escalated** |
+| **In Progress** | Sedang ditangani | **Escalated**, Resolved |
+| **Escalated** | Di-eskalasi ke level lebih tinggi | In Progress, Resolved |
+| **Resolved** | Sudah diselesaikan | Closed, Open (re-open) |
+| **Closed** | Ditutup permanen | — (tidak bisa berubah) |
+
+**Status Escalated** digunakan saat keluhan memerlukan perhatian dari Chief Dealing, Owner, atau Direksi. Perubahan ke status "Escalated" secara otomatis mengirimkan push notification ke Chief Dealing, Owner, dan Direksi.
 
 ### Notifikasi Otomatis
 - Keluhan baru → push notif ke **SPV, Chief Dealing, Owner**
-- Eskalasi SLA warning/critical → push notif ke **Chief Dealing, Owner, Direksi**
+- Status berubah ke **Escalated** → push notif ke **Chief Dealing, Owner, Direksi**
+- Keluhan di-assign ke seseorang → push notif ke orang yang di-assign
 
 ---
 
@@ -871,19 +886,25 @@ Setelah diinstall sebagai PWA, push notification muncul di notifikasi sistem HP 
 
 ## 20. Daftar Akun Demo
 
-Semua akun menggunakan password: **`password123`**
+Semua akun menggunakan password: **`password123`**  
+Total: **32 akun aktif**
 
 ### Korporat & Divisi (Tab: Semua PT)
+
+Semua akun berikut muncul di tab **"Semua PT"**, termasuk semua Admin System karena dikategorikan sebagai korporat.
 
 | Email | Nama | Role |
 |---|---|---|
 | superadmin@occ.id | Super Admin | Superadmin |
-| owner@occ.id | Owner | Owner |
+| owner@occ.id | Admin Owner | Owner |
 | dir.utama@occ.id | Direktur Utama | Direksi |
 | dir.kepatuhan@occ.id | Direktur Kepatuhan | Direksi |
 | kiki@occ.id | Kiki | Chief Dealing |
-
-> Admin System per-PT juga muncul di tab "Semua PT" karena dikategorikan sebagai korporat.
+| admin.sgb@occ.id | Admin SGB | Admin System |
+| admin.rfb@occ.id | Fitri Handayani | Admin System |
+| admin.kpf@occ.id | Toni Saputra | Admin System |
+| admin.bpf@occ.id | Erwin Setiawan | Admin System |
+| admin.ewf@occ.id | Widi Hartono | Admin System |
 
 ### PT SGB (Tab: SGB)
 
@@ -898,39 +919,39 @@ Semua akun menggunakan password: **`password123`**
 
 ### PT RFB (Tab: RFB)
 
-| Email | Role |
-|---|---|
-| spv1.rfb@occ.id | SPV Dealing |
-| spv2.rfb@occ.id | SPV Dealing |
-| dealer1.rfb@occ.id | Dealer |
-| dealer2.rfb@occ.id | Dealer |
+| Email | Nama | Role | Shift |
+|---|---|---|---|
+| spv1.rfb@occ.id | Dewi Lestari | SPV Dealing | Pagi |
+| spv2.rfb@occ.id | Hendra Wijaya | SPV Dealing | Malam |
+| dealer1.rfb@occ.id | Reza Aditya | Dealer | Pagi |
+| dealer2.rfb@occ.id | Maya Indah | Dealer | Siang |
 
 ### PT KPF (Tab: KPF)
 
-| Email | Role |
-|---|---|
-| spv1.kpf@occ.id | SPV Dealing |
-| spv2.kpf@occ.id | SPV Dealing |
-| dealer1.kpf@occ.id | Dealer |
-| dealer2.kpf@occ.id | Dealer |
+| Email | Nama | Role | Shift |
+|---|---|---|---|
+| spv1.kpf@occ.id | Nita Rahayu | SPV Dealing | Pagi |
+| spv2.kpf@occ.id | Agus Suryanto | SPV Dealing | Malam |
+| dealer1.kpf@occ.id | Fajar Nugraha | Dealer | Pagi |
+| dealer2.kpf@occ.id | Indah Permata | Dealer | Siang |
 
 ### PT BPF (Tab: BPF)
 
-| Email | Role |
-|---|---|
-| spv1.bpf@occ.id | SPV Dealing |
-| spv2.bpf@occ.id | SPV Dealing |
-| dealer1.bpf@occ.id | Dealer |
-| dealer2.bpf@occ.id | Dealer |
+| Email | Nama | Role | Shift |
+|---|---|---|---|
+| spv1.bpf@occ.id | Yuni Sari | SPV Dealing | Pagi |
+| spv2.bpf@occ.id | Rizki Permana | SPV Dealing | Malam |
+| dealer1.bpf@occ.id | Galih Prakoso | Dealer | Pagi |
+| dealer2.bpf@occ.id | Putri Amalia | Dealer | Siang |
 
 ### PT EWF (Tab: EWF)
 
-| Email | Role |
-|---|---|
-| spv1.ewf@occ.id | SPV Dealing |
-| spv2.ewf@occ.id | SPV Dealing |
-| dealer1.ewf@occ.id | Dealer |
-| dealer2.ewf@occ.id | Dealer |
+| Email | Nama | Role | Shift |
+|---|---|---|---|
+| spv1.ewf@occ.id | Sari Wulandari | SPV Dealing | Pagi |
+| spv2.ewf@occ.id | Denny Kusuma | SPV Dealing | Malam |
+| dealer1.ewf@occ.id | Bayu Setiabudi | Dealer | Pagi |
+| dealer2.ewf@occ.id | Ayu Ratnasari | Dealer | Siang |
 
 ---
 
