@@ -124,7 +124,7 @@ function DealerDashboard() {
   const { data: scores } = useListKpiScores({ ptId: user?.ptId });
   const { data: tasks } = useListTasks({ assignedTo: user?.id, status: "in_progress" });
   const dateFrom7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
-  const { data: logs } = useListActivityLogs({ userId: user?.id, dateFrom: dateFrom7, limit: 500 });
+  const { data: logs } = useListActivityLogs({ userId: user?.id, dateFrom: dateFrom7 });
 
   const myScore = scores?.find(s => s.userId === user?.id);
   const myRank = scores?.findIndex(s => s.userId === user?.id);

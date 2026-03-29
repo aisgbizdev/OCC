@@ -12,7 +12,7 @@ interface SwipeOptions {
 }
 
 export function useSwipe(
-  element: React.RefObject<HTMLElement>,
+  element: React.RefObject<HTMLElement | null>,
   { onSwipeRight, onSwipeLeft }: SwipeHandlers,
   { threshold = 60, edgeThreshold = 40, disabled = false }: SwipeOptions = {}
 ) {
