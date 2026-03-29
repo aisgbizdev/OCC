@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { db } from "@workspace/db";
 import { pushSubscriptionsTable } from "@workspace/db/schema";
 import { eq, inArray } from "drizzle-orm";
+import { isUserInDnd } from "../routes/notifications";
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL ?? "mailto:admin@occ.id",
@@ -20,10 +21,14 @@ export async function sendPushToUsers(userIds: number[], payload: PushPayload): 
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
   if (userIds.length === 0) return;
 
+  const dndChecks = await Promise.all(userIds.map(id => isUserInDnd(id).then(dnd => ({ id, dnd }))));
+  const activeIds = dndChecks.filter(u => !u.dnd).map(u => u.id);
+  if (activeIds.length === 0) return;
+
   const subscriptions = await db
     .select()
     .from(pushSubscriptionsTable)
-    .where(inArray(pushSubscriptionsTable.userId, userIds));
+    .where(inArray(pushSubscriptionsTable.userId, activeIds));
 
   const staleIds: number[] = [];
 

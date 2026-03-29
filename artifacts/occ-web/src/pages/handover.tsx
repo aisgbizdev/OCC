@@ -10,7 +10,7 @@ import {
   type ComplaintWithRelations
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy } from "lucide-react";
+import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -21,8 +21,8 @@ export default function Handover() {
   const [createOpen, setCreateOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleCopy = (log: HandoverLogWithRelations) => {
-    const text = `SHIFT HANDOVER REPORT
+  const buildHandoverText = (log: HandoverLogWithRelations) =>
+    `SHIFT HANDOVER REPORT
 From: ${log.fromShiftName ?? "-"} → ${log.toShiftName ?? "-"}
 By: ${log.creatorName ?? "-"}
 Date: ${log.createdAt ? format(new Date(log.createdAt), "yyyy-MM-dd HH:mm") : "-"}
@@ -32,8 +32,27 @@ PENDING ACTIVITIES: ${log.pendingActivities ?? "None"}
 PENDING TASKS: ${log.pendingTasks ?? "None"}
 PENDING COMPLAINTS: ${log.pendingComplaints ?? "None"}
 NOTES: ${log.notes ?? "-"}`;
-    navigator.clipboard.writeText(text);
+
+  const handleCopy = (log: HandoverLogWithRelations) => {
+    navigator.clipboard.writeText(buildHandoverText(log));
     toast({ title: "Disalin", description: "Laporan handover disalin ke clipboard" });
+  };
+
+  const handleShare = async (log: HandoverLogWithRelations) => {
+    const text = buildHandoverText(log);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Shift Handover Report", text });
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") {
+          navigator.clipboard.writeText(text);
+          toast({ title: "Disalin", description: "Laporan disalin ke clipboard" });
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(text);
+      toast({ title: "Disalin", description: "Laporan handover disalin ke clipboard" });
+    }
   };
 
   return (
@@ -62,7 +81,10 @@ NOTES: ${log.notes ?? "-"}`;
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Salin laporan">
+                <Button variant="ghost" size="icon" onClick={() => handleShare(log)} title="Bagikan laporan">
+                  <Share2 className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Salin ke clipboard">
                   <Copy className="w-4 h-4" />
                 </Button>
                 <div className="text-right">

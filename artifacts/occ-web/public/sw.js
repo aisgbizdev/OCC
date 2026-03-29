@@ -1,10 +1,8 @@
-const CACHE_NAME = "occ-shell-v2";
+const CACHE_NAME = "occ-shell-v3";
 const SHELL_ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
+  "./manifest.webmanifest",
 ];
 
 self.addEventListener("install", (event) => {
@@ -21,12 +19,26 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function shouldCache(url) {
+  const u = new URL(url);
+  if (u.pathname.startsWith("/api/")) return false;
+  if (u.pathname.startsWith("/@")) return false;
+  if (u.pathname.startsWith("/src/")) return false;
+  if (u.pathname.startsWith("/node_modules/")) return false;
+  if (u.pathname.endsWith(".ts") || u.pathname.endsWith(".tsx") || u.pathname.endsWith(".js") || u.pathname.endsWith(".jsx") || u.pathname.endsWith(".css")) return false;
+  return true;
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
   if (request.method !== "GET") return;
   if (url.pathname.startsWith("/api/")) return;
+
+  if (!shouldCache(request.url)) {
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => {

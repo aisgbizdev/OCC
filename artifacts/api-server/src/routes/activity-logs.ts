@@ -142,6 +142,14 @@ router.post("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (
     const resolved = await resolveTargetUser(req, targetUserId ? Number(targetUserId) : undefined, activityTypeId);
     if ("error" in resolved) { res.status(resolved.status).json({ error: resolved.error }); return; }
 
+    const oneMinAgo = new Date(Date.now() - 60000);
+    const [rateCheck] = await db.select({ count: sql<number>`COUNT(*)::int` })
+      .from(activityLogsTable)
+      .where(and(eq(activityLogsTable.userId, resolved.userId), gte(activityLogsTable.createdAt, oneMinAgo)));
+    if ((rateCheck?.count ?? 0) >= 20) {
+      res.status(429).json({ error: "Terlalu banyak aktivitas dalam 1 menit. Harap tunggu sebentar." }); return;
+    }
+
     const points = await calculatePoints(activityTypeId, qty);
     const [log] = await db.insert(activityLogsTable).values({
       userId: resolved.userId,
@@ -167,6 +175,16 @@ router.post("/activity-logs/batch", authMiddleware, requireRole(...ALL_ROLES), a
     const { items } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: "items array is required" }); return;
+    }
+    if (items.length > 20) {
+      res.status(400).json({ error: "Maksimal 20 aktivitas per batch" }); return;
+    }
+    const oneMinAgo = new Date(Date.now() - 60000);
+    const [rateCheckBatch] = await db.select({ count: sql<number>`COUNT(*)::int` })
+      .from(activityLogsTable)
+      .where(and(eq(activityLogsTable.userId, req.user!.userId), gte(activityLogsTable.createdAt, oneMinAgo)));
+    if ((rateCheckBatch?.count ?? 0) + items.length > 20) {
+      res.status(429).json({ error: "Terlalu banyak aktivitas dalam 1 menit. Harap tunggu sebentar." }); return;
     }
     const results: Array<typeof activityLogsTable.$inferSelect> = [];
     const affectedUserIds = new Set<number>();

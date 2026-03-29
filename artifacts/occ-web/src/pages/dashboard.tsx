@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import {
   useListKpiScores,
@@ -13,9 +14,79 @@ import {
   type CheckInactivity200,
 } from "@workspace/api-client-react";
 import { Activity, Award, CheckSquare, Target, AlertTriangle, TrendingUp, Users, Clock, Zap, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays, startOfDay } from "date-fns";
 import { Link } from "wouter";
 import type { LucideIcon } from "lucide-react";
+
+interface TrendPoint { date: string; points: number; }
+
+function KpiTrendChart({ logs }: { logs: ActivityLogWithRelations[] | undefined }) {
+  const trend = useMemo<TrendPoint[]>(() => {
+    const days = 7;
+    const result: TrendPoint[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = startOfDay(subDays(new Date(), i));
+      const dStr = format(d, "yyyy-MM-dd");
+      const pts = (logs ?? [])
+        .filter(l => l.createdAt && format(new Date(l.createdAt), "yyyy-MM-dd") === dStr)
+        .reduce((sum, l) => sum + Number(l.points ?? 0), 0);
+      result.push({ date: dStr, points: pts });
+    }
+    return result;
+  }, [logs]);
+
+  const max = Math.max(...trend.map(t => t.points), 1);
+  const W = 240, H = 48, PAD = 4;
+  const step = (W - PAD * 2) / (trend.length - 1);
+  const pts = trend.map((t, i) => {
+    const x = PAD + i * step;
+    const y = H - PAD - ((t.points / max) * (H - PAD * 2));
+    return [x, y] as [number, number];
+  });
+  const polyline = pts.map(([x, y]) => `${x},${y}`).join(" ");
+  const area = `${pts[0][0]},${H - PAD} ${pts.map(([x, y]) => `${x},${y}`).join(" ")} ${pts[pts.length - 1][0]},${H - PAD}`;
+  const totalToday = trend[trend.length - 1]?.points ?? 0;
+  const totalYesterday = trend[trend.length - 2]?.points ?? 0;
+  const delta = totalToday - totalYesterday;
+  const isUp = delta >= 0;
+
+  return (
+    <div className="bg-card border rounded-2xl p-5 shadow-sm">
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tren Poin 7 Hari</p>
+          <div className="flex items-center gap-2 mt-1">
+            <h3 className="text-2xl font-black tracking-tight">{totalToday}</h3>
+            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${isUp ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-400"}`}>
+              {isUp ? "+" : ""}{delta} vs kemarin
+            </span>
+          </div>
+        </div>
+        <TrendingUp className={`w-5 h-5 mt-1 ${isUp ? "text-emerald-500" : "text-muted-foreground"}`} />
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-12">
+        <defs>
+          <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill="url(#trendFill)" />
+        <polyline points={polyline} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 3 : 2}
+            fill={i === pts.length - 1 ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.5)"}
+          />
+        ))}
+      </svg>
+      <div className="flex justify-between mt-1">
+        {trend.map((t, i) => (
+          <span key={i} className="text-[9px] text-muted-foreground/60 font-mono">{format(new Date(t.date), "d/M")}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface InactiveDealer {
   userId: number;
@@ -52,7 +123,8 @@ function DealerDashboard() {
   const { user } = useAuth();
   const { data: scores } = useListKpiScores({ ptId: user?.ptId });
   const { data: tasks } = useListTasks({ assignedTo: user?.id, status: "in_progress" });
-  const { data: logs } = useListActivityLogs({ userId: user?.id });
+  const dateFrom7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
+  const { data: logs } = useListActivityLogs({ userId: user?.id, dateFrom: dateFrom7, limit: 500 });
 
   const myScore = scores?.find(s => s.userId === user?.id);
   const myRank = scores?.findIndex(s => s.userId === user?.id);
@@ -71,6 +143,8 @@ function DealerDashboard() {
         <StatCard title="Ranking Saya" value={String(rankDisplay)} icon={Award} color="text-emerald-400" />
         <StatCard title="Tugas Aktif" value={String(tasks?.length ?? 0)} icon={CheckSquare} color="text-purple-400" />
       </div>
+
+      <KpiTrendChart logs={logs} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border rounded-2xl p-6 shadow-sm">

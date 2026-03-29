@@ -14,6 +14,7 @@ import handoverRouter from "./handover";
 import notificationsRouter from "./notifications";
 import systemRouter from "./system";
 import pushRouter from "./push";
+import wallboardRouter from "./wallboard";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(handoverRouter);
 router.use(notificationsRouter);
 router.use(systemRouter);
 router.use(pushRouter);
+router.use(wallboardRouter);
 
 export default router;

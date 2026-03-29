@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity, CheckSquare, AlertTriangle, Megaphone, MessageSquare, Repeat, Bell,
-  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle
+  Users, Settings, LogOut, LayoutDashboard, BarChart2, Menu, X, MessageCircle, UserCircle, Monitor, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -13,6 +13,8 @@ import { ResponsiveModal } from "@/components/responsive-modal";
 import { BatchActivityForm } from "@/components/batch-activity-form";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import { CommandPalette } from "@/components/command-palette";
+import { useSwipe } from "@/hooks/use-swipe";
 
 interface NavItem {
   href: string;
@@ -47,8 +49,33 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   usePushNotifications();
+
+  const openCommand = useCallback(() => setCommandOpen(true), []);
+  const closeCommand = useCallback(() => setCommandOpen(false), []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandOpen(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useSwipe(
+    mainRef,
+    {
+      onSwipeRight: () => setMobileMenuOpen(true),
+      onSwipeLeft: () => setMobileMenuOpen(false),
+    },
+    { edgeThreshold: 40, threshold: 60 }
+  );
 
   const { data: notificationsData } = useListNotifications<ListNotifications200>(
     { unreadOnly: "true" },
@@ -120,6 +147,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                   location === "/system" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
                 )}><Settings className="w-4 h-4" /> System</Link>
+                <a href="/wallboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted border border-transparent transition-all">
+                  <Monitor className="w-4 h-4" /> TV Wallboard
+                </a>
               </>
             )}
           </nav>
@@ -193,6 +223,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
                       location === "/system" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
                     )}><Settings className="w-5 h-5" /> System</Link>
+                    <a href="/wallboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted border border-transparent transition-all">
+                      <Monitor className="w-5 h-5" /> TV Wallboard
+                    </a>
                   </>
                 )}
               </nav>
@@ -206,7 +239,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div className="flex-1 flex flex-col min-w-0 h-full relative z-0">
+        <div ref={mainRef} className="flex-1 flex flex-col min-w-0 h-full relative z-0">
           <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 border-b glass-panel sticky top-0 z-40">
             <div className="flex items-center gap-3">
               <button
@@ -226,6 +259,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={openCommand}
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
+                title="Command Palette (Ctrl+K)"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="text-xs">Cari...</span>
+                <kbd className="ml-2 text-[10px] font-mono px-1 py-0.5 rounded bg-background border border-border">⌘K</kbd>
+              </button>
+              <button
+                onClick={openCommand}
+                className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Cari"
+              >
+                <Search className="w-5 h-5" />
+              </button>
               <Link href="/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted">
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -278,6 +327,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         />
 
         <PwaInstallBanner />
+
+        <CommandPalette open={commandOpen} onClose={closeCommand} isAdmin={isAdmin} />
 
         <ResponsiveModal open={activityModalOpen} onOpenChange={setActivityModalOpen} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
           <BatchActivityForm onSuccess={() => setActivityModalOpen(false)} />

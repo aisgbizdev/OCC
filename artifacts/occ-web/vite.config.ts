@@ -43,6 +43,9 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    headers: {
+      "Clear-Site-Data": '"cache"',
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

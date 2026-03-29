@@ -1,8 +1,26 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { notificationsTable } from "@workspace/db/schema";
+import { notificationsTable, systemSettingsTable } from "@workspace/db/schema";
 import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
+
+interface DndConfig { enabled: boolean; startHour: number; endHour: number; }
+
+async function getDndConfig(userId: number): Promise<DndConfig> {
+  const key = `dnd_config_user_${userId}`;
+  const [row] = await db.select({ v: systemSettingsTable.settingValue })
+    .from(systemSettingsTable).where(eq(systemSettingsTable.settingKey, key)).limit(1);
+  if (!row?.v) return { enabled: false, startHour: 22, endHour: 7 };
+  try { return JSON.parse(row.v) as DndConfig; } catch { return { enabled: false, startHour: 22, endHour: 7 }; }
+}
+
+export async function isUserInDnd(userId: number): Promise<boolean> {
+  const cfg = await getDndConfig(userId);
+  if (!cfg.enabled) return false;
+  const hour = new Date().getHours();
+  if (cfg.startHour <= cfg.endHour) return hour >= cfg.startHour && hour < cfg.endHour;
+  return hour >= cfg.startHour || hour < cfg.endHour;
+}
 
 const router: IRouter = Router();
 
@@ -28,6 +46,41 @@ router.get("/notifications", authMiddleware, requireRole(...ALL_ROLES), async (r
     res.json({ notifications, unreadCount: unreadCount[0]?.count ?? 0 });
   } catch (error) {
     console.error("List notifications error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/notifications/dnd", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const config = await getDndConfig(req.user!.userId);
+    res.json(config);
+  } catch (error) {
+    console.error("Get DND config error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/notifications/dnd", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const { enabled, startHour, endHour } = req.body;
+    if (typeof enabled !== "boolean") { res.status(400).json({ error: "enabled (boolean) is required" }); return; }
+    const sh = Number(startHour ?? 22); const eh = Number(endHour ?? 7);
+    if (isNaN(sh) || isNaN(eh) || sh < 0 || sh > 23 || eh < 0 || eh > 23) {
+      res.status(400).json({ error: "startHour and endHour must be 0–23" }); return;
+    }
+    const config: DndConfig = { enabled, startHour: sh, endHour: eh };
+    const key = `dnd_config_user_${req.user!.userId}`;
+    const existing = await db.select({ id: systemSettingsTable.id }).from(systemSettingsTable)
+      .where(eq(systemSettingsTable.settingKey, key)).limit(1);
+    if (existing.length > 0) {
+      await db.update(systemSettingsTable).set({ settingValue: JSON.stringify(config), updatedBy: req.user!.userId })
+        .where(eq(systemSettingsTable.settingKey, key));
+    } else {
+      await db.insert(systemSettingsTable).values({ settingKey: key, settingValue: JSON.stringify(config), updatedBy: req.user!.userId });
+    }
+    res.json(config);
+  } catch (error) {
+    console.error("Set DND config error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -5,6 +5,18 @@ const SW_URL = `${import.meta.env.BASE_URL}sw.js`;
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!("serviceWorker" in navigator)) return null;
+  if (import.meta.env.DEV) {
+    // In development, unregister any old service workers to prevent stale caches
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const reg of regs) {
+      await reg.unregister();
+    }
+    const keys = await caches.keys();
+    for (const key of keys) {
+      await caches.delete(key);
+    }
+    return null;
+  }
   try {
     const reg = await navigator.serviceWorker.register(SW_URL, { scope: import.meta.env.BASE_URL });
     return reg;
