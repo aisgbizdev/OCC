@@ -1307,3 +1307,105 @@ export const UpdateSystemSettingResponse = zod.object({
   description: zod.string().optional(),
   updatedAt: zod.date().optional(),
 });
+
+/**
+ * @summary List quality error types
+ */
+export const ListQualityErrorTypesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.enum(["DEALER", "SPV", "ALL"]),
+  objectiveGroup: zod.string().nullish(),
+  description: zod.string().nullish(),
+  isActive: zod.boolean(),
+  createdAt: zod.date().optional(),
+});
+export const ListQualityErrorTypesResponse = zod.array(
+  ListQualityErrorTypesResponseItem,
+);
+
+/**
+ * @summary List quality records
+ */
+export const ListQualityRecordsQueryParams = zod.object({
+  userId: zod.coerce.number().optional(),
+  ptId: zod.coerce.number().optional(),
+  shiftId: zod.coerce.number().optional(),
+  score: zod.enum(["POOR", "AVERAGE", "PERFECT"]).optional(),
+  dateFrom: zod.date().optional(),
+  dateTo: zod.date().optional(),
+  limit: zod.coerce.number().optional(),
+});
+
+export const ListQualityRecordsResponseItem = zod
+  .object({
+    id: zod.number(),
+    userId: zod.number(),
+    errorTypeId: zod.number(),
+    occurredDate: zod.date(),
+    errorCount: zod.number(),
+    score: zod.enum(["POOR", "AVERAGE", "PERFECT"]),
+    notes: zod.string().nullish(),
+    recordedBy: zod.number(),
+    createdAt: zod.date().optional(),
+  })
+  .and(
+    zod.object({
+      userName: zod.string().nullish(),
+      userPtId: zod.number().nullish(),
+      userShiftId: zod.number().nullish(),
+      ptName: zod.string().nullish(),
+      errorTypeName: zod.string().nullish(),
+      errorTypeCategory: zod.string().nullish(),
+      objectiveGroup: zod.string().nullish(),
+    }),
+  );
+export const ListQualityRecordsResponse = zod.array(
+  ListQualityRecordsResponseItem,
+);
+
+/**
+ * @summary Create a quality record
+ */
+export const CreateQualityRecordBody = zod.object({
+  userId: zod.number(),
+  errorTypeId: zod.number(),
+  occurredDate: zod.date(),
+  errorCount: zod.number().optional(),
+  notes: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a quality record
+ */
+export const DeleteQualityRecordParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get quality summary for a period
+ */
+export const GetQualitySummaryQueryParams = zod.object({
+  dateFrom: zod.date().optional(),
+  dateTo: zod.date().optional(),
+  ptId: zod.coerce.number().optional(),
+  shiftId: zod.coerce.number().optional(),
+});
+
+export const GetQualitySummaryResponse = zod.object({
+  dateFrom: zod.date(),
+  dateTo: zod.date(),
+  summary: zod.array(
+    zod.object({
+      userId: zod.number(),
+      userName: zod.string().nullish(),
+      userPtId: zod.number().nullish(),
+      ptName: zod.string().nullish(),
+      shiftId: zod.number().nullish(),
+      shiftName: zod.string().nullish(),
+      totalErrors: zod.number(),
+      recordCount: zod.number(),
+      score: zod.enum(["POOR", "AVERAGE", "PERFECT"]),
+    }),
+  ),
+});

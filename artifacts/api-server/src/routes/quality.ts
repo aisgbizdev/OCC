@@ -5,14 +5,15 @@ import {
   qualityRecordsTable,
   usersTable,
   ptsTable,
+  shiftsTable,
 } from "@workspace/db/schema";
-import { eq, and, gte, lte, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System"];
-const MANAGEMENT = ["Owner", "Direksi", "Chief Dealing", "Admin System"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+const MANAGEMENT    = ["Owner", "Chief Dealing", "Admin System", "Superadmin"];
 
 function computeScore(errorCount: number): "POOR" | "AVERAGE" | "PERFECT" {
   if (errorCount === 0) return "PERFECT";
@@ -36,16 +37,47 @@ router.get("/quality/error-types", authMiddleware, requireRole(...SPV_AND_ABOVE)
 
 router.get("/quality/records", authMiddleware, requireRole(...SPV_AND_ABOVE), async (req, res) => {
   try {
+    const { userId, score, dateFrom, dateTo, ptId: ptIdQ, shiftId: shiftIdQ, limit = "200" } = req.query as Record<string, string>;
+
+    const roleName  = req.user!.roleName;
+    const myPtId    = req.user!.ptId;
+
     const conditions: SQL[] = [];
 
-    if (req.query.userId) conditions.push(eq(qualityRecordsTable.userId, Number(req.query.userId)));
-    if (req.query.errorTypeId) conditions.push(eq(qualityRecordsTable.errorTypeId, Number(req.query.errorTypeId)));
-    if (req.query.score) conditions.push(eq(qualityRecordsTable.score, req.query.score as "POOR" | "AVERAGE" | "PERFECT"));
-    if (req.query.dateFrom) conditions.push(gte(qualityRecordsTable.occurredDate, req.query.dateFrom as string));
-    if (req.query.dateTo) conditions.push(lte(qualityRecordsTable.occurredDate, req.query.dateTo as string));
+    // Role-based PT enforcement at the DB query level
+    if (roleName === "SPV Dealing" && myPtId) {
+      conditions.push(eq(usersTable.ptId, myPtId));
+    } else if (ptIdQ) {
+      conditions.push(eq(usersTable.ptId, Number(ptIdQ)));
+    }
 
-    const roleName = req.user!.roleName;
-    const ptId = req.user!.ptId;
+    if (userId) conditions.push(eq(qualityRecordsTable.userId, Number(userId)));
+    if (score)  conditions.push(eq(qualityRecordsTable.score, score as "POOR" | "AVERAGE" | "PERFECT"));
+
+    // Date filters on occurredDate
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const effectiveDateFrom = dateFrom || monthStart;
+    const effectiveDateTo   = dateTo   || now.toISOString().split("T")[0];
+    conditions.push(gte(qualityRecordsTable.occurredDate, effectiveDateFrom));
+    conditions.push(lte(qualityRecordsTable.occurredDate, effectiveDateTo));
+
+    // Shift filter: find users in that shift then filter records by userId
+    let shiftUserIds: number[] | null = null;
+    if (shiftIdQ) {
+      const shiftUsers = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.shiftId, Number(shiftIdQ)));
+      shiftUserIds = shiftUsers.map(u => u.id);
+      if (shiftUserIds.length === 0) {
+        return res.json([]);
+      }
+    }
+
+    if (shiftUserIds && shiftUserIds.length > 0) {
+      conditions.push(inArray(qualityRecordsTable.userId, shiftUserIds));
+    }
 
     const records = await db
       .select({
@@ -60,22 +92,19 @@ router.get("/quality/records", authMiddleware, requireRole(...SPV_AND_ABOVE), as
         createdAt: qualityRecordsTable.createdAt,
         userName: usersTable.name,
         userPtId: usersTable.ptId,
+        userShiftId: usersTable.shiftId,
+        ptName: ptsTable.name,
         errorTypeName: qualityErrorTypesTable.name,
         errorTypeCategory: qualityErrorTypesTable.category,
         objectiveGroup: qualityErrorTypesTable.objectiveGroup,
       })
       .from(qualityRecordsTable)
       .leftJoin(usersTable, eq(qualityRecordsTable.userId, usersTable.id))
+      .leftJoin(ptsTable, eq(usersTable.ptId, ptsTable.id))
       .leftJoin(qualityErrorTypesTable, eq(qualityRecordsTable.errorTypeId, qualityErrorTypesTable.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(and(...conditions))
       .orderBy(desc(qualityRecordsTable.createdAt))
-      .limit(Number(req.query.limit) || 200);
-
-    // SPV can only see records for users in the same PT
-    if (roleName === "SPV Dealing" && ptId) {
-      const filtered = records.filter(r => r.userPtId === ptId);
-      return res.json(filtered);
-    }
+      .limit(Math.min(Number(limit) || 200, 500));
 
     res.json(records);
   } catch (error) {
@@ -89,25 +118,37 @@ router.post("/quality/records", authMiddleware, requireRole(...SPV_AND_ABOVE), a
     const { userId, errorTypeId, occurredDate, errorCount, notes } = req.body;
 
     if (!userId || !errorTypeId || !occurredDate) {
-      res.status(400).json({ error: "userId, errorTypeId, and occurredDate are required" });
+      res.status(400).json({ error: "userId, errorTypeId, dan occurredDate wajib diisi" });
       return;
     }
 
-    const count = Number(errorCount) || 1;
-    if (count < 0) { res.status(400).json({ error: "errorCount must be >= 0" }); return; }
+    const count = Number(errorCount);
+    if (isNaN(count) || count < 0) {
+      res.status(400).json({ error: "errorCount harus berupa angka >= 0" });
+      return;
+    }
 
     const score = computeScore(count);
 
-    const roleName = req.user!.roleName;
+    const roleName    = req.user!.roleName;
     const recorderPtId = req.user!.ptId;
 
-    // SPV can only record for users in their PT
-    if (roleName === "SPV Dealing" && recorderPtId) {
-      const [targetUser] = await db.select({ ptId: usersTable.ptId }).from(usersTable).where(eq(usersTable.id, Number(userId))).limit(1);
-      if (!targetUser || targetUser.ptId !== recorderPtId) {
-        res.status(403).json({ error: "Anda hanya bisa mencatat kesalahan untuk anggota tim di PT Anda" });
-        return;
-      }
+    // SPV can only record for users within their own PT — enforced at query level
+    const [targetUser] = await db
+      .select({ id: usersTable.id, ptId: usersTable.ptId, roleName: sql<string>`r.name` })
+      .from(usersTable)
+      .leftJoin(sql`roles r`, sql`r.id = ${usersTable.roleId}`)
+      .where(eq(usersTable.id, Number(userId)))
+      .limit(1);
+
+    if (!targetUser) {
+      res.status(404).json({ error: "User tidak ditemukan" });
+      return;
+    }
+
+    if (roleName === "SPV Dealing" && recorderPtId && targetUser.ptId !== recorderPtId) {
+      res.status(403).json({ error: "Anda hanya bisa mencatat kesalahan untuk anggota tim di PT Anda" });
+      return;
     }
 
     const [record] = await db.insert(qualityRecordsTable).values({
@@ -129,8 +170,17 @@ router.post("/quality/records", authMiddleware, requireRole(...SPV_AND_ABOVE), a
 
 router.delete("/quality/records/:id", authMiddleware, requireRole(...MANAGEMENT), async (req, res) => {
   try {
-    const [record] = await db.select().from(qualityRecordsTable).where(eq(qualityRecordsTable.id, Number(req.params.id))).limit(1);
-    if (!record) { res.status(404).json({ error: "Record not found" }); return; }
+    const [record] = await db
+      .select()
+      .from(qualityRecordsTable)
+      .where(eq(qualityRecordsTable.id, Number(req.params.id)))
+      .limit(1);
+
+    if (!record) {
+      res.status(404).json({ error: "Record tidak ditemukan" });
+      return;
+    }
+
     await db.delete(qualityRecordsTable).where(eq(qualityRecordsTable.id, Number(req.params.id)));
     res.json({ success: true });
   } catch (error) {
@@ -141,17 +191,32 @@ router.delete("/quality/records/:id", authMiddleware, requireRole(...MANAGEMENT)
 
 router.get("/quality/summary", authMiddleware, requireRole(...SPV_AND_ABOVE), async (req, res) => {
   try {
+    const { dateFrom: qFrom, dateTo: qTo, ptId: ptIdQ, shiftId: shiftIdQ } = req.query as Record<string, string>;
+
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const dateFrom = (req.query.dateFrom as string) || monthStart;
-    const dateTo = (req.query.dateTo as string) || now.toISOString().split("T")[0];
+    const dateFrom = qFrom || monthStart;
+    const dateTo   = qTo   || now.toISOString().split("T")[0];
 
     const roleName = req.user!.roleName;
-    const ptId = req.user!.ptId;
+    const myPtId   = req.user!.ptId;
 
-    const ptFilter: SQL | undefined = roleName === "SPV Dealing" && ptId
-      ? eq(usersTable.ptId, ptId)
-      : undefined;
+    const conditions: SQL[] = [
+      gte(qualityRecordsTable.occurredDate, dateFrom),
+      lte(qualityRecordsTable.occurredDate, dateTo),
+    ];
+
+    // PT-level scoping
+    if (roleName === "SPV Dealing" && myPtId) {
+      conditions.push(eq(usersTable.ptId, myPtId));
+    } else if (ptIdQ) {
+      conditions.push(eq(usersTable.ptId, Number(ptIdQ)));
+    }
+
+    // Shift filter
+    if (shiftIdQ) {
+      conditions.push(eq(usersTable.shiftId, Number(shiftIdQ)));
+    }
 
     const rows = await db
       .select({
@@ -159,22 +224,25 @@ router.get("/quality/summary", authMiddleware, requireRole(...SPV_AND_ABOVE), as
         userName: usersTable.name,
         userPtId: usersTable.ptId,
         ptName: ptsTable.name,
+        shiftId: usersTable.shiftId,
         totalErrors: sql<number>`CAST(SUM(${qualityRecordsTable.errorCount}) AS INTEGER)`,
         recordCount: sql<number>`CAST(COUNT(*) AS INTEGER)`,
       })
       .from(qualityRecordsTable)
       .leftJoin(usersTable, eq(qualityRecordsTable.userId, usersTable.id))
       .leftJoin(ptsTable, eq(usersTable.ptId, ptsTable.id))
-      .where(and(
-        gte(qualityRecordsTable.occurredDate, dateFrom),
-        lte(qualityRecordsTable.occurredDate, dateTo),
-        ptFilter,
-      ))
-      .groupBy(qualityRecordsTable.userId, usersTable.name, usersTable.ptId, ptsTable.name)
+      .where(and(...conditions))
+      .groupBy(qualityRecordsTable.userId, usersTable.name, usersTable.ptId, ptsTable.name, usersTable.shiftId)
       .orderBy(desc(sql`SUM(${qualityRecordsTable.errorCount})`));
+
+    // Enrich with shift names
+    const shiftMap = new Map<number, string>();
+    const allShifts = await db.select({ id: shiftsTable.id, name: shiftsTable.name }).from(shiftsTable);
+    for (const s of allShifts) shiftMap.set(s.id, s.name);
 
     const summary = rows.map(r => ({
       ...r,
+      shiftName: r.shiftId ? (shiftMap.get(r.shiftId) ?? null) : null,
       score: computeScore(r.totalErrors),
     }));
 

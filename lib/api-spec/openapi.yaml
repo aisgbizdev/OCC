@@ -1613,6 +1613,138 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SystemSetting"
+  /quality/error-types:
+    get:
+      operationId: listQualityErrorTypes
+      tags: [quality]
+      summary: List quality error types
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of error types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QualityErrorType"
+  /quality/records:
+    get:
+      operationId: listQualityRecords
+      tags: [quality]
+      summary: List quality records
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+        - name: shiftId
+          in: query
+          schema:
+            type: integer
+        - name: score
+          in: query
+          schema:
+            type: string
+            enum: [POOR, AVERAGE, PERFECT]
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of quality records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QualityRecordWithRelations"
+    post:
+      operationId: createQualityRecord
+      tags: [quality]
+      summary: Create a quality record
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQualityRecordRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityRecord"
+  /quality/records/{id}:
+    delete:
+      operationId: deleteQualityRecord
+      tags: [quality]
+      summary: Delete a quality record
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+  /quality/summary:
+    get:
+      operationId: getQualitySummary
+      tags: [quality]
+      summary: Get quality summary for a period
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: ptId
+          in: query
+          schema:
+            type: integer
+        - name: shiftId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quality summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualitySummaryResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -2463,3 +2595,134 @@ components:
         description:
           type: string
       required: [settingValue]
+    QualityErrorType:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+          enum: [DEALER, SPV, ALL]
+        objectiveGroup:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, category, isActive]
+    QualityRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        errorTypeId:
+          type: integer
+        occurredDate:
+          type: string
+          format: date
+        errorCount:
+          type: integer
+        score:
+          type: string
+          enum: [POOR, AVERAGE, PERFECT]
+        notes:
+          type: string
+          nullable: true
+        recordedBy:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, errorTypeId, occurredDate, errorCount, score, recordedBy]
+    QualityRecordWithRelations:
+      allOf:
+        - $ref: "#/components/schemas/QualityRecord"
+        - type: object
+          properties:
+            userName:
+              type: string
+              nullable: true
+            userPtId:
+              type: integer
+              nullable: true
+            userShiftId:
+              type: integer
+              nullable: true
+            ptName:
+              type: string
+              nullable: true
+            errorTypeName:
+              type: string
+              nullable: true
+            errorTypeCategory:
+              type: string
+              nullable: true
+            objectiveGroup:
+              type: string
+              nullable: true
+    CreateQualityRecordRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        errorTypeId:
+          type: integer
+        occurredDate:
+          type: string
+          format: date
+        errorCount:
+          type: integer
+        notes:
+          type: string
+      required: [userId, errorTypeId, occurredDate]
+    QualitySummaryItem:
+      type: object
+      properties:
+        userId:
+          type: integer
+        userName:
+          type: string
+          nullable: true
+        userPtId:
+          type: integer
+          nullable: true
+        ptName:
+          type: string
+          nullable: true
+        shiftId:
+          type: integer
+          nullable: true
+        shiftName:
+          type: string
+          nullable: true
+        totalErrors:
+          type: integer
+        recordCount:
+          type: integer
+        score:
+          type: string
+          enum: [POOR, AVERAGE, PERFECT]
+      required: [userId, totalErrors, recordCount, score]
+    QualitySummaryResponse:
+      type: object
+      properties:
+        dateFrom:
+          type: string
+          format: date
+        dateTo:
+          type: string
+          format: date
+        summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/QualitySummaryItem"
+      required: [dateFrom, dateTo, summary]

@@ -462,6 +462,91 @@ export interface UpdateSystemSettingRequest {
   description?: string;
 }
 
+export type QualityErrorTypeCategory =
+  (typeof QualityErrorTypeCategory)[keyof typeof QualityErrorTypeCategory];
+
+export const QualityErrorTypeCategory = {
+  DEALER: "DEALER",
+  SPV: "SPV",
+  ALL: "ALL",
+} as const;
+
+export interface QualityErrorType {
+  id: number;
+  name: string;
+  category: QualityErrorTypeCategory;
+  objectiveGroup?: string | null;
+  description?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export type QualityRecordScore =
+  (typeof QualityRecordScore)[keyof typeof QualityRecordScore];
+
+export const QualityRecordScore = {
+  POOR: "POOR",
+  AVERAGE: "AVERAGE",
+  PERFECT: "PERFECT",
+} as const;
+
+export interface QualityRecord {
+  id: number;
+  userId: number;
+  errorTypeId: number;
+  occurredDate: string;
+  errorCount: number;
+  score: QualityRecordScore;
+  notes?: string | null;
+  recordedBy: number;
+  createdAt?: string;
+}
+
+export type QualityRecordWithRelations = QualityRecord & {
+  userName?: string | null;
+  userPtId?: number | null;
+  userShiftId?: number | null;
+  ptName?: string | null;
+  errorTypeName?: string | null;
+  errorTypeCategory?: string | null;
+  objectiveGroup?: string | null;
+};
+
+export interface CreateQualityRecordRequest {
+  userId: number;
+  errorTypeId: number;
+  occurredDate: string;
+  errorCount?: number;
+  notes?: string;
+}
+
+export type QualitySummaryItemScore =
+  (typeof QualitySummaryItemScore)[keyof typeof QualitySummaryItemScore];
+
+export const QualitySummaryItemScore = {
+  POOR: "POOR",
+  AVERAGE: "AVERAGE",
+  PERFECT: "PERFECT",
+} as const;
+
+export interface QualitySummaryItem {
+  userId: number;
+  userName?: string | null;
+  userPtId?: number | null;
+  ptName?: string | null;
+  shiftId?: number | null;
+  shiftName?: string | null;
+  totalErrors: number;
+  recordCount: number;
+  score: QualitySummaryItemScore;
+}
+
+export interface QualitySummaryResponse {
+  dateFrom: string;
+  dateTo: string;
+  summary: QualitySummaryItem[];
+}
+
 export type ListUsersParams = {
   ptId?: number;
   roleId?: number;
@@ -541,3 +626,29 @@ export type ListAuditLogsParams = {
 export type ListAuditLogs200Item = { [key: string]: unknown };
 
 export type CheckInactivity200 = { [key: string]: unknown };
+
+export type ListQualityRecordsParams = {
+  userId?: number;
+  ptId?: number;
+  shiftId?: number;
+  score?: ListQualityRecordsScore;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+};
+
+export type ListQualityRecordsScore =
+  (typeof ListQualityRecordsScore)[keyof typeof ListQualityRecordsScore];
+
+export const ListQualityRecordsScore = {
+  POOR: "POOR",
+  AVERAGE: "AVERAGE",
+  PERFECT: "PERFECT",
+} as const;
+
+export type GetQualitySummaryParams = {
+  dateFrom?: string;
+  dateTo?: string;
+  ptId?: number;
+  shiftId?: number;
+};

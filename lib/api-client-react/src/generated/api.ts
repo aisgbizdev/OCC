@@ -37,6 +37,7 @@ import type {
   CreateHandoverLogRequest,
   CreateMessageRequest,
   CreatePtRequest,
+  CreateQualityRecordRequest,
   CreateShiftRequest,
   CreateTaskCommentRequest,
   CreateTaskRequest,
@@ -44,6 +45,7 @@ import type {
   ErrorResponse,
   GenerateKpiSnapshotsBody,
   GetKpiLeaderboardParams,
+  GetQualitySummaryParams,
   GetUserKpi200,
   HandoverLogWithRelations,
   HealthStatus,
@@ -59,6 +61,7 @@ import type {
   ListKpiSnapshotsParams,
   ListNotifications200,
   ListNotificationsParams,
+  ListQualityRecordsParams,
   ListTasksParams,
   ListUsersParams,
   LoginRequest,
@@ -66,6 +69,10 @@ import type {
   MessageResponse,
   MessageWithSender,
   Pt,
+  QualityErrorType,
+  QualityRecord,
+  QualityRecordWithRelations,
+  QualitySummaryResponse,
   SendChatMessageRequest,
   Shift,
   SystemSetting,
@@ -6388,3 +6395,446 @@ export const useUpdateSystemSetting = <
 > => {
   return useMutation(getUpdateSystemSettingMutationOptions(options));
 };
+
+/**
+ * @summary List quality error types
+ */
+export const getListQualityErrorTypesUrl = () => {
+  return `/api/quality/error-types`;
+};
+
+export const listQualityErrorTypes = async (
+  options?: RequestInit,
+): Promise<QualityErrorType[]> => {
+  return customFetch<QualityErrorType[]>(getListQualityErrorTypesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListQualityErrorTypesQueryKey = () => {
+  return [`/api/quality/error-types`] as const;
+};
+
+export const getListQualityErrorTypesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listQualityErrorTypes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQualityErrorTypes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListQualityErrorTypesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listQualityErrorTypes>>
+  > = ({ signal }) => listQualityErrorTypes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listQualityErrorTypes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListQualityErrorTypesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listQualityErrorTypes>>
+>;
+export type ListQualityErrorTypesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List quality error types
+ */
+
+export function useListQualityErrorTypes<
+  TData = Awaited<ReturnType<typeof listQualityErrorTypes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQualityErrorTypes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListQualityErrorTypesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List quality records
+ */
+export const getListQualityRecordsUrl = (params?: ListQualityRecordsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/quality/records?${stringifiedParams}`
+    : `/api/quality/records`;
+};
+
+export const listQualityRecords = async (
+  params?: ListQualityRecordsParams,
+  options?: RequestInit,
+): Promise<QualityRecordWithRelations[]> => {
+  return customFetch<QualityRecordWithRelations[]>(
+    getListQualityRecordsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListQualityRecordsQueryKey = (
+  params?: ListQualityRecordsParams,
+) => {
+  return [`/api/quality/records`, ...(params ? [params] : [])] as const;
+};
+
+export const getListQualityRecordsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listQualityRecords>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListQualityRecordsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listQualityRecords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListQualityRecordsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listQualityRecords>>
+  > = ({ signal }) => listQualityRecords(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listQualityRecords>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListQualityRecordsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listQualityRecords>>
+>;
+export type ListQualityRecordsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List quality records
+ */
+
+export function useListQualityRecords<
+  TData = Awaited<ReturnType<typeof listQualityRecords>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListQualityRecordsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listQualityRecords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListQualityRecordsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a quality record
+ */
+export const getCreateQualityRecordUrl = () => {
+  return `/api/quality/records`;
+};
+
+export const createQualityRecord = async (
+  createQualityRecordRequest: CreateQualityRecordRequest,
+  options?: RequestInit,
+): Promise<QualityRecord> => {
+  return customFetch<QualityRecord>(getCreateQualityRecordUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createQualityRecordRequest),
+  });
+};
+
+export const getCreateQualityRecordMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQualityRecord>>,
+    TError,
+    { data: BodyType<CreateQualityRecordRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createQualityRecord>>,
+  TError,
+  { data: BodyType<CreateQualityRecordRequest> },
+  TContext
+> => {
+  const mutationKey = ["createQualityRecord"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createQualityRecord>>,
+    { data: BodyType<CreateQualityRecordRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createQualityRecord(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateQualityRecordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createQualityRecord>>
+>;
+export type CreateQualityRecordMutationBody =
+  BodyType<CreateQualityRecordRequest>;
+export type CreateQualityRecordMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a quality record
+ */
+export const useCreateQualityRecord = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQualityRecord>>,
+    TError,
+    { data: BodyType<CreateQualityRecordRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createQualityRecord>>,
+  TError,
+  { data: BodyType<CreateQualityRecordRequest> },
+  TContext
+> => {
+  return useMutation(getCreateQualityRecordMutationOptions(options));
+};
+
+/**
+ * @summary Delete a quality record
+ */
+export const getDeleteQualityRecordUrl = (id: number) => {
+  return `/api/quality/records/${id}`;
+};
+
+export const deleteQualityRecord = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteQualityRecordUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteQualityRecordMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteQualityRecord>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteQualityRecord>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteQualityRecord"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteQualityRecord>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteQualityRecord(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteQualityRecordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteQualityRecord>>
+>;
+
+export type DeleteQualityRecordMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a quality record
+ */
+export const useDeleteQualityRecord = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteQualityRecord>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteQualityRecord>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteQualityRecordMutationOptions(options));
+};
+
+/**
+ * @summary Get quality summary for a period
+ */
+export const getGetQualitySummaryUrl = (params?: GetQualitySummaryParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/quality/summary?${stringifiedParams}`
+    : `/api/quality/summary`;
+};
+
+export const getQualitySummary = async (
+  params?: GetQualitySummaryParams,
+  options?: RequestInit,
+): Promise<QualitySummaryResponse> => {
+  return customFetch<QualitySummaryResponse>(getGetQualitySummaryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetQualitySummaryQueryKey = (
+  params?: GetQualitySummaryParams,
+) => {
+  return [`/api/quality/summary`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetQualitySummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getQualitySummary>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetQualitySummaryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getQualitySummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetQualitySummaryQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getQualitySummary>>
+  > = ({ signal }) => getQualitySummary(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getQualitySummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetQualitySummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getQualitySummary>>
+>;
+export type GetQualitySummaryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get quality summary for a period
+ */
+
+export function useGetQualitySummary<
+  TData = Awaited<ReturnType<typeof getQualitySummary>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetQualitySummaryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getQualitySummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetQualitySummaryQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
