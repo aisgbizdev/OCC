@@ -1314,7 +1314,7 @@ export const UpdateSystemSettingResponse = zod.object({
 export const ListQualityErrorTypesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  category: zod.enum(["DEALER", "SPV", "ALL"]),
+  category: zod.enum(["DEALER", "SPV", "ADMIN", "ALL"]),
   objectiveGroup: zod.string().nullish(),
   description: zod.string().nullish(),
   isActive: zod.boolean(),

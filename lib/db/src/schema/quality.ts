@@ -10,7 +10,7 @@ export const qualityErrorTypesTable = pgTable("quality_error_types", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 150 }).notNull(),
   description: text("description"),
-  category: varchar("category", { length: 20 }).notNull().default("ALL"),
+  category: varchar("category", { length: 20 }).notNull().default("ALL").$type<"DEALER" | "SPV" | "ADMIN" | "ALL">(),
   objectiveGroup: varchar("objective_group", { length: 100 }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

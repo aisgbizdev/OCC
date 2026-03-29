@@ -2604,7 +2604,7 @@ components:
           type: string
         category:
           type: string
-          enum: [DEALER, SPV, ALL]
+          enum: [DEALER, SPV, ADMIN, ALL]
         objectiveGroup:
           type: string
           nullable: true

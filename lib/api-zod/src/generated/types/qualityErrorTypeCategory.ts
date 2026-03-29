@@ -12,5 +12,6 @@ export type QualityErrorTypeCategory =
 export const QualityErrorTypeCategory = {
   DEALER: "DEALER",
   SPV: "SPV",
+  ADMIN: "ADMIN",
   ALL: "ALL",
 } as const;

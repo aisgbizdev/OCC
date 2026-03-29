@@ -12,8 +12,8 @@ import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
-const MANAGEMENT    = ["Owner", "Chief Dealing", "Admin System", "Superadmin"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Superadmin"];
+const MANAGEMENT    = ["Owner", "Chief Dealing", "Superadmin"];
 
 function computeScore(errorCount: number): "POOR" | "AVERAGE" | "PERFECT" {
   if (errorCount === 0) return "PERFECT";

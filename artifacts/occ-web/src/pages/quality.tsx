@@ -86,8 +86,8 @@ export default function Quality() {
   const roleName = user?.roleName ?? "";
   const myPtId   = (user as { ptId?: number })?.ptId;
   const isSPV    = roleName === "SPV Dealing";
-  const isManagement = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"].includes(roleName);
-  const canLog   = isSPV || isManagement;
+  const isManagement = ["Owner", "Direksi", "Chief Dealing", "Superadmin"].includes(roleName);
+  const canLog = isSPV || isManagement;
 
   // ── Master data ───────────────────────────────────────────────────────────
   const { data: pts = [] }    = useListPts();
@@ -154,11 +154,13 @@ export default function Quality() {
       toast({ title: "Lengkapi semua field wajib", variant: "destructive" }); return;
     }
     createRecord({
-      userId: Number(formUserId),
-      errorTypeId: Number(formErrorTypeId),
-      occurredDate: formDate,
-      errorCount: Number(formCount) || 0,
-      notes: formNotes || undefined,
+      data: {
+        userId: Number(formUserId),
+        errorTypeId: Number(formErrorTypeId),
+        occurredDate: formDate,
+        errorCount: Number(formCount) || 0,
+        notes: formNotes || undefined,
+      },
     });
   }
 
