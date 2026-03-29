@@ -354,7 +354,7 @@ KPI dihitung **otomatis** setiap kali ada aktivitas yang dilog atau diedit.
 | Periode | Keterangan |
 |---|---|
 | **Harian** | Akumulasi poin hari ini |
-| **Mingguan** | Akumulasi poin minggu ini (Senin–Minggu) |
+| **Mingguan** | Akumulasi poin minggu ini (Minggu–Sabtu) |
 | **Bulanan** | Akumulasi poin bulan ini |
 | **Kuartalan** | Akumulasi poin kuartal berjalan |
 | **Tahunan** | Akumulasi poin tahun ini |
@@ -462,7 +462,7 @@ Sistem menghitung durasi sejak keluhan dibuat dan menampilkan status:
 
 Timer SLA berhenti saat status keluhan diubah ke **"Resolved"** atau **"Closed"**.
 
-> **Catatan:** Ambang batas SLA (24 jam dan 72 jam) saat ini bersifat tetap di dalam sistem, tidak dapat diubah melalui Pengaturan Sistem.
+> **Catatan:** Parameter `complaint_sla_warning_hours` (default: 24 jam) dan `complaint_sla_critical_hours` (default: 72 jam) tersedia di halaman Pengaturan Sistem, namun **perhitungan SLA saat ini menggunakan nilai tetap** 24 jam dan 72 jam di backend — perubahan di UI Pengaturan Sistem belum langsung mempengaruhi kalkulasi SLA keluhan.
 
 ### Status Keluhan & Alur Transisi
 
@@ -809,16 +809,23 @@ Kelola definisi shift: nama (Pagi/Siang/Malam), jam mulai, jam selesai.
 
 ## 18. Pengaturan Sistem
 
-Hanya bisa diakses dan diubah oleh: **Admin System, Owner, Superadmin**
+**Akses halaman Pengaturan Sistem:**
+- **Lihat parameter** (read-only): Semua role
+- **Ubah parameter**: Hanya Owner, Admin System, Superadmin
+- Link menu "Pengaturan" di sidebar: hanya tampil untuk Owner, Admin System, Superadmin
 
 ### Parameter yang Bisa Dikonfigurasi
 
-| Parameter | Satuan | Keterangan |
+| Parameter | Nilai Default | Keterangan |
 |---|---|---|
-| **Target Poin Harian** | poin | Target KPI poin per dealer per hari |
-| **Batas Warning Inaktivitas** | jam | Jam tanpa aktivitas sebelum peringatan muncul |
-| **Batas Kritis Inaktivitas** | jam | Jam tanpa aktivitas sebelum alert kritis |
-| **Jendela Edit Aktivitas** | menit | Berapa menit log aktivitas bisa diedit (default: 60) |
+| **Target Poin Harian** | 40 poin | Target KPI poin per dealer per hari |
+| **Batas Warning Inaktivitas** | 2 jam | Jam tanpa aktivitas sebelum peringatan muncul |
+| **Batas Kritis Inaktivitas** | 4 jam | Jam tanpa aktivitas sebelum alert kritis |
+| **Jendela Edit Aktivitas** | 60 menit | Berapa menit log aktivitas bisa diedit setelah dibuat |
+| **SLA Warning Keluhan** | 24 jam | Target tampil di UI; backend masih hardcoded* |
+| **SLA Kritis Keluhan** | 72 jam | Target tampil di UI; backend masih hardcoded* |
+
+> *Parameter SLA Keluhan tersimpan di database dan tampil di halaman Pengaturan Sistem, namun **kalkulasi SLA di backend complaint route belum membaca dari database** — saat ini masih menggunakan nilai tetap 24 jam dan 72 jam. Nilai default sudah sesuai.
 
 ### Cara Edit Parameter
 
