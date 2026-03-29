@@ -71,7 +71,7 @@ router.get("/quality/records", authMiddleware, requireRole(...SPV_AND_ABOVE), as
         .where(eq(usersTable.shiftId, Number(shiftIdQ)));
       shiftUserIds = shiftUsers.map(u => u.id);
       if (shiftUserIds.length === 0) {
-        return res.json([]);
+        res.json([]); return;
       }
     }
 
