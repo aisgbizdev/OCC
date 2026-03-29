@@ -15,7 +15,7 @@ import bcryptjs from "bcryptjs";
 
 // Seed version marker — update this email whenever the seed data changes
 // to force a reseed on any environment that still has the old data.
-const SEED_MARKER_EMAIL = "kiki@occ.id";
+const SEED_MARKER_EMAIL = "kiki@occ.id.v17-46cabang";
 
 async function seed() {
   console.log("Seeding OCC database...");
@@ -139,11 +139,57 @@ async function seed() {
     const branches = await db
       .insert(branchesTable)
       .values([
-        { ptId: pts[0].id, name: "Pusat Jakarta", city: "Jakarta" },
-        { ptId: pts[1].id, name: "Pusat Jakarta", city: "Jakarta" },
-        { ptId: pts[2].id, name: "Pusat Jakarta", city: "Jakarta" },
-        { ptId: pts[3].id, name: "Pusat Jakarta", city: "Jakarta" },
-        { ptId: pts[4].id, name: "Pusat Jakarta", city: "Jakarta" },
+        // SGB — 5 cabang
+        { ptId: pts[0].id, name: "BALI",       city: "Bali"       },
+        { ptId: pts[0].id, name: "MAKASSAR",   city: "Makassar"   },
+        { ptId: pts[0].id, name: "PALEMBANG",  city: "Palembang"  },
+        { ptId: pts[0].id, name: "SEMARANG",   city: "Semarang"   },
+        { ptId: pts[0].id, name: "TCC",        city: "Jakarta"    },
+        // RFB — 14 cabang
+        { ptId: pts[1].id, name: "AXA",        city: "Jakarta"    },
+        { ptId: pts[1].id, name: "AXA 2",      city: "Jakarta"    },
+        { ptId: pts[1].id, name: "AXA 3",      city: "Jakarta"    },
+        { ptId: pts[1].id, name: "BALIKPAPAN", city: "Balikpapan" },
+        { ptId: pts[1].id, name: "BANDUNG",    city: "Bandung"    },
+        { ptId: pts[1].id, name: "DBS",        city: "Jakarta"    },
+        { ptId: pts[1].id, name: "JOGYA",      city: "Yogyakarta" },
+        { ptId: pts[1].id, name: "MEDAN",      city: "Medan"      },
+        { ptId: pts[1].id, name: "PALEMBANG",  city: "Palembang"  },
+        { ptId: pts[1].id, name: "PEKANBARU",  city: "Pekanbaru"  },
+        { ptId: pts[1].id, name: "SEMARANG",   city: "Semarang"   },
+        { ptId: pts[1].id, name: "SOLO",       city: "Solo"       },
+        { ptId: pts[1].id, name: "SURABAYA",   city: "Surabaya"   },
+        { ptId: pts[1].id, name: "SURABAYA 7", city: "Surabaya"   },
+        // KPF — 7 cabang
+        { ptId: pts[2].id, name: "BALI",       city: "Bali"       },
+        { ptId: pts[2].id, name: "BANDUNG",    city: "Bandung"    },
+        { ptId: pts[2].id, name: "JOGYA",      city: "Yogyakarta" },
+        { ptId: pts[2].id, name: "MAKASSAR",   city: "Makassar"   },
+        { ptId: pts[2].id, name: "MAREIN",     city: "Jakarta"    },
+        { ptId: pts[2].id, name: "SEMARANG",   city: "Semarang"   },
+        { ptId: pts[2].id, name: "SURABAYA",   city: "Surabaya"   },
+        // BPF — 11 cabang
+        { ptId: pts[3].id, name: "BANDUNG",    city: "Bandung"    },
+        { ptId: pts[3].id, name: "BANJARMASIN",city: "Banjarmasin"},
+        { ptId: pts[3].id, name: "ET",         city: "Jakarta"    },
+        { ptId: pts[3].id, name: "JAMBI",      city: "Jambi"      },
+        { ptId: pts[3].id, name: "LAMPUNG",    city: "Lampung"    },
+        { ptId: pts[3].id, name: "MEDAN",      city: "Medan"      },
+        { ptId: pts[3].id, name: "MLNG",       city: "Malang"     },
+        { ptId: pts[3].id, name: "PEKANBARU",  city: "Pekanbaru"  },
+        { ptId: pts[3].id, name: "PONTK",      city: "Pontianak"  },
+        { ptId: pts[3].id, name: "SEMARANG",   city: "Semarang"   },
+        { ptId: pts[3].id, name: "SURABAYA",   city: "Surabaya"   },
+        // EWF — 9 cabang
+        { ptId: pts[4].id, name: "CIREBON",              city: "Cirebon"  },
+        { ptId: pts[4].id, name: "CYBER",                city: "Jakarta"  },
+        { ptId: pts[4].id, name: "MEDAN",                city: "Medan"    },
+        { ptId: pts[4].id, name: "MNDO",                 city: "Manado"   },
+        { ptId: pts[4].id, name: "SBY2",                 city: "Surabaya" },
+        { ptId: pts[4].id, name: "SMG3",                 city: "Semarang" },
+        { ptId: pts[4].id, name: "SSC",                  city: "Jakarta"  },
+        { ptId: pts[4].id, name: "SURABAYA 6 (EWF) (ALBET)",  city: "Surabaya" },
+        { ptId: pts[4].id, name: "SURABAYA 6 (EWF) (M NAIM)", city: "Surabaya" },
       ])
       .returning();
     console.log(`Created ${branches.length} branches`);
@@ -186,11 +232,24 @@ async function seed() {
 
     const pw = await bcryptjs.hash("password123", 10);
 
-    const sgb = pts[0]; const b0 = branches[0];
-    const rfb = pts[1]; const b1 = branches[1];
-    const kpf = pts[2]; const b2 = branches[2];
-    const bpf = pts[3]; const b3 = branches[3];
-    const ewf = pts[4]; const b4 = branches[4];
+    const sgb = pts[0];
+    const rfb = pts[1];
+    const kpf = pts[2];
+    const bpf = pts[3];
+    const ewf = pts[4];
+
+    // Pick first branch for each PT by scoping on ptId — robust against insertion-order changes
+    const firstBranchByPtId = new Map(
+      [sgb, rfb, kpf, bpf, ewf].map((pt) => [
+        pt.id,
+        branches.find((b) => b.ptId === pt.id)!,
+      ])
+    );
+    const b0 = firstBranchByPtId.get(sgb.id)!;
+    const b1 = firstBranchByPtId.get(rfb.id)!;
+    const b2 = firstBranchByPtId.get(kpf.id)!;
+    const b3 = firstBranchByPtId.get(bpf.id)!;
+    const b4 = firstBranchByPtId.get(ewf.id)!;
     const [pagi, siang, malam] = shifts;
 
     await db.insert(usersTable).values([
