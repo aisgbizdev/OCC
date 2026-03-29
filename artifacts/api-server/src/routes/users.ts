@@ -90,16 +90,43 @@ router.get("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "C
 
 router.put("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing"), async (req, res) => {
   try {
+    const roleName = req.user!.roleName;
+    const isSuperAdmin = roleName === "Superadmin";
+    const canEditRolePt = isSuperAdmin || roleName === "Owner" || roleName === "Chief Dealing";
+    const canChangeActiveStatus = isSuperAdmin || roleName === "Admin System";
+
     const updateData: Partial<typeof usersTable.$inferInsert> = {};
+
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.phone !== undefined) updateData.phone = req.body.phone;
-    if (req.body.roleId !== undefined) updateData.roleId = req.body.roleId;
-    if (req.body.ptId !== undefined) updateData.ptId = req.body.ptId;
-    if (req.body.branchId !== undefined) updateData.branchId = req.body.branchId;
     if (req.body.shiftId !== undefined) updateData.shiftId = req.body.shiftId;
     if (req.body.positionTitle !== undefined) updateData.positionTitle = req.body.positionTitle;
     if (req.body.supervisorId !== undefined) updateData.supervisorId = req.body.supervisorId;
-    if (req.body.activeStatus !== undefined) updateData.activeStatus = req.body.activeStatus;
+    if (req.body.branchId !== undefined) updateData.branchId = req.body.branchId;
+
+    if (req.body.roleId !== undefined) {
+      if (!canEditRolePt) {
+        res.status(403).json({ error: "Insufficient permissions to change role" });
+        return;
+      }
+      updateData.roleId = req.body.roleId;
+    }
+
+    if (req.body.ptId !== undefined) {
+      if (!canEditRolePt) {
+        res.status(403).json({ error: "Insufficient permissions to change PT assignment" });
+        return;
+      }
+      updateData.ptId = req.body.ptId;
+    }
+
+    if (req.body.activeStatus !== undefined) {
+      if (!canChangeActiveStatus) {
+        res.status(403).json({ error: "Insufficient permissions to change active status" });
+        return;
+      }
+      updateData.activeStatus = req.body.activeStatus;
+    }
 
     const [user] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, Number(req.params.id))).returning();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
@@ -110,7 +137,7 @@ router.put("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "C
   }
 });
 
-router.delete("/users/:id", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
+router.delete("/users/:id", authMiddleware, requireRole("Admin System"), async (req, res) => {
   try {
     const [user] = await db.update(usersTable).set({ activeStatus: false }).where(eq(usersTable.id, Number(req.params.id))).returning();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }

@@ -1,27 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  useListUsers, useListPts, useListShifts, useCreateUser,
+  useListUsers, useListPts, useListShifts, useCreateUser, useUpdateUser, useDeleteUser,
   type UserWithRelations, type Pt, type Shift,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Users, Building, Shield, CheckCircle2, XCircle, Plus, X,
-  Crown, Eye, Star, TrendingUp, Settings, Loader2,
+  Crown, Eye, Star, TrendingUp, Settings, Loader2, Pencil, UserX, UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
-const DB_ROLES = [
-  { id: 7, name: "Superadmin" },
-  { id: 1, name: "Owner" },
-  { id: 2, name: "Direksi" },
-  { id: 3, name: "Chief Dealing" },
-  { id: 4, name: "SPV Dealing" },
-  { id: 5, name: "Dealer" },
-  { id: 6, name: "Admin System" },
-];
+interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  activeStatus: boolean;
+}
 
 const ROLE_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
   "Superadmin":    { color: "text-amber-400",   bg: "bg-amber-500/10",   icon: <Shield className="w-3.5 h-3.5" /> },
@@ -46,26 +43,80 @@ interface UserForm {
   positionTitle: string;
 }
 
+interface EditForm {
+  name: string;
+  roleId: number;
+  ptId: string;
+  shiftId: string;
+  positionTitle: string;
+  activeStatus: boolean;
+}
+
 const EMPTY_FORM: UserForm = {
   name: "", email: "", password: "", confirmPassword: "",
-  roleId: 5, ptId: "", shiftId: "", positionTitle: "",
+  roleId: 0, ptId: "", shiftId: "", positionTitle: "",
 };
+
+function useListRoles() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch("/api/roles")
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then((data: Role[]) => setRoles(data))
+      .catch(() => setRoles([]))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  return { data: roles, isLoading };
+}
 
 export default function MasterData() {
   const { user: me } = useAuth();
-  const { data: users, isLoading } = useListUsers();
   const { data: pts } = useListPts();
   const { data: shifts } = useListShifts();
+  const { data: roles, isLoading: rolesLoading } = useListRoles();
   const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
+  const [ptFilter, setPtFilter] = useState<string>("");
+
+  const activeStatusParam = activeTab === "active" ? true : false;
+  const listParams = {
+    activeStatus: activeStatusParam,
+    ...(ptFilter ? { ptId: Number(ptFilter) } : {}),
+  };
+  const { data: users, isLoading } = useListUsers(listParams);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<UserForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<UserForm>>({});
 
+  const [editingUser, setEditingUser] = useState<UserWithRelations | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: "", roleId: 0, ptId: "", shiftId: "", positionTitle: "", activeStatus: true,
+  });
+  const [deactivatingId, setDeactivatingId] = useState<number | null>(null);
+
   const isSuperAdmin = me?.roleName === "Superadmin";
-  const canManage = isSuperAdmin || me?.roleName === "Admin System" || me?.roleName === "Owner";
+  const isAdminSystem = me?.roleName === "Admin System";
+  const isOwner = me?.roleName === "Owner";
+  const isChiefDealing = me?.roleName === "Chief Dealing";
+
+  const canAddUser = isSuperAdmin || isAdminSystem || isOwner;
+  const canEditUser = isSuperAdmin || isAdminSystem || isOwner || isChiefDealing;
+  const canDeactivate = isSuperAdmin || isAdminSystem;
+  const canEditRolePt = isSuperAdmin || isOwner || isChiefDealing;
+
+  const defaultRoleId = roles.length > 0 ? (roles.find(r => r.name === "Dealer")?.id ?? roles[0]?.id ?? 0) : 0;
+
+  const roleCfg = (roleName: string | null | undefined) => ROLE_CONFIG[roleName ?? ""] ?? DEFAULT_ROLE_CFG;
 
   const f = (k: keyof UserForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [k]: e.target.value }));
@@ -85,12 +136,17 @@ export default function MasterData() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    const roleId = form.roleId || defaultRoleId;
+    if (!roleId) {
+      toast({ title: "Gagal", description: "Daftar role belum tersedia, coba refresh halaman", variant: "destructive" });
+      return;
+    }
     createUser.mutate({
       data: {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        roleId: Number(form.roleId),
+        roleId: Number(roleId),
         ptId: form.ptId ? Number(form.ptId) : undefined,
         shiftId: form.shiftId ? Number(form.shiftId) : undefined,
         positionTitle: form.positionTitle.trim() || undefined,
@@ -98,7 +154,7 @@ export default function MasterData() {
     }, {
       onSuccess: () => {
         toast({ title: "Pengguna berhasil ditambahkan" });
-        qc.invalidateQueries({ queryKey: ["listUsers"] });
+        qc.invalidateQueries({ queryKey: ["/api/users"] });
         setShowForm(false);
         setForm(EMPTY_FORM);
       },
@@ -109,7 +165,79 @@ export default function MasterData() {
     });
   };
 
-  const roleCfg = (roleName: string | null | undefined) => ROLE_CONFIG[roleName ?? ""] ?? DEFAULT_ROLE_CFG;
+  const openEdit = (u: UserWithRelations) => {
+    setEditingUser(u);
+    setEditForm({
+      name: u.name,
+      roleId: u.roleId ?? 0,
+      ptId: u.ptId ? String(u.ptId) : "",
+      shiftId: u.shiftId ? String(u.shiftId) : "",
+      positionTitle: u.positionTitle ?? "",
+      activeStatus: u.activeStatus ?? true,
+    });
+  };
+
+  const handleEditSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    const payload: Record<string, unknown> = {
+      name: editForm.name.trim(),
+      shiftId: editForm.shiftId ? Number(editForm.shiftId) : undefined,
+      positionTitle: editForm.positionTitle.trim() || undefined,
+    };
+    if (canEditRolePt) {
+      payload.roleId = Number(editForm.roleId);
+      payload.ptId = editForm.ptId ? Number(editForm.ptId) : undefined;
+    }
+    if (canDeactivate) {
+      payload.activeStatus = editForm.activeStatus;
+    }
+    updateUser.mutate({
+      id: editingUser.id,
+      data: payload as Parameters<typeof updateUser.mutate>[0]["data"],
+    }, {
+      onSuccess: () => {
+        toast({ title: "Pengguna berhasil diperbarui" });
+        qc.invalidateQueries({ queryKey: ["/api/users"] });
+        setEditingUser(null);
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Gagal memperbarui pengguna";
+        toast({ title: "Gagal", description: msg, variant: "destructive" });
+      }
+    });
+  };
+
+  const handleDeactivate = (u: UserWithRelations) => {
+    setDeactivatingId(u.id);
+    if (u.activeStatus) {
+      deleteUser.mutate({ id: u.id }, {
+        onSuccess: () => {
+          toast({ title: `${u.name} telah dinonaktifkan` });
+          qc.invalidateQueries({ queryKey: ["/api/users"] });
+          setDeactivatingId(null);
+        },
+        onError: () => {
+          toast({ title: "Gagal menonaktifkan pengguna", variant: "destructive" });
+          setDeactivatingId(null);
+        }
+      });
+    } else {
+      updateUser.mutate({ id: u.id, data: { activeStatus: true } }, {
+        onSuccess: () => {
+          toast({ title: `${u.name} telah diaktifkan kembali` });
+          qc.invalidateQueries({ queryKey: ["/api/users"] });
+          setDeactivatingId(null);
+        },
+        onError: () => {
+          toast({ title: "Gagal mengaktifkan pengguna", variant: "destructive" });
+          setDeactivatingId(null);
+        }
+      });
+    }
+  };
+
+  const closeAddForm = () => { setShowForm(false); setForm(EMPTY_FORM); setErrors({}); };
 
   return (
     <div className="space-y-6">
@@ -118,8 +246,8 @@ export default function MasterData() {
           <h1 className="text-3xl font-bold tracking-tight">Master Data</h1>
           <p className="text-muted-foreground mt-1">Kelola pengguna, PT, dan role sistem OCC.</p>
         </div>
-        {canManage && !showForm && (
-          <Button onClick={() => setShowForm(true)} className="gap-2">
+        {canAddUser && !showForm && (
+          <Button onClick={() => { setShowForm(true); setForm({ ...EMPTY_FORM, roleId: defaultRoleId }); }} className="gap-2">
             <Plus className="w-4 h-4" /> Tambah User
           </Button>
         )}
@@ -132,7 +260,7 @@ export default function MasterData() {
               <Plus className="w-4 h-4 text-primary" />
               <h2 className="font-bold">Tambah Pengguna Baru</h2>
             </div>
-            <button onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setErrors({}); }}
+            <button onClick={closeAddForm}
               className="text-muted-foreground hover:text-foreground transition-colors rounded-full p-1 hover:bg-muted">
               <X className="w-4 h-4" />
             </button>
@@ -162,17 +290,25 @@ export default function MasterData() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Jabatan / Role <span className="text-red-500">*</span></label>
                 <select
-                  value={form.roleId}
+                  value={form.roleId || defaultRoleId}
                   onChange={e => setForm(p => ({ ...p, roleId: Number(e.target.value) }))}
+                  disabled={rolesLoading}
                   className="w-full h-10 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  {DB_ROLES.filter(r => isSuperAdmin || r.name !== "Superadmin").map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
+                  {rolesLoading ? (
+                    <option>Memuat role...</option>
+                  ) : (
+                    roles.filter(r => isSuperAdmin || r.name !== "Superadmin").map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))
+                  )}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">PT</label>
+                <label className="text-sm font-medium">
+                  PT
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">Kosongkan untuk user lintas-PT / korporat</span>
+                </label>
                 <select
                   value={form.ptId}
                   onChange={e => setForm(p => ({ ...p, ptId: e.target.value }))}
@@ -203,11 +339,111 @@ export default function MasterData() {
               </div>
             </div>
             <div className="flex gap-3 mt-6 justify-end">
-              <Button type="button" variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setErrors({}); }}>
-                Batal
-              </Button>
+              <Button type="button" variant="outline" onClick={closeAddForm}>Batal</Button>
               <Button type="submit" disabled={createUser.isPending} className="gap-2">
                 {createUser.isPending ? <><Loader2 className="w-4 h-4 animate-spin" />Menyimpan...</> : <><Plus className="w-4 h-4" />Tambah Pengguna</>}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {editingUser && (
+        <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-5 border-b flex items-center justify-between bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-primary" />
+              <h2 className="font-bold">Edit Pengguna: {editingUser.name}</h2>
+            </div>
+            <button onClick={() => setEditingUser(null)}
+              className="text-muted-foreground hover:text-foreground transition-colors rounded-full p-1 hover:bg-muted">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <form onSubmit={handleEditSave} className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></label>
+                <Input
+                  value={editForm.name}
+                  onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Nama lengkap"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Jabatan / Role <span className="text-red-500">*</span></label>
+                <select
+                  value={editForm.roleId}
+                  onChange={e => setEditForm(p => ({ ...p, roleId: Number(e.target.value) }))}
+                  disabled={!canEditRolePt || rolesLoading}
+                  className="w-full h-10 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {rolesLoading ? (
+                    <option>Memuat role...</option>
+                  ) : (
+                    roles.filter(r => isSuperAdmin || r.name !== "Superadmin").map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))
+                  )}
+                </select>
+                {!canEditRolePt && <p className="text-xs text-muted-foreground">Hanya Owner, Chief Dealing, atau Superadmin yang dapat mengubah role</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">
+                  PT
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">Kosongkan untuk user lintas-PT / korporat</span>
+                </label>
+                <select
+                  value={editForm.ptId}
+                  onChange={e => setEditForm(p => ({ ...p, ptId: e.target.value }))}
+                  disabled={!canEditRolePt}
+                  className="w-full h-10 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">— Tanpa PT (lintas-PT / korporat) —</option>
+                  {(pts as Pt[] | undefined)?.map(pt => (
+                    <option key={pt.id} value={pt.id}>{pt.name} ({pt.code})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Shift</label>
+                <select
+                  value={editForm.shiftId}
+                  onChange={e => setEditForm(p => ({ ...p, shiftId: e.target.value }))}
+                  className="w-full h-10 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">— Tanpa Shift —</option>
+                  {(shifts as Shift[] | undefined)?.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.startTime}–{s.endTime})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Jabatan Teknis</label>
+                <Input
+                  value={editForm.positionTitle}
+                  onChange={e => setEditForm(p => ({ ...p, positionTitle: e.target.value }))}
+                  placeholder="Contoh: Dealer Senior"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Status Aktif</label>
+                <select
+                  value={editForm.activeStatus ? "true" : "false"}
+                  onChange={e => setEditForm(p => ({ ...p, activeStatus: e.target.value === "true" }))}
+                  disabled={!canDeactivate}
+                  className="w-full h-10 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="true">Aktif</option>
+                  <option value="false">Nonaktif</option>
+                </select>
+                {!canDeactivate && <p className="text-xs text-muted-foreground">Hanya Superadmin atau Admin System yang dapat mengubah status aktif</p>}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6 justify-end">
+              <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>Batal</Button>
+              <Button type="submit" disabled={updateUser.isPending} className="gap-2">
+                {updateUser.isPending ? <><Loader2 className="w-4 h-4 animate-spin" />Menyimpan...</> : <><Pencil className="w-4 h-4" />Simpan Perubahan</>}
               </Button>
             </div>
           </form>
@@ -233,16 +469,46 @@ export default function MasterData() {
           <div className="p-3 rounded-xl bg-purple-500/10 text-purple-500"><Shield className="w-6 h-6" /></div>
           <div>
             <p className="text-sm text-muted-foreground">Total Role</p>
-            <p className="text-2xl font-black">{DB_ROLES.length}</p>
+            <p className="text-2xl font-black">{roles.length}</p>
           </div>
         </div>
       </div>
 
       <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b flex items-center gap-2">
-          <Users className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">Daftar Pengguna</h2>
-          <span className="ml-auto text-xs text-muted-foreground">{users?.length ?? 0} pengguna</span>
+        <div className="p-6 border-b">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <Users className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold">Daftar Pengguna</h2>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={ptFilter}
+                onChange={e => setPtFilter(e.target.value)}
+                className="h-9 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Semua PT</option>
+                {(pts as Pt[] | undefined)?.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.name}</option>
+                ))}
+              </select>
+              <div className="flex rounded-lg border overflow-hidden">
+                <button
+                  onClick={() => setActiveTab("active")}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "active" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}
+                >
+                  Aktif
+                </button>
+                <button
+                  onClick={() => setActiveTab("inactive")}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "inactive" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}
+                >
+                  Nonaktif
+                </button>
+              </div>
+              <span className="text-xs text-muted-foreground">{users?.length ?? 0} pengguna</span>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -254,15 +520,17 @@ export default function MasterData() {
                 <th className="px-6 py-4">PT</th>
                 <th className="px-6 py-4">Shift</th>
                 <th className="px-6 py-4 text-center">Status</th>
+                {(canEditUser || canDeactivate) && <th className="px-6 py-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                <tr><td colSpan={6} className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
+                <tr><td colSpan={(canEditUser || canDeactivate) ? 7 : 6} className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
               ) : (users as UserWithRelations[] | undefined)?.map((u: UserWithRelations) => {
                 const rc = roleCfg(u.roleName);
+                const isDeactivating = deactivatingId === u.id;
                 return (
-                  <tr key={u.id} className="hover:bg-muted/20 transition-colors">
+                  <tr key={u.id} className={`hover:bg-muted/20 transition-colors ${!u.activeStatus ? "opacity-60" : ""}`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-full ${rc.bg} flex items-center justify-center font-bold text-xs border ${rc.color.replace("text-", "border-").replace("400", "400/40")}`}>
@@ -288,11 +556,46 @@ export default function MasterData() {
                         ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
                         : <XCircle className="w-4 h-4 text-muted-foreground mx-auto" />}
                     </td>
+                    {(canEditUser || canDeactivate) && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          {canEditUser && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEdit(u)}
+                              className="h-8 gap-1.5 text-xs"
+                            >
+                              <Pencil className="w-3.5 h-3.5" /> Edit
+                            </Button>
+                          )}
+                          {canDeactivate && (
+                            <Button
+                              size="sm"
+                              variant={u.activeStatus ? "destructive" : "outline"}
+                              onClick={() => handleDeactivate(u)}
+                              disabled={isDeactivating}
+                              className="h-8 gap-1.5 text-xs"
+                            >
+                              {isDeactivating ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : u.activeStatus ? (
+                                <><UserX className="w-3.5 h-3.5" /> Nonaktifkan</>
+                              ) : (
+                                <><UserCheck className="w-3.5 h-3.5" /> Aktifkan</>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
               {!isLoading && !users?.length && (
-                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Belum ada data pengguna</td></tr>
+                <tr><td colSpan={(canEditUser || canDeactivate) ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                  {activeTab === "inactive" ? "Tidak ada pengguna nonaktif" : "Belum ada data pengguna"}
+                </td></tr>
               )}
             </tbody>
           </table>
@@ -322,7 +625,9 @@ export default function MasterData() {
             <Shield className="w-5 h-5 text-purple-500" /> Daftar Role & Jabatan
           </h2>
           <div className="space-y-2">
-            {DB_ROLES.map(role => {
+            {rolesLoading ? (
+              <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            ) : roles.map(role => {
               const rc = roleCfg(role.name);
               return (
                 <div key={role.id} className={`flex items-center gap-3 p-3 rounded-lg border ${rc.bg}`}>

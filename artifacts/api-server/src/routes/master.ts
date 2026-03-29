@@ -1,10 +1,20 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { ptsTable, branchesTable, shiftsTable, activityTypesTable } from "@workspace/db/schema";
+import { ptsTable, branchesTable, shiftsTable, activityTypesTable, rolesTable } from "@workspace/db/schema";
 import { eq, and, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
+
+router.get("/roles", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
+  try {
+    const roles = await db.select().from(rolesTable).where(eq(rolesTable.activeStatus, true));
+    res.json(roles);
+  } catch (error) {
+    console.error("List roles error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 router.get("/pts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
