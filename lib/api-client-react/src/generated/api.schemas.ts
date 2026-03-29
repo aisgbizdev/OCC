@@ -194,6 +194,9 @@ export interface CreateActivityLogRequest {
   activityTypeId: number;
   quantity: number;
   note?: string;
+  targetUserId?: number;
+  branchId?: number;
+  shiftId?: number;
 }
 
 export interface BatchActivityLogRequest {

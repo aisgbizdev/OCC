@@ -68,7 +68,7 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
 
-    createBatch.mutate({ data: { items: validRows } } as Parameters<typeof createBatch.mutate>[0], {
+    createBatch.mutate({ data: { items: validRows } }, {
       onSuccess: () => {
         toast({ title: "Berhasil", description: `${validRows.length} aktivitas dicatat` });
         qc.invalidateQueries({ queryKey: ["/api/activity-logs"] });

@@ -176,6 +176,10 @@ async function seed() {
         // Semua role
         { name: "Menangani Komplain",                category: "Support",     weightPoints: "4", noteRequired: true },
         { name: "Investigasi Transaksi",             category: "Support",     weightPoints: "6", noteRequired: true },
+        // Error — dicatat oleh SPV untuk anggota (menggantikan modul Quality)
+        { name: "Koreksi Entri Data",                category: "Error",       weightPoints: "0", noteRequired: true },
+        { name: "Kesalahan Prosedur SOP",            category: "Error",       weightPoints: "0", noteRequired: true },
+        { name: "Kesalahan Pelaporan",               category: "Error",       weightPoints: "0", noteRequired: true },
       ])
       .returning();
     console.log(`Created ${activityTypes.length} activity types`);
