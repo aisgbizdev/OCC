@@ -63,22 +63,22 @@
 
 **Langkah 1 — Pilih PT / Divisi**
 
-Halaman login menampilkan dropdown filter di bagian atas:
+Halaman login menampilkan tab filter di bagian atas. Setiap tab menentukan siapa saja yang ditampilkan di dropdown nama:
 
 | Pilihan Tab | Menampilkan Siapa |
 |---|---|
-| **Semua PT — Korporat & Divisi** | Superadmin, Owner, Direksi, Chief Dealing |
-| **SGB** | SPV, Dealer, Admin System PT SGB |
-| **RFB** | SPV, Dealer, Admin System PT RFB |
-| **KPF** | SPV, Dealer, Admin System PT KPF |
-| **BPF** | SPV, Dealer, Admin System PT BPF |
-| **EWF** | SPV, Dealer, Admin System PT EWF |
+| **Semua PT — Korporat & Divisi** | Superadmin, Owner, Direksi, Chief Dealing, **Admin System** |
+| **SGB** | SPV Dealing dan Dealer yang terdaftar di PT SGB |
+| **RFB** | SPV Dealing dan Dealer yang terdaftar di PT RFB |
+| **KPF** | SPV Dealing dan Dealer yang terdaftar di PT KPF |
+| **BPF** | SPV Dealing dan Dealer yang terdaftar di PT BPF |
+| **EWF** | SPV Dealing dan Dealer yang terdaftar di PT EWF |
 
-> **Catatan:** Chief Dealing (Kiki) adalah jabatan tingkat Divisi, bukan per-PT, sehingga hanya muncul di tab "Semua".
+> **Catatan penting:** Admin System termasuk dalam kategori "korporat" di sistem, sehingga selalu muncul di tab "Semua PT" — bukan di tab per-PT.
 
 **Langkah 2 — Pilih Nama**
 
-Setelah memilih tab, muncul dropdown kedua berisi daftar nama personil aktif di PT/Divisi tersebut. Pilih nama Anda.
+Setelah memilih tab, muncul dropdown berisi daftar nama personil aktif sesuai tab yang dipilih. Pilih nama Anda.
 
 **Langkah 3 — Masukkan Password**
 
@@ -86,9 +86,9 @@ Ketik password Anda di kolom yang tersedia, lalu klik **Masuk**.
 
 ### Catatan Login
 - Hanya personil dengan status **aktif** yang muncul di daftar
-- Jika nama tidak muncul, hubungi Admin System PT Anda atau Owner
+- Jika nama tidak muncul, hubungi Owner atau Superadmin untuk mengaktifkan akun
 - Password default akun baru: `password123` (wajib diganti setelah login pertama)
-- Lupa password? Minta Admin System atau Owner untuk reset
+- Lupa password? Minta Owner atau Superadmin untuk melakukan reset password
 
 ---
 
@@ -99,11 +99,10 @@ Ketik password Anda di kolom yang tersedia, lalu klik **Masuk**.
 ```
 Owner
 ├── Direksi (Direktur Utama, Direktur Kepatuhan)
-└── Chief Dealing (Kiki — level Divisi Operasional)
+└── Chief Dealing (level Divisi Operasional)
     ├── PT SGB
-    │   ├── SPV Dealing Shift Pagi
-    │   ├── SPV Dealing Shift Malam (2 orang)
-    │   ├── Dealer (3 orang)
+    │   ├── SPV Dealing (Pagi/Malam)
+    │   ├── Dealer
     │   └── Admin System
     ├── PT RFB (struktur sama)
     ├── PT KPF (struktur sama)
@@ -115,12 +114,12 @@ Owner
 
 | No | Role | Deskripsi Singkat |
 |---|---|---|
-| 1 | **Superadmin** | Akses penuh ke semua fitur, melewati semua pembatasan role. Untuk kebutuhan teknis/IT. |
-| 2 | **Owner** | Akses penuh operasional. Dapat melihat semua PT, semua modul, mengelola user. |
-| 3 | **Direksi** | Akses baca (view-only) untuk dashboard dan performa PT. Tidak bisa input data. |
-| 4 | **Chief Dealing** | Kelola tim dealing, assign tugas, lihat KPI semua PT, buat pengumuman. |
-| 5 | **SPV Dealing** | Monitor shift, assign tugas ke dealer, catat keluhan, catat quality error, handover shift. |
-| 6 | **Dealer** | Log aktivitas harian, update status tugas yang di-assign, lihat KPI pribadi. |
+| 1 | **Superadmin** | Akses teknis penuh, melewati semua pembatasan role. Untuk keperluan IT/developer. |
+| 2 | **Owner** | Akses operasional penuh. Bisa lihat semua PT, semua modul, kelola user. |
+| 3 | **Direksi** | Akses baca (view-only) untuk dashboard, laporan, dan monitoring PT. Tidak bisa input atau ubah data. |
+| 4 | **Chief Dealing** | Kelola tim dealing, assign tugas, lihat KPI semua PT, buat pengumuman, catat quality error. |
+| 5 | **SPV Dealing** | Monitor shift, assign tugas ke dealer, kelola keluhan, catat quality error, isi handover shift. |
+| 6 | **Dealer** | Log aktivitas harian, update tugas yang di-assign, isi handover shift, lihat KPI pribadi. |
 | 7 | **Admin System** | Kelola master data (user, PT, shift, tipe aktivitas), pengaturan sistem, reset password. |
 
 ### Shift Kerja
@@ -135,39 +134,65 @@ Owner
 
 ## 4. Tabel Hak Akses
 
+Tabel ini mencerminkan implementasi aktual sistem berdasarkan kontrol akses di setiap endpoint.
+
 ### Keterangan Simbol
-- ✅ Bisa akses / input / lakukan
+- ✅ Bisa mengakses / melakukan aksi
 - 🔍 Hanya bisa lihat (read-only)
 - ❌ Tidak bisa akses
-- ⭐ Hanya milik sendiri / PT sendiri
 
 ### Matrix Akses per Modul
 
-| Modul / Fitur | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
+| Modul / Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Dashboard** | ✅ | ✅ | 🔍 | ✅ | ✅ | ⭐ | ❌ |
-| **Log Aktivitas — Lihat** | ✅ | ✅ | ✅ | ✅ | ✅ | ⭐ | ❌ |
-| **Log Aktivitas — Input** | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **Log Aktivitas — Edit** | ✅ | ✅ | ❌ | ❌ | ❌ | ⭐ (batas waktu) | ❌ |
-| **KPI & Leaderboard** | ✅ | ✅ | ✅ | ✅ | ✅ | ⭐ | ❌ |
-| **Tugas — Lihat** | ✅ | ✅ | ✅ | ✅ | ✅ | ⭐ | ❌ |
-| **Tugas — Buat & Assign** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Tugas — Update Status** | ✅ | ✅ | ❌ | ✅ | ✅ | ⭐ | ❌ |
-| **Komplain — Lihat** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Komplain — Buat** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| **Pengumuman — Lihat** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Pengumuman — Buat** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| **Pesan Resmi** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Chat** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Handover Shift** | ✅ | ✅ | 🔍 | ✅ | ✅ | ❌ | ❌ |
-| **Quality — Lihat** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Quality — Catat Error** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Notifikasi** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Profil Sendiri** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Master Data (Users)** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Pengaturan Sistem** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Riwayat Audit** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Reset Password User Lain** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **DASHBOARD** | | | | | | | |
+| Lihat Dashboard | ✅ | ✅ | 🔍 | ✅ | ✅ | ✅ | ❌ |
+| **LOG AKTIVITAS** | | | | | | | |
+| Lihat semua log | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Input / Log baru | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Edit log (dalam jendela waktu) | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **KPI & LEADERBOARD** | | | | | | | |
+| Lihat skor & leaderboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Lihat daftar snapshot | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Generate snapshot KPI | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **TUGAS** | | | | | | | |
+| Lihat semua tugas | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat & assign tugas | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Update status tugas | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Hapus tugas | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Buat & lihat komentar | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **KELUHAN (COMPLAINT)** | | | | | | | |
+| Lihat semua keluhan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat / update / hapus keluhan | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| **PENGUMUMAN** | | | | | | | |
+| Lihat pengumuman | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat / edit / hapus pengumuman | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| **PESAN RESMI** | | | | | | | |
+| Lihat pesan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Kirim pesan (via API) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **CHAT** | | | | | | | |
+| Lihat & kirim pesan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **HANDOVER SHIFT** | | | | | | | |
+| Lihat laporan handover | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat laporan handover | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **QUALITY CONTROL** | | | | | | | |
+| Lihat tipe error & record | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Catat kesalahan (create record) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Hapus record | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **NOTIFIKASI** | | | | | | | |
+| Lihat notifikasi | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **PROFIL** | | | | | | | |
+| Edit profil sendiri | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Ganti password sendiri | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **MASTER DATA** | | | | | | | |
+| Kelola User (CRUD) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Reset password user lain | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Kelola PT/Branch/Shift/Tipe Aktivitas | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **PENGATURAN SISTEM** | | | | | | | |
+| Edit parameter sistem | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Lihat audit log | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+> **Catatan Quality:** Direksi memiliki akses **lihat dan catat** quality error (bukan hanya view-only). Dealer dan Admin System tidak memiliki akses ke modul Quality sama sekali.
 
 ---
 
@@ -179,7 +204,6 @@ Dashboard ditampilkan berbeda sesuai role pengguna yang login.
 
 Tampil untuk role: **Dealer**
 
-**Widget yang tersedia:**
 | Widget | Penjelasan |
 |---|---|
 | Skor Harian | Poin KPI hari ini |
@@ -194,22 +218,20 @@ Tampil untuk role: **Dealer**
 
 Tampil untuk role: **SPV Dealing** dan **Chief Dealing**
 
-**Widget yang tersedia:**
 | Widget | Penjelasan |
 |---|---|
 | Aktivitas Tim Hari Ini | Jumlah log aktivitas seluruh tim hari ini |
-| Dealer Aktif | Jumlah dealer yang terdaftar di PT |
+| Dealer Aktif | Jumlah dealer terdaftar di PT |
 | Tugas Tertunda | Tugas yang belum selesai |
 | Komplain Terbuka | Keluhan yang belum resolved |
 | Tabel Aktivitas Tim | Log aktivitas tim hari ini (10 terbaru) |
-| Inaktivitas Dealer | Dealer yang belum log aktivitas melewati batas |
+| Dealer Inaktif | Dealer yang melewati batas waktu tanpa log aktivitas |
 | Komplain Terbuka | Daftar komplain aktif |
 
 ### 5.3 Dashboard Radar (Owner, Direksi, Superadmin)
 
 Tampil untuk role: **Owner**, **Direksi**, **Superadmin**
 
-**Widget yang tersedia:**
 | Widget | Penjelasan |
 |---|---|
 | **Pulse Operasional** | Indikator status keseluruhan: NORMAL / HATI-HATI / KRITIS |
@@ -217,14 +239,13 @@ Tampil untuk role: **Owner**, **Direksi**, **Superadmin**
 | Tugas Tertunda | Total semua PT |
 | Dealer Inaktif | Total dealer yang melewati batas inaktivitas |
 | Top Skor Harian | Nilai tertinggi dari seluruh dealer |
-| PT Radar | Tabel per-PT: jumlah komplain, tugas, top skor, status |
-| Alert Panel | Daftar komplain dengan urgensi tinggi (muncul otomatis jika ada) |
-| Dealer Inaktif | Daftar dealer inaktif dengan durasi |
+| PT Radar | Tabel per-PT: komplain, tugas, top skor, status |
+| Alert Panel | Daftar komplain urgensi tinggi (muncul otomatis jika ada) |
 | Leaderboard Harian | Top 10 dealer seluruh PT |
 
 **Rumus Pulse Operasional:**
-- 🔴 **KRITIS** — Lebih dari 3 komplain tinggi ATAU lebih dari 5 dealer inaktif
-- 🟡 **HATI-HATI** — Ada komplain tinggi ATAU lebih dari 5 komplain terbuka ATAU lebih dari 2 dealer inaktif
+- 🔴 **KRITIS** — Lebih dari 3 komplain urgensi tinggi ATAU lebih dari 5 dealer inaktif
+- 🟡 **HATI-HATI** — Ada komplain urgensi tinggi ATAU lebih dari 5 komplain terbuka ATAU lebih dari 2 dealer inaktif
 - 🟢 **NORMAL** — Semua kondisi baik
 
 ---
@@ -232,11 +253,13 @@ Tampil untuk role: **Owner**, **Direksi**, **Superadmin**
 ## 6. Modul Log Aktivitas
 
 ### Tujuan
-Mencatat aktivitas kerja operasional harian dealer. Setiap aktivitas yang dilog akan **otomatis memperbarui skor KPI**.
+Mencatat aktivitas kerja operasional harian. Setiap aktivitas yang dilog akan **otomatis memperbarui skor KPI** dealer yang bersangkutan.
 
 ### Siapa yang Bisa Input
-- **Dealer** — input aktivitas diri sendiri
-- Role lain (Owner, SPV, dll) hanya bisa melihat
+- **Dealer, SPV Dealing, Chief Dealing, Owner, Admin System**
+- Direksi hanya bisa melihat, tidak bisa input
+
+> Dalam praktik operasional, log aktivitas harian biasanya diisi oleh **Dealer** untuk aktivitas diri sendiri, dan oleh **SPV atau Owner** untuk koreksi atau keperluan tertentu.
 
 ### Cara Input Aktivitas (Batch)
 
@@ -255,16 +278,16 @@ Mencatat aktivitas kerja operasional harian dealer. Setiap aktivitas yang dilog 
 6. KPI otomatis diperbarui setelah submit
 
 ### Aturan Edit Aktivitas
-- Aktivitas hanya bisa diedit dalam **jendela waktu** tertentu setelah dibuat
+- Log aktivitas hanya bisa diedit dalam **jendela waktu** setelah dibuat
 - Default: **60 menit** (bisa diubah oleh Admin/Owner di Pengaturan Sistem)
 - **Owner dan Admin System** dapat mengedit kapan saja tanpa batas waktu
 
 ### Tampilan Daftar Log Aktivitas
-Tabel menampilkan kolom: **Waktu | Dealer | Tipe Aktivitas | Qty | Catatan | Poin**
+Tabel kolom: **Waktu | Dealer | Tipe Aktivitas | Qty | Catatan | Poin**
 
 Filter yang tersedia:
 - Cari berdasarkan nama dealer atau tipe aktivitas
-- Filter berdasarkan tanggal (dari–sampai)
+- Filter berdasarkan rentang tanggal
 
 ---
 
@@ -289,18 +312,21 @@ KPI dihitung **otomatis** setiap kali ada aktivitas yang dilog atau diedit. Tida
 Poin = Qty × Weight Points (per tipe aktivitas)
 ```
 
-Contoh: Jika "Input Order" memiliki bobot 5 poin, dan dealer input 10 order → dapat **50 poin**.
+Contoh: Jika "Input Order" memiliki bobot 5 poin dan dealer input 10 order → dapat **50 poin**.
 
 ### Tampilan KPI Page (Leaderboard Global)
 
 - Tab pilihan periode: **Harian | Mingguan | Bulanan | Tahunan**
-- Grafik batang: **Top 10 Performer**
+- Grafik batang: Top 10 Performer
 - Tabel peringkat: seluruh tim operasional
 
-### Catatan
-- Semua role bisa melihat leaderboard (kecuali Admin System)
-- KPI Dealer hanya berisi data dari PT yang sama (scoped per PT)
-- Snapshot KPI bisa di-generate untuk laporan periode (fitur Owner/Admin)
+### Akses KPI
+
+Semua role (termasuk Admin System) bisa melihat skor dan leaderboard. Dealer hanya melihat data di PT sendiri (scoped per PT).
+
+**Snapshot KPI:**
+- Lihat daftar snapshot: Owner, Direksi, Chief Dealing, SPV Dealing, Admin System
+- Generate snapshot baru: Owner dan Admin System
 
 ---
 
@@ -309,12 +335,16 @@ Contoh: Jika "Input Order" memiliki bobot 5 poin, dan dealer input 10 order → 
 ### Tujuan
 Assign, track, dan update tugas operasional antar anggota tim.
 
-### Siapa yang Bisa Membuat Tugas
-- **Owner, Chief Dealing, SPV Dealing, Superadmin**
+### Hak Akses Tugas
 
-### Siapa yang Bisa Mengupdate Status
-- **Dealer** — update status tugas yang di-assign ke dirinya
-- **SPV, Chief, Owner, Superadmin** — update status semua tugas
+| Aksi | Role yang Bisa |
+|---|---|
+| Buat & assign tugas | Owner, Chief Dealing, SPV Dealing, Admin System |
+| Lihat semua tugas | Semua role |
+| Update status tugas | Semua role |
+| Hapus tugas | Owner, Chief Dealing, SPV Dealing, Admin System |
+
+> Dealer bisa **update status** tugas yang di-assign ke dirinya, tetapi tidak bisa membuat atau menghapus tugas.
 
 ### Cara Buat Tugas
 
@@ -334,23 +364,17 @@ Assign, track, dan update tugas operasional antar anggota tim.
 
 ### Status Tugas & Progres
 
-Klik ikon status di kartu tugas untuk mengubah status:
-
-| Status | Ikon | Progress |
+| Status | Progress | Keterangan |
 |---|---|---|
-| **New** | ○ Lingkaran kosong | 0% |
-| **In Progress** | ⏰ Jam | 50% |
-| **Completed** | ✅ Centang hijau | 100% |
+| **New** | 0% | Baru dibuat, belum dimulai |
+| **In Progress** | 50% | Sedang dikerjakan |
+| **Completed** | 100% | Selesai |
 
-### Kartu Tugas
-Setiap tugas ditampilkan sebagai kartu dengan info:
-- Badge prioritas (merah=tinggi, kuning=sedang, biru=rendah)
-- Judul & deskripsi
-- Progress bar
-- Tenggat & nama assignee
+Klik ikon status di kartu tugas untuk mengubah status.
 
-### Fitur Komentar
-> *Catatan: Backend mendukung komentar tugas (POST /api/tasks/:id/comments), namun UI komentar belum diimplementasikan di frontend.*
+### Komentar Tugas
+
+Semua role (termasuk Dealer dan Direksi) bisa membaca dan menulis komentar pada tugas.
 
 ---
 
@@ -359,8 +383,14 @@ Setiap tugas ditampilkan sebagai kartu dengan info:
 ### Tujuan
 Mencatat, memonitor, dan mengelola masalah operasional dengan timer SLA.
 
-### Siapa yang Bisa Membuat Keluhan
-- **SPV Dealing, Chief Dealing, Owner, Superadmin** (dan Dealer berdasarkan kode)
+### Hak Akses Keluhan
+
+| Aksi | Role yang Bisa |
+|---|---|
+| Lihat semua keluhan | Semua role |
+| Buat / update / hapus keluhan | Owner, Chief Dealing, SPV Dealing, Admin System |
+
+> **Dealer dan Direksi tidak bisa membuat keluhan.** Dealer dapat melaporkan masalah ke SPV untuk dicatatkan.
 
 ### Cara Buat Keluhan
 
@@ -372,20 +402,22 @@ Mencatat, memonitor, dan mengelola masalah operasional dengan timer SLA.
 | **Judul** | ✅ | Deskripsi singkat masalah |
 | **Tipe** | ✅ | Internal / Eksternal / Sistem |
 | **Urgensi** | ✅ | Rendah / Sedang / Tinggi |
-| **Kronologi** | ❌ | Ceritakan apa yang terjadi, kapan, siapa yang terlibat |
+| **Kronologi** | ❌ | Penjelasan kejadian, waktu, dan pihak yang terlibat |
 
 3. Klik **"Kirim Komplain"**
 4. **Timer SLA otomatis dimulai** sejak keluhan dibuat
 
 ### Sistem SLA Timer
 
-| Status SLA | Kondisi | Warna Indikator |
+| Status SLA | Kondisi | Indikator |
 |---|---|---|
 | **Normal** | Kurang dari 24 jam | 🟢 Hijau |
 | **Warning** | 24–72 jam belum resolved | 🟡 Kuning |
-| **Critical** | Lebih dari 72 jam belum resolved | 🔴 Merah (berkedip) |
+| **Critical** | Lebih dari 72 jam belum resolved | 🔴 Merah berkedip |
 
-Timer SLA berhenti ketika status keluhan diubah ke **"Resolved"** atau **"Closed"**.
+Timer SLA berhenti saat status keluhan diubah ke **"Resolved"** atau **"Closed"**.
+
+Ambang batas SLA ini dapat dikonfigurasi di Pengaturan Sistem.
 
 ### Status Keluhan
 - **Open** — baru dibuat, belum ditangani
@@ -393,9 +425,9 @@ Timer SLA berhenti ketika status keluhan diubah ke **"Resolved"** atau **"Closed
 - **Resolved** — sudah diselesaikan
 - **Closed** — ditutup
 
-### Escalation & Notifikasi Otomatis
+### Notifikasi Otomatis
 - Keluhan baru → push notif ke **SPV, Chief Dealing, Owner**
-- Escalation (SLA warning/critical) → push notif ke **Chief Dealing, Owner, Direksi**
+- Eskalasi SLA warning/critical → push notif ke **Chief Dealing, Owner, Direksi**
 
 ---
 
@@ -404,35 +436,39 @@ Timer SLA berhenti ketika status keluhan diubah ke **"Resolved"** atau **"Closed
 ### Tujuan
 Broadcast informasi resmi dari management ke seluruh atau sebagian tim.
 
-### Siapa yang Bisa Membuat Pengumuman
-- **Owner, Chief Dealing, SPV Dealing, Admin System, Superadmin**
-- Semua role bisa **melihat** pengumuman
+### Hak Akses Pengumuman
+
+| Aksi | Role yang Bisa |
+|---|---|
+| Lihat pengumuman | Semua role |
+| Buat / edit / hapus pengumuman | Owner, Chief Dealing, SPV Dealing, Admin System |
+
+> Dealer dan Direksi hanya bisa membaca, tidak bisa membuat pengumuman.
 
 ### Cara Buat Pengumuman
 
-1. Klik **"+ Buat Pengumuman"** (tombol hanya muncul jika berhak)
+1. Klik **"+ Buat Pengumuman"** (tombol hanya muncul bagi yang berhak)
 2. Isi form:
 
 | Field | Wajib | Keterangan |
 |---|:---:|---|
 | **Judul** | ✅ | Judul pengumuman |
-| **Isi** | ✅ | Konten pengumuman (mendukung baris baru) |
+| **Isi** | ✅ | Konten pengumuman |
 | **Prioritas** | ✅ | Normal / Tinggi |
-| **Scope** | ✅ | Target penerima |
+| **Scope** | ✅ | Target penerima (lihat di bawah) |
 
 **Pilihan Scope:**
-| Nilai | Keterangan |
+
+| Nilai | Target |
 |---|---|
 | **Semua** | Seluruh pengguna OCC |
-| **PT Saya** | Hanya pengguna PT yang sama |
+| **PT Saya** | Hanya pengguna di PT yang sama |
 | **Shift Ini** | Hanya shift yang sama |
 | **Role Saya** | Hanya role yang sama |
 
 3. Klik **"Kirim Pengumuman"**
 
-### Tampilan Pengumuman
-- Pengumuman prioritas **Tinggi** memiliki garis merah di sisi kiri kartu
-- Menampilkan: judul, isi, waktu, pembuat, dan scope
+Pengumuman dengan prioritas **Tinggi** ditandai dengan garis merah di sisi kiri kartu.
 
 ---
 
@@ -442,24 +478,23 @@ Broadcast informasi resmi dari management ke seluruh atau sebagian tim.
 Komunikasi langsung yang memerlukan **konfirmasi tanda terima** dari penerima.
 
 ### Perbedaan dengan Chat
+
 | | Pesan Resmi | Chat |
 |---|---|---|
-| Formal | ✅ Ya | ❌ Tidak |
-| Perlu konfirmasi tanda terima | Opsional (bisa diminta) | ❌ Tidak |
-| Riwayat terstruktur | ✅ Ya | ✅ Ya |
+| Sifat | Formal/resmi | Informal |
+| Tanda terima | Bisa diminta (opsional) | Tidak ada |
+| Riwayat | Terstruktur | Terstruktur |
+
+### Semua Role Bisa Akses
+
+Seluruh role (Superadmin, Owner, Direksi, Chief, SPV, Dealer, Admin System) bisa membaca dan mengirim pesan resmi.
 
 ### Cara Membaca & Konfirmasi
+
 1. Buka halaman **Pesan**
-2. Pesan yang belum dikonfirmasi memiliki border biru/highlight
-3. Jika pesan memerlukan konfirmasi (requireAck), klik **"Konfirmasi Penerimaan"**
+2. Pesan yang belum dikonfirmasi memiliki highlight berbeda
+3. Jika pesan memerlukan konfirmasi (`requireAck`), klik **"Konfirmasi Penerimaan"**
 4. Status berubah menjadi ✅ **Dikonfirmasi**
-
-### Informasi yang Ditampilkan per Pesan
-- Subjek & isi pesan
-- Pengirim & waktu
-- Status konfirmasi (jika diperlukan)
-
-> *Catatan: Untuk mengirim pesan resmi baru, saat ini dilakukan melalui backend API. UI pengiriman belum tersedia di frontend.*
 
 ---
 
@@ -468,16 +503,19 @@ Komunikasi langsung yang memerlukan **konfirmasi tanda terima** dari penerima.
 ### Tujuan
 Komunikasi informal real-time antar anggota tim dalam chat room.
 
+### Semua Role Bisa Akses
+
+Seluruh role bisa membaca dan mengirim pesan di semua chat room yang tersedia.
+
 ### Cara Menggunakan Chat
 
 **Melihat Daftar Room:**
 - Buka halaman **Chat**
-- Daftar room yang tersedia ditampilkan sebagai kartu
-- Setiap kartu menampilkan: nama room, tipe, preview pesan terakhir, jumlah member
+- Daftar room ditampilkan sebagai kartu dengan nama, tipe, preview pesan terakhir, dan jumlah member
 
 **Masuk ke Room:**
 - Klik kartu room untuk membuka percakapan
-- Pesan lama ditampilkan, chat di-refresh setiap **5 detik** otomatis
+- Pesan di-refresh otomatis setiap **5 detik**
 
 **Mengirim Pesan:**
 1. Ketik pesan di kotak input bawah
@@ -496,16 +534,21 @@ Komunikasi informal real-time antar anggota tim dalam chat room.
 ## 13. Modul Handover Shift
 
 ### Tujuan
-Dokumentasi serah terima shift yang terstruktur — memastikan informasi penting tidak hilang saat pergantian shift.
+Dokumentasi serah terima shift yang terstruktur agar informasi penting tidak hilang saat pergantian shift.
 
-### Siapa yang Mengisi
-- **SPV Dealing** — mengisi handover di akhir shift
-- Chief Dealing, Owner, Superadmin — bisa melihat dan membuat
+### Hak Akses Handover
+
+| Aksi | Role yang Bisa |
+|---|---|
+| Lihat laporan handover | Semua role |
+| Buat laporan handover | Owner, Chief Dealing, SPV Dealing, **Dealer**, Admin System |
+
+> Direksi hanya bisa melihat laporan, tidak bisa membuat. SPV adalah penanggung jawab utama pengisian handover di akhir shift.
 
 ### Cara Isi Handover Shift
 
 1. Klik **"+ Handover Baru"**
-2. Pilih:
+2. Isi:
 
 | Field | Wajib | Keterangan |
 |---|:---:|---|
@@ -514,37 +557,44 @@ Dokumentasi serah terima shift yang terstruktur — memastikan informasi penting
 
 3. Selesaikan **Checklist Handover** (semua harus dicentang sebelum bisa submit):
 
-| Item Checklist | Detail |
+| Item Checklist | Penjelasan |
 |---|---|
-| ✅ Review Komplain Tertunda | Konfirmasi sudah review semua komplain terbuka |
-| ✅ Review Tugas Belum Selesai | Konfirmasi sudah review tugas yang berjalan |
-| ✅ Verifikasi Status Sistem | Pilih kondisi sistem: Normal / Ada masalah kecil / Terganggu / Gangguan kritis |
-| ✅ Semua Aktivitas Telah Dilog | Konfirmasi semua aktivitas shift sudah diinput |
+| Review Komplain Tertunda | Konfirmasi sudah review semua komplain terbuka |
+| Review Tugas Belum Selesai | Konfirmasi sudah review tugas yang berjalan |
+| Verifikasi Status Sistem | Pilih kondisi: Normal / Ada masalah kecil / Terganggu / Gangguan kritis |
+| Semua Aktivitas Telah Dilog | Konfirmasi semua aktivitas shift sudah diinput |
 
-4. Isi **Catatan Khusus** (opsional) — info penting untuk shift berikutnya
+4. Isi **Catatan Khusus** (opsional) — informasi penting untuk shift berikutnya
 5. Klik **"Submit Handover"**
 
 ### Isi Laporan Handover
 Setelah submit, laporan menampilkan:
-- Dari shift → ke shift + nama pembuat + waktu
-- Ringkasan kondisi sistem
-- Daftar **tugas yang sedang berjalan** (auto-pull dari sistem)
-- Daftar **komplain terbuka** (auto-pull dari sistem)
+- Nama pembuat, dari shift → ke shift, waktu submit
+- Ringkasan kondisi sistem (dari checklist)
+- Daftar **tugas yang sedang berjalan** (diambil otomatis dari sistem)
+- Daftar **komplain terbuka** (diambil otomatis dari sistem)
 - Catatan khusus
 
-### Fitur Copy Laporan
-Klik ikon 📋 di setiap kartu handover untuk menyalin laporan sebagai teks ke clipboard.
+### Fitur Salin Laporan
+Klik ikon 📋 di kartu handover untuk menyalin laporan sebagai teks ke clipboard.
 
 ---
 
 ## 14. Modul Quality Control
 
 ### Tujuan
-Mencatat dan memonitor kesalahan kerja operasional tim dealing secara terstruktur. Berbasis KPI Operasional internal Solid Group.
+Mencatat dan memonitor kesalahan kerja operasional tim dealing secara terstruktur.
 
-### Siapa yang Bisa Mencatat Error
-- **SPV Dealing** — hanya bisa catat error untuk anggota **PT sendiri**
-- **Chief Dealing, Owner, Superadmin** — bisa catat error untuk semua PT
+### Hak Akses Quality Control
+
+| Aksi | Role yang Bisa |
+|---|---|
+| Lihat tipe error, record, & summary | Owner, **Direksi**, Chief Dealing, SPV Dealing, Superadmin |
+| Catat kesalahan (buat record) | Owner, **Direksi**, Chief Dealing, SPV Dealing, Superadmin |
+| Hapus record | Owner, Chief Dealing, Superadmin |
+
+> **Dealer dan Admin System tidak memiliki akses** ke modul Quality Control.  
+> **Direksi** memiliki akses penuh (lihat dan catat) — berbeda dari modul lain di mana Direksi biasanya hanya view-only.
 
 ### Sistem Scoring
 
@@ -561,14 +611,15 @@ Mencatat dan memonitor kesalahan kerja operasional tim dealing secara terstruktu
 
 | Field | Wajib | Keterangan |
 |---|:---:|---|
-| **Anggota Tim** | ✅ | Pilih nama dealer/SPV (SPV hanya lihat tim PT sendiri) |
-| **Jenis Kesalahan** | ✅ | Pilih dari daftar (dikelompokkan per Objective) |
-| **Tanggal** | ✅ | Tanggal terjadinya kesalahan (max: hari ini) |
-| **Jumlah Kesalahan** | ✅ | Angka 0–99 (0 = PERFECT, preview skor otomatis tampil) |
+| **Anggota Tim** | ✅ | Pilih nama dealer/SPV (SPV hanya lihat PT sendiri) |
+| **Jenis Kesalahan** | ✅ | Pilih dari daftar tipe error (dikelompokkan per kategori) |
+| **Tanggal** | ✅ | Tanggal terjadinya kesalahan (maksimal hari ini) |
+| **Jumlah Kesalahan** | ✅ | Angka 0–99 (0 = PERFECT) |
 | **Catatan** | ❌ | Deskripsi singkat kejadian |
 
-3. Preview skor otomatis muncul saat mengisi jumlah kesalahan
-4. Klik **"Simpan"**
+Preview skor otomatis muncul saat mengisi jumlah kesalahan.
+
+3. Klik **"Simpan"**
 
 ### Tab di Halaman Quality
 
@@ -576,19 +627,21 @@ Mencatat dan memonitor kesalahan kerja operasional tim dealing secara terstruktu
 |---|---|
 | **Summary** | Tabel ringkasan per anggota tim: total kesalahan, jumlah record, skor keseluruhan |
 | **Riwayat** | Daftar semua record kesalahan (bisa di-expand untuk detail) |
-| **Jenis Kesalahan** | Referensi daftar semua tipe kesalahan dari KPI Operasional |
+| **Jenis Kesalahan** | Referensi lengkap semua tipe kesalahan |
 
-### Filter yang Tersedia (Summary & Riwayat)
-- Periode tanggal (dari–sampai)
+### Filter yang Tersedia
+
+- Rentang tanggal (dari–sampai)
 - Filter PT (untuk management)
 - Filter shift
 - Filter anggota (di tab Riwayat)
 - Filter skor (PERFECT / AVERAGE / POOR)
 
 ### Kategori Jenis Kesalahan
-Kesalahan dikelompokkan berdasarkan **Objective Group** dari KPI Operasional:
 
-| Kategori | Arti |
+Tipe kesalahan dikelompokkan berdasarkan pelaku:
+
+| Kategori | Keterangan |
 |---|---|
 | **DEALER** | Kesalahan yang dilakukan oleh Dealer |
 | **SPV** | Kesalahan yang dilakukan oleh SPV |
@@ -605,33 +658,38 @@ Informasi real-time tentang kejadian penting yang relevan untuk pengguna.
 
 | Trigger | Penerima |
 |---|---|
-| Tugas baru di-assign ke seseorang | Orang yang di-assign |
+| Tugas baru di-assign | Orang yang di-assign |
 | Keluhan baru dibuat | SPV, Chief Dealing, Owner |
-| Escalation SLA keluhan | Chief Dealing, Owner, Direksi |
+| Eskalasi SLA keluhan | Chief Dealing, Owner, Direksi |
 | Dealer inaktif melewati batas warning | SPV, Chief Dealing |
 | Dealer inaktif melewati batas kritis | Owner, Direksi |
-| Pesan chat masuk ke room | Anggota room yang relevan |
-| Komentar pada tugas | Pemilik tugas |
+| Pesan masuk ke chat room | Anggota room |
 
 ### Tampilan Notifikasi
-- Notifikasi yang **belum dibaca** ditandai dengan latar biru muda
+
+- Notifikasi yang **belum dibaca** memiliki latar biru muda
 - Klik **"Tandai Semua Dibaca"** untuk membaca semua sekaligus
 
 ### Push Notification (Browser/HP)
-OCC mendukung **push notification** (notif yang muncul di browser atau HP meskipun aplikasi tidak sedang dibuka):
-1. Saat pertama kali login, browser akan meminta izin notifikasi
+
+OCC mendukung push notification — notif muncul di browser atau HP meskipun aplikasi tidak sedang dibuka:
+
+1. Saat pertama login, browser meminta izin notifikasi
 2. Klik **"Allow"** / **"Izinkan"** untuk mengaktifkan
-3. Notifikasi penting akan muncul otomatis
+3. Notifikasi penting muncul otomatis di sistem operasi
 
 ---
 
 ## 16. Profil & Manajemen Password
 
 ### Mengakses Halaman Profil
-- Klik **nama/avatar** di sidebar (desktop) atau di drawer menu (mobile)
+
+- Klik **nama/avatar** di bagian bawah sidebar (desktop)
 - Atau klik **ikon bulat** di pojok kanan atas header
 
-### Yang Bisa Diubah Sendiri (Semua User)
+Semua role memiliki akses ke halaman profil sendiri.
+
+### Yang Bisa Diubah Sendiri
 
 **Ubah Data Profil:**
 
@@ -647,25 +705,25 @@ Klik **"Simpan Profil"** untuk menyimpan.
 
 | Field | Keterangan |
 |---|---|
-| **Password Lama** | Password saat ini |
+| **Password Lama** | Password yang sedang digunakan |
 | **Password Baru** | Password yang ingin digunakan |
 | **Konfirmasi Password Baru** | Ketik ulang password baru |
 
 Klik **"Ganti Password"**. Indikator kekuatan password ditampilkan secara live.
 
 ### Informasi Read-Only di Profil
-- Email (tidak bisa diubah sendiri)
+
+Field berikut hanya bisa diubah oleh **Owner atau Admin System** melalui halaman Master Data:
+- Email
 - Role
 - PT & Shift
 - Status akun
-
-Perubahan email, role, PT, atau shift hanya bisa dilakukan oleh **Owner atau Admin System** melalui halaman Master Data.
 
 ### Reset Password oleh Admin (Admin System / Owner / Superadmin)
 
 1. Buka halaman **Users** (Master Data)
 2. Temukan user di tabel
-3. Klik tombol **"Reset PW"** (warna kuning/amber) di baris user tersebut
+3. Klik tombol **"Reset PW"** di baris user
 4. Masukkan password baru + konfirmasi
 5. Klik **"Reset Password"**
 
@@ -679,44 +737,43 @@ Halaman ini hanya bisa diakses oleh: **Admin System, Owner, Superadmin**
 
 **Tampilan:** Tabel semua user dengan kolom: Nama | Email | Role | PT | Shift | Status | Aksi
 
-**Fitur yang tersedia:**
+**Aksi yang tersedia:**
 
-| Aksi | Tombol | Keterangan |
-|---|---|---|
-| Tambah User | **+ Tambah User** | Buat akun baru |
-| Edit User | ✏️ Edit | Ubah nama, email, role, PT, shift, status |
-| Reset Password | 🔑 Reset PW | Set password baru untuk user |
-| Nonaktifkan | Toggle status | User nonaktif tidak muncul di login |
+| Aksi | Keterangan |
+|---|---|
+| Tambah User | Buat akun baru |
+| Edit User | Ubah nama, email, role, PT, shift, status |
+| Reset Password | Set password baru untuk user |
+| Nonaktifkan | User nonaktif tidak muncul di dropdown login |
 
 **Form Tambah/Edit User:**
 
 | Field | Keterangan |
 |---|---|
 | Nama | Nama lengkap |
-| Email | Email login (unik, format: xxx@occ.id) |
+| Email | Email login (unik per sistem) |
 | Role | Pilih dari 7 role |
-| PT | Pilih PT (untuk SPV/Dealer/Admin PT) |
+| PT | Pilih PT (untuk SPV Dealing / Dealer) |
 | Shift | Shift kerja |
-| Status Aktif | Aktif/nonaktif (toggle) |
+| Status Aktif | Aktif / nonaktif |
 | Password | Untuk user baru: set password awal |
 
 ### 17.2 Manajemen PT
 
 Kelola daftar PT (SGB, RFB, KPF, BPF, EWF):
-- Tambah PT baru
-- Edit nama, kode, deskripsi PT
+- Tambah, edit nama/kode/deskripsi PT
 - Nonaktifkan PT
 
 ### 17.3 Manajemen Branch
 
 Kelola kantor cabang per PT:
-- Tambah/edit/hapus branch
+- Tambah, edit, hapus branch
 
 ### 17.4 Manajemen Shift
 
 Kelola definisi shift:
-- Nama shift (Pagi/Siang/Malam)
-- Jam mulai & jam selesai
+- Nama shift (Pagi / Siang / Malam)
+- Jam mulai dan jam selesai
 
 ### 17.5 Manajemen Tipe Aktivitas
 
@@ -734,24 +791,23 @@ Kelola jenis aktivitas yang bisa di-log dealer:
 
 ## 18. Pengaturan Sistem
 
-Halaman ini menampilkan dan memungkinkan perubahan parameter operasional.
-
-**Siapa yang bisa mengubah:** Admin System, Owner, Superadmin
+Halaman ini hanya bisa diakses dan diubah oleh: **Admin System, Owner, Superadmin**
 
 ### Parameter yang Bisa Dikonfigurasi
 
-| Parameter | Satuan | Default | Keterangan |
-|---|---|---|---|
-| **Target Poin Harian** | poin | — | Target KPI poin per dealer per hari |
-| **Batas Warning Inaktivitas** | jam | — | Jam tanpa aktivitas sebelum peringatan |
-| **Batas Kritis Inaktivitas** | jam | — | Jam tanpa aktivitas sebelum alert kritis |
-| **Jendela Edit Aktivitas** | menit | 60 | Berapa menit aktivitas bisa diedit setelah dibuat |
-| **SLA Warning Komplain** | jam | 24 | Jam sebelum komplain masuk status warning |
-| **SLA Kritis Komplain** | jam | 72 | Jam sebelum komplain masuk status kritis |
+| Parameter | Satuan | Keterangan |
+|---|---|---|
+| **Target Poin Harian** | poin | Target KPI poin per dealer per hari |
+| **Batas Warning Inaktivitas** | jam | Jam tanpa aktivitas sebelum muncul peringatan |
+| **Batas Kritis Inaktivitas** | jam | Jam tanpa aktivitas sebelum muncul alert kritis |
+| **Jendela Edit Aktivitas** | menit | Berapa menit log aktivitas bisa diedit setelah dibuat (default: 60) |
+| **SLA Warning Komplain** | jam | Jam sebelum keluhan masuk status warning (default: 24) |
+| **SLA Kritis Komplain** | jam | Jam sebelum keluhan masuk status kritis (default: 72) |
 
-### Cara Edit Pengaturan
-1. Klik ikon ✏️ di baris pengaturan yang ingin diubah
-2. Ketik nilai baru di kotak input
+### Cara Edit Parameter
+
+1. Klik ikon ✏️ di baris parameter yang ingin diubah
+2. Ketik nilai baru
 3. Klik ✅ untuk menyimpan atau ✕ untuk batal
 
 ### Monitor Inaktivitas Dealer
@@ -759,11 +815,11 @@ Halaman ini menampilkan dan memungkinkan perubahan parameter operasional.
 Bagian kiri halaman menampilkan:
 - Ambang batas warning dan kritis (dari pengaturan)
 - Jumlah dealer yang sedang bermasalah
-- Daftar dealer inaktif + durasi inaktif + waktu aktivitas terakhir
+- Daftar dealer inaktif + durasi + waktu aktivitas terakhir
 
 ### Riwayat Audit (20 Terakhir)
 
-Tabel menampilkan semua aksi write yang dilakukan di sistem:
+Tabel semua aksi write yang tercatat di sistem:
 
 | Kolom | Keterangan |
 |---|---|
@@ -779,13 +835,13 @@ Tabel menampilkan semua aksi write yang dilakukan di sistem:
 
 ### Apa itu PWA?
 
-OCC adalah **Progressive Web App (PWA)** — artinya bisa diinstall seperti aplikasi di HP tanpa perlu download dari Play Store/App Store.
+OCC adalah **Progressive Web App (PWA)** — bisa diinstall seperti aplikasi di HP tanpa perlu download dari Play Store/App Store.
 
 ### Cara Install di HP
 
 **Android (Chrome):**
 1. Buka OCC di browser Chrome HP
-2. Muncul banner/prompt "Tambah ke Layar Utama" di bagian bawah
+2. Muncul banner "Tambah ke Layar Utama" di bagian bawah
 3. Klik **Install** / **Tambahkan**
 4. Ikon OCC muncul di layar utama HP
 
@@ -804,17 +860,19 @@ OCC adalah **Progressive Web App (PWA)** — artinya bisa diinstall seperti apli
 - Tugas
 - **Lainnya** → membuka drawer menu lengkap
 
-**Hamburger Menu (drawer):**
+**Drawer Menu:**
 - Semua menu tersedia di sini
 - Geser dari kiri atau klik ☰
 
 ### Offline Mode
+
 OCC menyimpan shell aplikasi di cache browser. Jika koneksi terputus:
 - Halaman yang sudah dimuat sebelumnya tetap bisa dilihat
 - Input data baru memerlukan koneksi internet
 
 ### Push Notification di Mobile
-Setelah install sebagai PWA, push notification akan muncul di notifikasi sistem HP (seperti aplikasi biasa), bahkan saat OCC tidak sedang dibuka.
+
+Setelah diinstall sebagai PWA, push notification muncul di notifikasi sistem HP — bahkan saat OCC tidak sedang dibuka.
 
 ---
 
@@ -831,6 +889,9 @@ Semua akun menggunakan password: **`password123`**
 | dir.utama@occ.id | Direktur Utama | Direksi |
 | dir.kepatuhan@occ.id | Direktur Kepatuhan | Direksi |
 | kiki@occ.id | Kiki | Chief Dealing |
+| admin.corp@occ.id | Admin Korporat | Admin System |
+
+> **Catatan:** Admin System termasuk kategori korporat dan muncul di tab "Semua PT", bukan di tab PT masing-masing.
 
 ### PT SGB (Tab: SGB)
 
@@ -842,79 +903,44 @@ Semua akun menggunakan password: **`password123`**
 | aziz.sgb@occ.id | Abdul Aziz | Dealer | Pagi |
 | amel.sgb@occ.id | Amel | Dealer | Siang |
 | dealer.sgb@occ.id | Dealer SGB | Dealer | Malam |
-| admin.sgb@occ.id | Admin SGB | Admin System | — |
 
 ### PT RFB (Tab: RFB)
 
-| Email | Role |
-|---|---|
-| spv1.rfb@occ.id | SPV Dealing |
-| spv2.rfb@occ.id | SPV Dealing |
-| dealer1.rfb@occ.id | Dealer |
-| dealer2.rfb@occ.id | Dealer |
-| admin.rfb@occ.id | Admin System |
+| Email | Role | Shift |
+|---|---|---|
+| spv1.rfb@occ.id | SPV Dealing | Pagi |
+| spv2.rfb@occ.id | SPV Dealing | Malam |
+| dealer1.rfb@occ.id | Dealer | Pagi |
+| dealer2.rfb@occ.id | Dealer | Siang |
 
 ### PT KPF (Tab: KPF)
 
-| Email | Role |
-|---|---|
-| spv1.kpf@occ.id | SPV Dealing |
-| spv2.kpf@occ.id | SPV Dealing |
-| dealer1.kpf@occ.id | Dealer |
-| dealer2.kpf@occ.id | Dealer |
-| admin.kpf@occ.id | Admin System |
+| Email | Role | Shift |
+|---|---|---|
+| spv1.kpf@occ.id | SPV Dealing | Pagi |
+| spv2.kpf@occ.id | SPV Dealing | Malam |
+| dealer1.kpf@occ.id | Dealer | Pagi |
+| dealer2.kpf@occ.id | Dealer | Siang |
 
 ### PT BPF (Tab: BPF)
 
-| Email | Role |
-|---|---|
-| spv1.bpf@occ.id | SPV Dealing |
-| spv2.bpf@occ.id | SPV Dealing |
-| dealer1.bpf@occ.id | Dealer |
-| dealer2.bpf@occ.id | Dealer |
-| admin.bpf@occ.id | Admin System |
+| Email | Role | Shift |
+|---|---|---|
+| spv1.bpf@occ.id | SPV Dealing | Pagi |
+| spv2.bpf@occ.id | SPV Dealing | Malam |
+| dealer1.bpf@occ.id | Dealer | Pagi |
+| dealer2.bpf@occ.id | Dealer | Siang |
 
 ### PT EWF (Tab: EWF)
 
-| Email | Role |
-|---|---|
-| spv1.ewf@occ.id | SPV Dealing |
-| spv2.ewf@occ.id | SPV Dealing |
-| dealer1.ewf@occ.id | Dealer |
-| dealer2.ewf@occ.id | Dealer |
-| admin.ewf@occ.id | Admin System |
+| Email | Role | Shift |
+|---|---|---|
+| spv1.ewf@occ.id | SPV Dealing | Pagi |
+| spv2.ewf@occ.id | SPV Dealing | Malam |
+| dealer1.ewf@occ.id | Dealer | Pagi |
+| dealer2.ewf@occ.id | Dealer | Siang |
 
 ---
 
-## Lampiran: Hal-hal yang Perlu Dicek / Potensi Gap
-
-Berikut adalah daftar area yang mungkin perlu dikonfirmasi atau dikembangkan lebih lanjut:
-
-### Fitur yang Ada di Backend tapi Belum Ada UI-nya
-- [ ] **Kirim Pesan Resmi** — Backend ada (POST /api/messages), UI input belum tersedia
-- [ ] **Buat Chat Room baru** — Backend ada, tombol "Buat Room" belum di UI
-- [ ] **Komentar Tugas** — Backend ada (POST /api/tasks/:id/comments), UI belum ada
-- [ ] **Generate KPI Snapshot** — Backend ada, tombol generate belum di UI dashboard
-
-### Pertanyaan yang Perlu Dikonfirmasi
-- [ ] Apakah Dealer boleh membuat keluhan? (kode mengizinkan, perlu konfirmasi kebijakan)
-- [ ] Siapa yang bisa menutup (closed) keluhan? SPV atau hanya Owner?
-- [ ] Apakah ada fitur laporan/export data ke Excel?
-- [ ] Apakah perlu fitur edit keluhan setelah dibuat?
-- [ ] Apakah SPV bisa melihat data PT lain?
-- [ ] Apakah perlu notifikasi pengumuman baru?
-- [ ] Apakah skor quality error terintegrasi ke KPI poin dealer?
-
-### Fitur yang Mungkin Perlu Ditambahkan
-- [ ] Export laporan KPI ke PDF/Excel
-- [ ] Laporan bulanan otomatis per PT
-- [ ] Filter log aktivitas per dealer (bukan hanya per tanggal)
-- [ ] Fitur pencarian global
-- [ ] Fitur notifikasi: pengumuman baru
-- [ ] History perubahan tugas (siapa yang update, kapan)
-- [ ] Fitur approval keluhan oleh SPV sebelum diteruskan ke Owner
-
----
-
-*Dokumen ini dibuat secara otomatis dari source code OCC versi Maret 2026.*  
+*Dokumen ini dibuat dari source code OCC versi Maret 2026.*  
 *Untuk pertanyaan teknis, hubungi tim pengembang.*
