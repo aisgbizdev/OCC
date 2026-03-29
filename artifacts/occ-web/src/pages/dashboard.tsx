@@ -7,11 +7,13 @@ import {
   useListComplaints,
   useCheckInactivity,
   useGetKpiLeaderboard,
+  useGetKpiTrend,
   type KpiScoreWithUser,
   type ActivityLogWithRelations,
   type TaskWithRelations,
   type ComplaintWithRelations,
   type CheckInactivity200,
+  type KpiTrendPoint,
 } from "@workspace/api-client-react";
 import { Activity, Award, CheckSquare, Target, AlertTriangle, TrendingUp, Users, Clock, Zap, ArrowRight } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
@@ -81,6 +83,63 @@ function KpiTrendChart({ logs }: { logs: ActivityLogWithRelations[] | undefined 
       </svg>
       <div className="flex justify-between mt-1">
         {trend.map((t, i) => (
+          <span key={i} className="text-[9px] text-muted-foreground/60 font-mono">{format(new Date(t.date), "d/M")}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SpvKpiTrendChart({ trend }: { trend: KpiTrendPoint[] | undefined }) {
+  const data = trend ?? [];
+  if (data.length === 0) return null;
+
+  const max = Math.max(...data.map(t => t.points), 1);
+  const W = 240, H = 48, PAD = 4;
+  const step = data.length > 1 ? (W - PAD * 2) / (data.length - 1) : 0;
+  const pts = data.map((t, i) => {
+    const x = PAD + i * step;
+    const y = H - PAD - ((t.points / max) * (H - PAD * 2));
+    return [x, y] as [number, number];
+  });
+  const polyline = pts.map(([x, y]) => `${x},${y}`).join(" ");
+  const area = `${pts[0][0]},${H - PAD} ${pts.map(([x, y]) => `${x},${y}`).join(" ")} ${pts[pts.length - 1][0]},${H - PAD}`;
+  const totalToday = data[data.length - 1]?.points ?? 0;
+  const totalYesterday = data[data.length - 2]?.points ?? 0;
+  const delta = totalToday - totalYesterday;
+  const isUp = delta >= 0;
+
+  return (
+    <div className="bg-card border rounded-2xl p-5 shadow-sm">
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tren Poin Tim 7 Hari</p>
+          <div className="flex items-center gap-2 mt-1">
+            <h3 className="text-2xl font-black tracking-tight">{totalToday}</h3>
+            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${isUp ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-400"}`}>
+              {isUp ? "+" : ""}{delta} vs kemarin
+            </span>
+          </div>
+        </div>
+        <TrendingUp className={`w-5 h-5 mt-1 ${isUp ? "text-emerald-500" : "text-muted-foreground"}`} />
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-12">
+        <defs>
+          <linearGradient id="spvTrendFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill="url(#spvTrendFill)" />
+        <polyline points={polyline} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 3 : 2}
+            fill={i === pts.length - 1 ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.5)"}
+          />
+        ))}
+      </svg>
+      <div className="flex justify-between mt-1">
+        {data.map((t, i) => (
           <span key={i} className="text-[9px] text-muted-foreground/60 font-mono">{format(new Date(t.date), "d/M")}</span>
         ))}
       </div>
@@ -220,6 +279,7 @@ function SupervisorDashboard() {
   const { data: complaints } = useListComplaints({ ptId: user?.ptId });
   const { data: logs } = useListActivityLogs({ ptId: user?.ptId });
   const { data: inactivityRaw } = useCheckInactivity();
+  const { data: trendData } = useGetKpiTrend({ period: "7d" });
 
   const pendingTasks = tasks?.filter(t => t.status !== "completed") ?? [];
   const openComplaints = complaints?.filter(c => c.status === "open" || c.status === "in_progress") ?? [];
@@ -240,6 +300,8 @@ function SupervisorDashboard() {
         <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" />
         <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" />
       </div>
+
+      <SpvKpiTrendChart trend={trendData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-card border rounded-2xl shadow-sm overflow-hidden">

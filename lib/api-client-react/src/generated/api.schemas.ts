@@ -600,6 +600,15 @@ export type GetKpiLeaderboardParams = {
   limit?: number;
 };
 
+export type KpiTrendPoint = {
+  date: string;
+  points: number;
+};
+
+export type GetKpiTrendParams = {
+  period?: string;
+};
+
 export type GetUserKpi200 = { [key: string]: unknown };
 
 export type ListKpiSnapshotsParams = {

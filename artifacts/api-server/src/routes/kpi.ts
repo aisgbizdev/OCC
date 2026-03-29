@@ -123,6 +123,50 @@ router.get("/kpi/user/:userId", authMiddleware, requireRole(...ALL_ROLES), async
   }
 });
 
+router.get("/kpi/trend", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const days = 7;
+    const result: { date: string; points: number }[] = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+
+      const nextD = new Date(d);
+      nextD.setDate(nextD.getDate() + 1);
+
+      const conditions: SQL[] = [
+        gte(activityLogsTable.createdAt, d),
+        sql`${activityLogsTable.createdAt} < ${nextD}`,
+      ];
+
+      if (req.user!.roleName === "Dealer") {
+        conditions.push(eq(activityLogsTable.userId, req.user!.userId));
+      } else if (req.user!.ptId) {
+        conditions.push(
+          sql`${activityLogsTable.userId} IN (SELECT id FROM users WHERE pt_id = ${req.user!.ptId})`
+        );
+      }
+
+      const [row] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${activityLogsTable.points}), 0)` })
+        .from(activityLogsTable)
+        .where(and(...conditions));
+
+      result.push({
+        date: d.toISOString().slice(0, 10),
+        points: Number(row?.total ?? 0),
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error("KPI trend error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/kpi/snapshots/generate", authMiddleware, requireRole("Owner", "Admin System"), async (req, res) => {
   try {
     const { periodType, periodKey } = req.body;

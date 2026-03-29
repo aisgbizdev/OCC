@@ -45,8 +45,10 @@ import type {
   ErrorResponse,
   GenerateKpiSnapshotsBody,
   GetKpiLeaderboardParams,
+  GetKpiTrendParams,
   GetQualitySummaryParams,
   GetUserKpi200,
+  KpiTrendPoint,
   HandoverLogWithRelations,
   HealthStatus,
   KpiScoreWithUser,
@@ -6836,5 +6838,87 @@ export function useGetQualitySummary<
     queryKey: QueryKey;
   };
 
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get KPI trend for the last 7 days
+ */
+export const getGetKpiTrendUrl = (params?: GetKpiTrendParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0
+    ? `/api/kpi/trend?${stringifiedParams}`
+    : `/api/kpi/trend`;
+};
+
+export const getKpiTrend = async (
+  params?: GetKpiTrendParams,
+  options?: RequestInit,
+): Promise<KpiTrendPoint[]> => {
+  return customFetch<KpiTrendPoint[]>(getGetKpiTrendUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetKpiTrendQueryKey = (params?: GetKpiTrendParams) => {
+  return [`/api/kpi/trend`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetKpiTrendQueryOptions = <
+  TData = Awaited<ReturnType<typeof getKpiTrend>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetKpiTrendParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getKpiTrend>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetKpiTrendQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getKpiTrend>>> = ({
+    signal,
+  }) => getKpiTrend(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getKpiTrend>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetKpiTrendQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getKpiTrend>>
+>;
+export type GetKpiTrendQueryError = ErrorType<unknown>;
+
+export function useGetKpiTrend<
+  TData = Awaited<ReturnType<typeof getKpiTrend>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetKpiTrendParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getKpiTrend>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetKpiTrendQueryOptions(params, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
   return { ...query, queryKey: queryOptions.queryKey };
 }
