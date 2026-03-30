@@ -3,7 +3,7 @@ import bcryptjs from "bcryptjs";
 import { db } from "@workspace/db";
 import { usersTable, rolesTable, ptsTable, branchesTable, shiftsTable } from "@workspace/db/schema";
 import { eq, and, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -37,7 +37,12 @@ async function enrichUser(user: typeof usersTable.$inferSelect) {
 router.get("/users", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Direksi"), async (req, res) => {
   try {
     const conditions: SQL[] = [];
-    if (req.query.ptId) conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
+    const ptScope = getPtScope(req);
+    if (ptScope !== null) {
+      conditions.push(eq(usersTable.ptId, ptScope));
+    } else if (req.query.ptId) {
+      conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
+    }
     if (req.query.roleId) conditions.push(eq(usersTable.roleId, Number(req.query.roleId)));
     if (req.query.shiftId) conditions.push(eq(usersTable.shiftId, Number(req.query.shiftId)));
     if (req.query.activeStatus !== undefined) conditions.push(eq(usersTable.activeStatus, req.query.activeStatus === "true"));

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { handoverLogsTable, usersTable, ptsTable, branchesTable, shiftsTable } from "@workspace/db/schema";
 import { eq, and, desc, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 import { createAuditLog } from "../helpers/audit";
 
 const router: IRouter = Router();
@@ -35,7 +35,12 @@ async function enrichHandover(log: typeof handoverLogsTable.$inferSelect) {
 router.get("/handover-logs", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const conditions: SQL[] = [];
-    if (req.query.ptId) conditions.push(eq(handoverLogsTable.ptId, Number(req.query.ptId)));
+    const ptScope = getPtScope(req);
+    if (ptScope !== null) {
+      conditions.push(eq(handoverLogsTable.ptId, ptScope));
+    } else if (req.query.ptId) {
+      conditions.push(eq(handoverLogsTable.ptId, Number(req.query.ptId)));
+    }
     if (req.query.fromShiftId) conditions.push(eq(handoverLogsTable.fromShiftId, Number(req.query.fromShiftId)));
     if (req.query.toShiftId) conditions.push(eq(handoverLogsTable.toShiftId, Number(req.query.toShiftId)));
 

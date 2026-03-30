@@ -62,3 +62,24 @@ export function requireRole(...allowedRoles: string[]) {
     next();
   };
 }
+
+export function getPtScope(req: Request): number | null {
+  if (!req.user) return null;
+  if (req.user.roleName === "Direksi" && req.user.ptId !== null) {
+    return req.user.ptId;
+  }
+  return null;
+}
+
+export function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction): void {
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) {
+    const token = header.slice(7);
+    try {
+      const decoded = jwt.verify(token, getJwtSecret()) as AuthPayload;
+      req.user = decoded;
+    } catch {
+    }
+  }
+  next();
+}

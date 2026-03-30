@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { kpiScoresTable, kpiSnapshotsTable, usersTable, activityLogsTable } from "@workspace/db/schema";
 import { eq, and, desc, sql, gte, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -13,7 +13,12 @@ router.get("/kpi/scores", authMiddleware, requireRole(...ALL_ROLES), async (req,
   try {
     const conditions: SQL[] = [];
     if (req.query.userId) conditions.push(eq(kpiScoresTable.userId, Number(req.query.userId)));
-    if (req.query.ptId) conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
+    const ptScope = getPtScope(req);
+    if (ptScope !== null) {
+      conditions.push(eq(usersTable.ptId, ptScope));
+    } else if (req.query.ptId) {
+      conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
+    }
     if (req.user!.roleName === "Dealer") {
       conditions.push(eq(kpiScoresTable.userId, req.user!.userId));
     }
@@ -51,7 +56,10 @@ router.get("/kpi/leaderboard", authMiddleware, requireRole(...ALL_ROLES), async 
       : kpiScoresTable.currentDailyScore;
 
     const conditions: SQL[] = [];
-    if (req.query.ptId) {
+    const ptScopeL = getPtScope(req);
+    if (ptScopeL !== null) {
+      conditions.push(eq(usersTable.ptId, ptScopeL));
+    } else if (req.query.ptId) {
       conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
     }
 

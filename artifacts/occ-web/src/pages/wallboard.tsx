@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, Component } from "react";
 import type { ReactNode } from "react";
 import { useSearch } from "wouter";
+import { useAuth } from "@/lib/auth";
 import { Award, Activity, AlertTriangle, Clock, Wifi, WifiOff, Monitor } from "lucide-react";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -78,7 +79,9 @@ function useWallboardData(pt?: string) {
       const url = pt
         ? `/api/wallboard?pt=${encodeURIComponent(pt)}`
         : `/api/wallboard`;
-      const res = await fetch(url);
+      const token = localStorage.getItem("occ_token");
+      const headers: HeadersInit = token ? { "Authorization": `Bearer ${token}` } : {};
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error("Network error");
       const json = await res.json();
       setData(json);
@@ -130,9 +133,12 @@ const PULSE_CONFIG = {
 };
 
 function WallboardInner() {
+  const { user } = useAuth();
+  const isDireksi = user?.roleName === "Direksi";
   const search = useSearch();
   const params = new URLSearchParams(search);
-  const pt = params.get("pt") ?? undefined;
+  const rawPt = params.get("pt") ?? undefined;
+  const pt = isDireksi && user?.ptName ? user.ptName : rawPt;
   const now = useClock();
   const { data, error, isOnline, lastRefresh } = useWallboardData(pt);
 

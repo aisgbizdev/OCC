@@ -5,10 +5,11 @@ import {
   activityLogsTable, complaintsTable, systemSettingsTable,
 } from "@workspace/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { optionalAuthMiddleware, getPtScope } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/wallboard", async (req, res) => {
+router.get("/wallboard", optionalAuthMiddleware, async (req, res) => {
   try {
     const ptFilter = req.query.pt as string | undefined;
 
@@ -16,7 +17,10 @@ router.get("/wallboard", async (req, res) => {
     const ptIdMap: Record<string, number> = {};
     pts.forEach(p => { ptIdMap[p.code ?? p.name] = p.id; ptIdMap[p.name] = p.id; });
 
-    const targetPtId: number | undefined = ptFilter ? ptIdMap[ptFilter.toUpperCase()] ?? ptIdMap[ptFilter] : undefined;
+    const ptScope = getPtScope(req);
+    const targetPtId: number | undefined = ptScope !== null
+      ? ptScope
+      : (ptFilter ? ptIdMap[ptFilter.toUpperCase()] ?? ptIdMap[ptFilter] : undefined);
 
     const [dealerRole] = await db.select({ id: rolesTable.id })
       .from(rolesTable).where(eq(rolesTable.name, "Dealer")).limit(1);

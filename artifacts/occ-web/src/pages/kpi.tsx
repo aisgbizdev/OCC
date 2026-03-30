@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGetKpiLeaderboard, useListPts, useListBranches, type KpiScoreWithUser, type Branch } from "@workspace/api-client-react";
 import { Trophy, Building2, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -20,10 +20,17 @@ function getScore(user: KpiScoreWithUser, period: Period): number {
 export default function KPI() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+  const isDireksi = user?.roleName === "Direksi";
 
   const [period, setPeriod] = useState<Period>("daily");
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
+
+  useEffect(() => {
+    if (isDireksi && user?.ptId) {
+      setFilterPtId(String(user.ptId));
+    }
+  }, [isDireksi, user?.ptId]);
 
   const { data: pts } = useListPts();
   const { data: filterBranches } = useListBranches(
@@ -76,9 +83,10 @@ export default function KPI() {
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
             <select
-              className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px]"
+              className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px] disabled:opacity-60 disabled:cursor-not-allowed"
               value={filterPtId}
               onChange={e => handlePtChange(e.target.value)}
+              disabled={isDireksi}
             >
               <option value="">Semua PT</option>
               {pts?.map(pt => (

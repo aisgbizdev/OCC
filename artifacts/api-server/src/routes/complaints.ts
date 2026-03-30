@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { complaintsTable, usersTable, ptsTable, branchesTable } from "@workspace/db/schema";
 import { eq, and, desc, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 import { createAuditLog, createNotification } from "../helpers/audit";
 import { sendPushToRoles, sendPushToUsers } from "../lib/push";
 
@@ -45,7 +45,12 @@ router.get("/complaints", authMiddleware, requireRole(...ALL_ROLES), async (req,
     const conditions: SQL[] = [];
     if (req.query.status) conditions.push(eq(complaintsTable.status, req.query.status as string));
     if (req.query.severity) conditions.push(eq(complaintsTable.severity, req.query.severity as string));
-    if (req.query.ptId) conditions.push(eq(complaintsTable.ptId, Number(req.query.ptId)));
+    const ptScope = getPtScope(req);
+    if (ptScope !== null) {
+      conditions.push(eq(complaintsTable.ptId, ptScope));
+    } else if (req.query.ptId) {
+      conditions.push(eq(complaintsTable.ptId, Number(req.query.ptId)));
+    }
     if (req.query.assignedUserId) conditions.push(eq(complaintsTable.assignedUserId, Number(req.query.assignedUserId)));
 
     const complaints = await db.select().from(complaintsTable)

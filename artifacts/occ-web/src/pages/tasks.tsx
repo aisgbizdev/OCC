@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useListTasks, useUpdateTask, useCreateTask, useListUsers, useListPts, useListBranches, type TaskWithRelations, type UserWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
 
@@ -21,10 +21,17 @@ const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "S
 export default function Tasks() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+  const isDireksi = user?.roleName === "Direksi";
 
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  useEffect(() => {
+    if (isDireksi && user?.ptId) {
+      setFilterPtId(String(user.ptId));
+    }
+  }, [isDireksi, user?.ptId]);
 
   const { data: pts } = useListPts();
   const { data: filterBranches } = useListBranches(
@@ -108,9 +115,10 @@ export default function Tasks() {
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
               <select
-                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px]"
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[150px] disabled:opacity-60 disabled:cursor-not-allowed"
                 value={filterPtId}
                 onChange={e => handlePtChange(e.target.value)}
+                disabled={isDireksi}
               >
                 <option value="">Semua PT</option>
                 {pts?.map(pt => (

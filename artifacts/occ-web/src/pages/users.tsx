@@ -85,8 +85,16 @@ export default function MasterData() {
   const qc = useQueryClient();
   const { toast } = useToast();
 
+  const isDireksi = me?.roleName === "Direksi";
+
   const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
   const [ptFilter, setPtFilter] = useState<string>("");
+
+  useEffect(() => {
+    if (isDireksi && me?.ptId) {
+      setPtFilter(String(me.ptId));
+    }
+  }, [isDireksi, me?.ptId]);
 
   const activeStatusParam = activeTab === "active" ? true : false;
   const listParams = {
@@ -534,7 +542,8 @@ export default function MasterData() {
               <select
                 value={ptFilter}
                 onChange={e => setPtFilter(e.target.value)}
-                className="h-9 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={isDireksi}
+                className="h-9 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="">Semua PT</option>
                 {(pts as Pt[] | undefined)?.map(pt => (

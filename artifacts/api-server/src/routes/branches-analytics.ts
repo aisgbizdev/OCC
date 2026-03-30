@@ -10,15 +10,16 @@ import {
   usersTable,
 } from "@workspace/db/schema";
 import { eq, and, gte, inArray, sql, desc } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
-router.get("/branches/analytics", authMiddleware, requireRole(...CHIEF_AND_ABOVE), async (_req, res) => {
+router.get("/branches/analytics", authMiddleware, requireRole(...CHIEF_AND_ABOVE), async (req, res) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const ptScope = getPtScope(req);
 
     const branches = await db
       .select({
@@ -29,7 +30,9 @@ router.get("/branches/analytics", authMiddleware, requireRole(...CHIEF_AND_ABOVE
         activeStatus: branchesTable.activeStatus,
       })
       .from(branchesTable)
-      .where(eq(branchesTable.activeStatus, true))
+      .where(ptScope !== null
+        ? and(eq(branchesTable.activeStatus, true), eq(branchesTable.ptId, ptScope))
+        : eq(branchesTable.activeStatus, true))
       .orderBy(branchesTable.name);
 
     if (branches.length === 0) {

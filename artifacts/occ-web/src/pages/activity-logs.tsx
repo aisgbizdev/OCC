@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useListActivityLogs, useListPts, useListBranches, type ActivityLogWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Plus, Filter, Flag, Building2, MapPin } from "lucide-react";
@@ -35,6 +35,13 @@ export default function ActivityLogs() {
 
   const isSPV = SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+  const isDireksi = user?.roleName === "Direksi";
+
+  useEffect(() => {
+    if (isDireksi && user?.ptId) {
+      setFilterPtId(String(user.ptId));
+    }
+  }, [isDireksi, user?.ptId]);
 
   const { data: pts } = useListPts();
   const { data: branches } = useListBranches(
@@ -123,9 +130,10 @@ export default function ActivityLogs() {
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
               <select
-                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[160px]"
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[160px] disabled:opacity-60 disabled:cursor-not-allowed"
                 value={filterPtId}
                 onChange={e => handlePtChange(e.target.value)}
+                disabled={isDireksi}
               >
                 <option value="">Semua PT</option>
                 {pts?.map(pt => (

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { ptsTable, branchesTable, shiftsTable, activityTypesTable, rolesTable } from "@workspace/db/schema";
 import { eq, and, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -78,7 +78,12 @@ router.delete("/pts/:id", authMiddleware, requireRole("Owner", "Admin System"), 
 router.get("/branches", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const conditions: SQL[] = [];
-    if (req.query.ptId) conditions.push(eq(branchesTable.ptId, Number(req.query.ptId)));
+    const ptScope = getPtScope(req);
+    if (ptScope !== null) {
+      conditions.push(eq(branchesTable.ptId, ptScope));
+    } else if (req.query.ptId) {
+      conditions.push(eq(branchesTable.ptId, Number(req.query.ptId)));
+    }
     const branches = conditions.length > 0
       ? await db.select().from(branchesTable).where(and(...conditions))
       : await db.select().from(branchesTable);

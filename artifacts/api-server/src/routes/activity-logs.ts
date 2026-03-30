@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { activityLogsTable, activityTypesTable, usersTable, ptsTable, branchesTable, shiftsTable, systemSettingsTable, kpiScoresTable } from "@workspace/db/schema";
 import { eq, and, gte, lte, desc, sql, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth";
+import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 import { createAuditLog } from "../helpers/audit";
 
 const router: IRouter = Router();
@@ -80,7 +80,12 @@ router.get("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (r
   try {
     const conditions: SQL[] = [];
     if (req.query.userId) conditions.push(eq(activityLogsTable.userId, Number(req.query.userId)));
-    if (req.query.ptId) conditions.push(eq(activityLogsTable.ptId, Number(req.query.ptId)));
+    const ptScope = getPtScope(req);
+    if (ptScope !== null) {
+      conditions.push(eq(activityLogsTable.ptId, ptScope));
+    } else if (req.query.ptId) {
+      conditions.push(eq(activityLogsTable.ptId, Number(req.query.ptId)));
+    }
     if (req.query.shiftId) conditions.push(eq(activityLogsTable.shiftId, Number(req.query.shiftId)));
     if (req.query.activityTypeId) conditions.push(eq(activityLogsTable.activityTypeId, Number(req.query.activityTypeId)));
     if (req.query.dateFrom) conditions.push(gte(activityLogsTable.createdAt, new Date(req.query.dateFrom as string)));
