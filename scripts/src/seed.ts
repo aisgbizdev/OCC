@@ -15,7 +15,7 @@ import bcryptjs from "bcryptjs";
 
 // Seed version marker — update this email whenever the seed data changes
 // to force a reseed on any environment that still has the old data.
-const SEED_MARKER_EMAIL = "kiki@occ.id.v20-dirperpt";
+const SEED_MARKER_EMAIL = "kiki@occ.id.v21-direksi-real";
 
 async function seed() {
   console.log("Seeding OCC database...");
@@ -271,8 +271,8 @@ async function seed() {
       { name: "Amel",                  email: "amel.sgb@occ.id",            passwordHash: pw, roleId: coSpvRole.id,      ptId: null,   branchId: null,   shiftId: siang.id, positionTitle: "Co-SPV Dealing" },
 
       // ── SGB — Direktur & Tim Operasional ──────────────────────────────
-      { name: "Direktur Utama SGB",    email: "dir.utama@occ.id",           passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Direktur Kepatuhan SGB",email: "dir.kepatuhan@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Iriawan Widadi",        email: "du_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Ahmad Fauzi",           email: "dk_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
       { name: "Eko",                   email: "eko.sgb@occ.id",             passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
       { name: "Fahrul",                email: "fahrul.sgb@occ.id",          passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Adid",                  email: "adid.sgb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
@@ -281,8 +281,8 @@ async function seed() {
       { name: "Siti Nuraini",          email: "admin.sgb@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── RFB ────────────────────────────────────────────────────────────
-      { name: "Bambang Sutrisno",      email: "dir.utama.rfb@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Sri Wahyuni",           email: "dir.kepatuhan.rfb@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Riyan Kurniawan",       email: "du_rfb@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Mega Helia Purnama Putri", email: "dk_rfb@occ.id",           passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
       { name: "Dewi Lestari",          email: "spv1.rfb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
       { name: "Hendra Wijaya",         email: "spv2.rfb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Reza Aditya",           email: "dealer1.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
@@ -290,8 +290,8 @@ async function seed() {
       { name: "Fitri Handayani",       email: "admin.rfb@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── KPF ────────────────────────────────────────────────────────────
-      { name: "Darmawan Priadi",       email: "dir.utama.kpf@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Ratna Kusuma",          email: "dir.kepatuhan.kpf@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Lukman Wahyudin",       email: "du_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Egi Ramadian NP",       email: "dk_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
       { name: "Nita Rahayu",           email: "spv1.kpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
       { name: "Agus Suryanto",         email: "spv2.kpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Fajar Nugraha",         email: "dealer1.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
@@ -299,8 +299,8 @@ async function seed() {
       { name: "Toni Saputra",          email: "admin.kpf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── BPF ────────────────────────────────────────────────────────────
-      { name: "Wirawan Hadi",          email: "dir.utama.bpf@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Endang Susanti",        email: "dir.kepatuhan.bpf@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Nurwanto",              email: "du_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Akhmad Royani",         email: "dk_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
       { name: "Yuni Sari",             email: "spv1.bpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
       { name: "Rizki Permana",         email: "spv2.bpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Galih Prakoso",         email: "dealer1.bpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
@@ -308,8 +308,8 @@ async function seed() {
       { name: "Erwin Setiawan",        email: "admin.bpf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── EWF ────────────────────────────────────────────────────────────
-      { name: "Haryono Budi",          email: "dir.utama.ewf@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Yuliana Pratiwi",       email: "dir.kepatuhan.ewf@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Agus Wijayanto",        email: "du_ewf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Fadly Khairuzzadhi, M.H.", email: "dk_ewf@occ.id",           passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
       { name: "Sari Wulandari",        email: "spv1.ewf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
       { name: "Denny Kusuma",          email: "spv2.ewf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Bayu Setiabudi",        email: "dealer1.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
@@ -332,11 +332,16 @@ async function seed() {
     console.log("─── Korporat/Lintas-PT ────────────────────────────────────");
     console.log("  superadmin@occ.id | owner@occ.id | kiki@occ.id | amel.sgb@occ.id");
     console.log("─── SGB ───────────────────────────────────────────────────");
-    console.log("  dir.utama@occ.id | dir.kepatuhan@occ.id");
+    console.log("  du_sgb@occ.id (Iriawan Widadi) | dk_sgb@occ.id (Ahmad Fauzi)");
     console.log("  eko.sgb / fahrul.sgb / adid.sgb | aziz.sgb / dealer.sgb | admin.sgb");
-    console.log("─── PT lain (RFB/KPF/BPF/EWF) ────────────────────────────");
-    console.log("  dir.utama.<pt>@occ.id | dir.kepatuhan.<pt>@occ.id");
-    console.log("  spv1/spv2.<pt>@occ.id | dealer1/dealer2.<pt>@occ.id | admin.<pt>@occ.id");
+    console.log("─── RFB ───────────────────────────────────────────────────");
+    console.log("  du_rfb@occ.id (Riyan Kurniawan) | dk_rfb@occ.id (Mega Helia Purnama Putri)");
+    console.log("─── KPF ───────────────────────────────────────────────────");
+    console.log("  du_kpf@occ.id (Lukman Wahyudin) | dk_kpf@occ.id (Egi Ramadian NP)");
+    console.log("─── BPF ───────────────────────────────────────────────────");
+    console.log("  du_bpf@occ.id (Nurwanto) | dk_bpf@occ.id (Akhmad Royani)");
+    console.log("─── EWF ───────────────────────────────────────────────────");
+    console.log("  du_ewf@occ.id (Agus Wijayanto) | dk_ewf@occ.id (Fadly Khairuzzadhi, M.H.)");
   } // end if (!skipMainSeed)
 
   // ── Error Activity Types (idempotent, always runs) ───────────────────────
