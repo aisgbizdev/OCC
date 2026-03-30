@@ -607,7 +607,7 @@ export default function MasterData() {
                         {u.roleName ?? "—"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">{u.ptName ?? "—"}</td>
+                    <td className="px-6 py-4 text-muted-foreground text-sm">{u.ptName ?? "Head Quarters"}</td>
                     <td className="px-6 py-4 text-muted-foreground text-sm">{u.shiftName ?? "—"}</td>
                     <td className="px-6 py-4 text-center">
                       {u.activeStatus
