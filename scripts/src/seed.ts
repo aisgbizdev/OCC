@@ -15,7 +15,7 @@ import bcryptjs from "bcryptjs";
 
 // Seed version marker — update this email whenever the seed data changes
 // to force a reseed on any environment that still has the old data.
-const SEED_MARKER_EMAIL = "kiki@occ.id.v19-cospv";
+const SEED_MARKER_EMAIL = "kiki@occ.id.v19b-qualitynames";
 
 async function seed() {
   console.log("Seeding OCC database...");
@@ -367,8 +367,8 @@ async function seed() {
     } else {
       await db.insert(qualityErrorTypesTable).values([
         // Dealer
-        { name: "Validasi Data Nasabah",          category: "DEALER", objectiveGroup: "Validasi Data Nasabah",    description: "Kesalahan dalam proses pemeriksaan keabsahan data nasabah, pengiriman User ID & Password, penginputan client bank, dan update NA di program BAS." },
-        { name: "Identifikasi Margin In & Out",   category: "DEALER", objectiveGroup: "Margin In & Out",          description: "Kesalahan dalam identifikasi slip setoran, pencatatan margin in/out di buku keuangan, verifikasi OR, withdrawal, dan penyerahan data ke finance." },
+        { name: "Aktivasi Account",               category: "DEALER", objectiveGroup: "Aktivasi Account",         description: "Kesalahan dalam proses aktivasi account nasabah, pengiriman User ID & Password, input client bank & new account, dan update NA di program BAS." },
+        { name: "Cek Dana Masuk & Withdrawal",    category: "DEALER", objectiveGroup: "Cek Dana Masuk & WD",      description: "Kesalahan dalam pengecekan dana masuk (deposit / top up), cek withdrawal, pencatatan di buku keuangan, verifikasi OR, dan penyerahan data ke finance." },
         { name: "Laporan Logbook / Serah Terima", category: "DEALER", objectiveGroup: "Laporan Logbook",          description: "Keterlambatan atau kesalahan pencatatan pekerjaan setiap serah terima antar shift, pengecekan surat pernyataan, dan penginputan report XLS." },
         { name: "Pengiriman Statement Nasabah",   category: "DEALER", objectiveGroup: "Pengiriman Statement",     description: "Keterlambatan pengiriman statement ke email nasabah melalui BDC. Seluruh email harus terkirim sebelum shift berakhir." },
         // SPV
