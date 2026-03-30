@@ -15,7 +15,7 @@ import bcryptjs from "bcryptjs";
 
 // Seed version marker — update this email whenever the seed data changes
 // to force a reseed on any environment that still has the old data.
-const SEED_MARKER_EMAIL = "kiki@occ.id.v19b-qualitynames";
+const SEED_MARKER_EMAIL = "kiki@occ.id.v20-dirperpt";
 
 async function seed() {
   console.log("Seeding OCC database...");
@@ -264,51 +264,59 @@ async function seed() {
     const [pagi, siang, malam] = shifts;
 
     await db.insert(usersTable).values([
-      // ── Level Korporat / Divisi ────────────────────────────────────────
-      { name: "Super Admin",           email: "superadmin@occ.id",      passwordHash: pw, roleId: superadminRole.id, ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Superadmin" },
-      { name: "Admin Owner",           email: "owner@occ.id",           passwordHash: pw, roleId: ownerRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Owner" },
-      { name: "Direktur Utama",        email: "dir.utama@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Direktur Kepatuhan",    email: "dir.kepatuhan@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Kiki",                  email: "kiki@occ.id",            passwordHash: pw, roleId: chiefRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+      // ── Korporat / Lintas-PT (tanpa PT spesifik) ──────────────────────
+      { name: "Super Admin",           email: "superadmin@occ.id",          passwordHash: pw, roleId: superadminRole.id, ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "Superadmin" },
+      { name: "Admin Owner",           email: "owner@occ.id",               passwordHash: pw, roleId: ownerRole.id,      ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "Owner" },
+      { name: "Kiki",                  email: "kiki@occ.id",                passwordHash: pw, roleId: chiefRole.id,      ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "Chief Dealing" },
+      { name: "Amel",                  email: "amel.sgb@occ.id",            passwordHash: pw, roleId: coSpvRole.id,      ptId: null,   branchId: null,   shiftId: siang.id, positionTitle: "Co-SPV Dealing" },
 
-      // ── SGB — Nama asli dari KPI-OPR Excel ────────────────────────────
-      { name: "Eko",                   email: "eko.sgb@occ.id",         passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
-      { name: "Fahrul",                email: "fahrul.sgb@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Adid",                  email: "adid.sgb@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Abdul Aziz",            email: "aziz.sgb@occ.id",        passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Amel",                  email: "amel.sgb@occ.id",        passwordHash: pw, roleId: coSpvRole.id,    ptId: null,   branchId: null,   shiftId: siang.id, positionTitle: "Co-SPV Dealing" },
-      { name: "Dealer SGB",            email: "dealer.sgb@occ.id",      passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "Dealer" },
-      { name: "Admin SGB",             email: "admin.sgb@occ.id",       passwordHash: pw, roleId: adminRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+      // ── SGB — Direktur & Tim Operasional ──────────────────────────────
+      { name: "Direktur Utama SGB",    email: "dir.utama@occ.id",           passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Direktur Kepatuhan SGB",email: "dir.kepatuhan@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Eko",                   email: "eko.sgb@occ.id",             passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+      { name: "Fahrul",                email: "fahrul.sgb@occ.id",          passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
+      { name: "Adid",                  email: "adid.sgb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
+      { name: "Abdul Aziz",            email: "aziz.sgb@occ.id",            passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
+      { name: "Budi Santoso",          email: "dealer.sgb@occ.id",          passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id,  shiftId: malam.id, positionTitle: "Dealer" },
+      { name: "Siti Nuraini",          email: "admin.sgb@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── RFB ────────────────────────────────────────────────────────────
-      { name: "Dewi Lestari",          email: "spv1.rfb@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
-      { name: "Hendra Wijaya",         email: "spv2.rfb@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Reza Aditya",           email: "dealer1.rfb@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Maya Indah",            email: "dealer2.rfb@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id, shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Fitri Handayani",       email: "admin.rfb@occ.id",       passwordHash: pw, roleId: adminRole.id,      ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Bambang Sutrisno",      email: "dir.utama.rfb@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Sri Wahyuni",           email: "dir.kepatuhan.rfb@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Dewi Lestari",          email: "spv1.rfb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+      { name: "Hendra Wijaya",         email: "spv2.rfb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: rfb.id, branchId: b1.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
+      { name: "Reza Aditya",           email: "dealer1.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
+      { name: "Maya Indah",            email: "dealer2.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id,  shiftId: siang.id, positionTitle: "Dealer" },
+      { name: "Fitri Handayani",       email: "admin.rfb@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── KPF ────────────────────────────────────────────────────────────
-      { name: "Nita Rahayu",           email: "spv1.kpf@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
-      { name: "Agus Suryanto",         email: "spv2.kpf@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Fajar Nugraha",         email: "dealer1.kpf@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Indah Permata",         email: "dealer2.kpf@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id, shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Toni Saputra",          email: "admin.kpf@occ.id",       passwordHash: pw, roleId: adminRole.id,      ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Darmawan Priadi",       email: "dir.utama.kpf@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Ratna Kusuma",          email: "dir.kepatuhan.kpf@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Nita Rahayu",           email: "spv1.kpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+      { name: "Agus Suryanto",         email: "spv2.kpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: kpf.id, branchId: b2.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
+      { name: "Fajar Nugraha",         email: "dealer1.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
+      { name: "Indah Permata",         email: "dealer2.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id,  shiftId: siang.id, positionTitle: "Dealer" },
+      { name: "Toni Saputra",          email: "admin.kpf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── BPF ────────────────────────────────────────────────────────────
-      { name: "Yuni Sari",             email: "spv1.bpf@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
-      { name: "Rizki Permana",         email: "spv2.bpf@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Galih Prakoso",         email: "dealer1.bpf@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Putri Amalia",          email: "dealer2.bpf@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id, shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Erwin Setiawan",        email: "admin.bpf@occ.id",       passwordHash: pw, roleId: adminRole.id,      ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Wirawan Hadi",          email: "dir.utama.bpf@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Endang Susanti",        email: "dir.kepatuhan.bpf@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Yuni Sari",             email: "spv1.bpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+      { name: "Rizki Permana",         email: "spv2.bpf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: bpf.id, branchId: b3.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
+      { name: "Galih Prakoso",         email: "dealer1.bpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
+      { name: "Putri Amalia",          email: "dealer2.bpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id,  shiftId: siang.id, positionTitle: "Dealer" },
+      { name: "Erwin Setiawan",        email: "admin.bpf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── EWF ────────────────────────────────────────────────────────────
-      { name: "Sari Wulandari",        email: "spv1.ewf@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "SPV Dealing" },
-      { name: "Denny Kusuma",          email: "spv2.ewf@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Bayu Setiabudi",        email: "dealer1.ewf@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Ayu Ratnasari",         email: "dealer2.ewf@occ.id",     passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id, shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Widi Hartono",          email: "admin.ewf@occ.id",       passwordHash: pw, roleId: adminRole.id,      ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Haryono Budi",          email: "dir.utama.ewf@occ.id",       passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Yuliana Pratiwi",       email: "dir.kepatuhan.ewf@occ.id",   passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Sari Wulandari",        email: "spv1.ewf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "SPV Dealing" },
+      { name: "Denny Kusuma",          email: "spv2.ewf@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: ewf.id, branchId: b4.id,  shiftId: malam.id, positionTitle: "SPV Dealing" },
+      { name: "Bayu Setiabudi",        email: "dealer1.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
+      { name: "Ayu Ratnasari",         email: "dealer2.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id,  shiftId: siang.id, positionTitle: "Dealer" },
+      { name: "Widi Hartono",          email: "admin.ewf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
     ]);
-    console.log("Created 32 users (5 korporat/divisi + 7 SGB + 5×4 PT lain)");
+    console.log("Created 40 users (4 korporat + 8 SGB + 7×4 PT lain)");
 
     await db.insert(systemSettingsTable).values([
       { settingKey: "daily_target_points",          settingValue: "40", description: "Daily KPI target points per dealer" },
@@ -320,16 +328,15 @@ async function seed() {
     ]);
     console.log("Created system settings");
 
-    console.log("\n✓ Seed complete! 32 demo accounts (password: password123)");
-    console.log("─── Korporat/Divisi ───────────────────────────────────────");
-    console.log("  superadmin@occ.id      | kiki@occ.id");
-    console.log("  dir.utama@occ.id       | dir.kepatuhan@occ.id");
-    console.log("─── SGB (nama asli) ───────────────────────────────────────");
-    console.log("  eko.sgb@occ.id (SPV Pagi) | fahrul.sgb / adid.sgb (SPV Malam)");
-    console.log("  aziz.sgb@occ.id (Pagi)    | amel.sgb@occ.id (Siang)");
-    console.log("─── PT lain ───────────────────────────────────────────────");
-    console.log("  spv1/spv2.<pt>@occ.id  | dealer1/dealer2.<pt>@occ.id | admin.<pt>@occ.id");
-    console.log("  (ganti <pt> dengan rfb / kpf / bpf / ewf)");
+    console.log("\n✓ Seed complete! 40 demo accounts (password: password123)");
+    console.log("─── Korporat/Lintas-PT ────────────────────────────────────");
+    console.log("  superadmin@occ.id | owner@occ.id | kiki@occ.id | amel.sgb@occ.id");
+    console.log("─── SGB ───────────────────────────────────────────────────");
+    console.log("  dir.utama@occ.id | dir.kepatuhan@occ.id");
+    console.log("  eko.sgb / fahrul.sgb / adid.sgb | aziz.sgb / dealer.sgb | admin.sgb");
+    console.log("─── PT lain (RFB/KPF/BPF/EWF) ────────────────────────────");
+    console.log("  dir.utama.<pt>@occ.id | dir.kepatuhan.<pt>@occ.id");
+    console.log("  spv1/spv2.<pt>@occ.id | dealer1/dealer2.<pt>@occ.id | admin.<pt>@occ.id");
   } // end if (!skipMainSeed)
 
   // ── Error Activity Types (idempotent, always runs) ───────────────────────

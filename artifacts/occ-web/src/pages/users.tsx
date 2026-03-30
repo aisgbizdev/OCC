@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Users, Building, Shield, CheckCircle2, XCircle, Plus, X,
-  Crown, Eye, Star, TrendingUp, Settings, Loader2, Pencil, UserX, UserCheck, KeyRound,
+  Crown, Eye, Star, TrendingUp, Settings, Loader2, Pencil, UserX, UserCheck, KeyRound, Trash2, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,10 +24,11 @@ const ROLE_CONFIG: Record<string, { color: string; bg: string; icon: React.React
   "Superadmin":    { color: "text-amber-400",   bg: "bg-amber-500/10",   icon: <Shield className="w-3.5 h-3.5" /> },
   "Owner":         { color: "text-violet-400",  bg: "bg-violet-500/10",  icon: <Crown className="w-3.5 h-3.5" /> },
   "Direksi":       { color: "text-blue-400",    bg: "bg-blue-500/10",    icon: <Eye className="w-3.5 h-3.5" /> },
-  "Chief Dealing": { color: "text-emerald-400", bg: "bg-emerald-500/10", icon: <Star className="w-3.5 h-3.5" /> },
-  "SPV Dealing":   { color: "text-orange-400",  bg: "bg-orange-500/10",  icon: <Star className="w-3.5 h-3.5" /> },
-  "Dealer":        { color: "text-cyan-400",    bg: "bg-cyan-500/10",    icon: <TrendingUp className="w-3.5 h-3.5" /> },
-  "Admin System":  { color: "text-rose-400",    bg: "bg-rose-500/10",    icon: <Settings className="w-3.5 h-3.5" /> },
+  "Chief Dealing":   { color: "text-emerald-400", bg: "bg-emerald-500/10", icon: <Star className="w-3.5 h-3.5" /> },
+  "Co-SPV Dealing":  { color: "text-yellow-400",  bg: "bg-yellow-500/10",  icon: <Users className="w-3.5 h-3.5" /> },
+  "SPV Dealing":     { color: "text-orange-400",  bg: "bg-orange-500/10",  icon: <Star className="w-3.5 h-3.5" /> },
+  "Dealer":          { color: "text-cyan-400",    bg: "bg-cyan-500/10",    icon: <TrendingUp className="w-3.5 h-3.5" /> },
+  "Admin System":    { color: "text-rose-400",    bg: "bg-rose-500/10",    icon: <Settings className="w-3.5 h-3.5" /> },
 };
 
 const DEFAULT_ROLE_CFG = { color: "text-primary", bg: "bg-primary/10", icon: <Users className="w-3.5 h-3.5" /> };
@@ -103,6 +104,8 @@ export default function MasterData() {
     name: "", roleId: 0, ptId: "", shiftId: "", positionTitle: "", activeStatus: true,
   });
   const [deactivatingId, setDeactivatingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserWithRelations | null>(null);
+  const [hardDeleting, setHardDeleting] = useState(false);
   const [resetTarget, setResetTarget] = useState<UserWithRelations | null>(null);
   const [resetNewPw, setResetNewPw] = useState("");
   const [resetConfirmPw, setResetConfirmPw] = useState("");
@@ -116,6 +119,7 @@ export default function MasterData() {
   const canAddUser = isSuperAdmin || isAdminSystem || isOwner;
   const canEditUser = isSuperAdmin || isAdminSystem || isOwner || isChiefDealing;
   const canDeactivate = isSuperAdmin || isAdminSystem;
+  const canHardDelete = isSuperAdmin || isOwner;
   const canEditRolePt = isSuperAdmin || isOwner || isChiefDealing;
   const canResetPassword = isSuperAdmin || isAdminSystem || isOwner;
 
@@ -215,30 +219,41 @@ export default function MasterData() {
 
   const handleDeactivate = (u: UserWithRelations) => {
     setDeactivatingId(u.id);
-    if (u.activeStatus) {
-      deleteUser.mutate({ id: u.id }, {
-        onSuccess: () => {
-          toast({ title: `${u.name} telah dinonaktifkan` });
-          qc.invalidateQueries({ queryKey: ["/api/users"] });
-          setDeactivatingId(null);
-        },
-        onError: () => {
-          toast({ title: "Gagal menonaktifkan pengguna", variant: "destructive" });
-          setDeactivatingId(null);
-        }
+    const newStatus = !u.activeStatus;
+    updateUser.mutate({ id: u.id, data: { activeStatus: newStatus } }, {
+      onSuccess: () => {
+        toast({ title: newStatus ? `${u.name} telah diaktifkan kembali` : `${u.name} telah dinonaktifkan` });
+        qc.invalidateQueries({ queryKey: ["/api/users"] });
+        setDeactivatingId(null);
+      },
+      onError: () => {
+        toast({ title: newStatus ? "Gagal mengaktifkan pengguna" : "Gagal menonaktifkan pengguna", variant: "destructive" });
+        setDeactivatingId(null);
+      }
+    });
+  };
+
+  const handleHardDelete = async () => {
+    if (!deleteTarget) return;
+    setHardDeleting(true);
+    const token = localStorage.getItem("occ_token");
+    try {
+      const res = await fetch(`/api/users/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-    } else {
-      updateUser.mutate({ id: u.id, data: { activeStatus: true } }, {
-        onSuccess: () => {
-          toast({ title: `${u.name} telah diaktifkan kembali` });
-          qc.invalidateQueries({ queryKey: ["/api/users"] });
-          setDeactivatingId(null);
-        },
-        onError: () => {
-          toast({ title: "Gagal mengaktifkan pengguna", variant: "destructive" });
-          setDeactivatingId(null);
-        }
-      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: "Gagal menghapus", description: body.error ?? "Terjadi kesalahan", variant: "destructive" });
+      } else {
+        toast({ title: `${deleteTarget.name} berhasil dihapus permanen` });
+        qc.invalidateQueries({ queryKey: ["/api/users"] });
+        setDeleteTarget(null);
+      }
+    } catch {
+      toast({ title: "Gagal menghapus pengguna", variant: "destructive" });
+    } finally {
+      setHardDeleting(false);
     }
   };
 
@@ -554,12 +569,12 @@ export default function MasterData() {
                 <th className="px-6 py-4">PT</th>
                 <th className="px-6 py-4">Shift</th>
                 <th className="px-6 py-4 text-center">Status</th>
-                {(canEditUser || canDeactivate) && <th className="px-6 py-4 text-center">Aksi</th>}
+                {(canEditUser || canDeactivate || canHardDelete) && <th className="px-6 py-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                <tr><td colSpan={(canEditUser || canDeactivate) ? 7 : 6} className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
+                <tr><td colSpan={(canEditUser || canDeactivate || canHardDelete) ? 7 : 6} className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
               ) : (users as UserWithRelations[] | undefined)?.map((u: UserWithRelations) => {
                 const rc = roleCfg(u.roleName);
                 const isDeactivating = deactivatingId === u.id;
@@ -590,9 +605,9 @@ export default function MasterData() {
                         ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
                         : <XCircle className="w-4 h-4 text-muted-foreground mx-auto" />}
                     </td>
-                    {(canEditUser || canDeactivate) && (
+                    {(canEditUser || canDeactivate || canHardDelete) && (
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
                           {canEditUser && (
                             <Button
                               size="sm"
@@ -606,10 +621,10 @@ export default function MasterData() {
                           {canDeactivate && (
                             <Button
                               size="sm"
-                              variant={u.activeStatus ? "destructive" : "outline"}
+                              variant={u.activeStatus ? "outline" : "outline"}
                               onClick={() => handleDeactivate(u)}
                               disabled={isDeactivating}
-                              className="h-8 gap-1.5 text-xs"
+                              className={`h-8 gap-1.5 text-xs ${u.activeStatus ? "text-amber-600 border-amber-400/40 hover:bg-amber-50 hover:text-amber-700" : "text-emerald-600 border-emerald-400/40 hover:bg-emerald-50 hover:text-emerald-700"}`}
                             >
                               {isDeactivating ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -630,6 +645,16 @@ export default function MasterData() {
                               <KeyRound className="w-3.5 h-3.5" /> Reset PW
                             </Button>
                           )}
+                          {canHardDelete && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDeleteTarget(u)}
+                              className="h-8 gap-1.5 text-xs text-red-600 border-red-400/40 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Hapus
+                            </Button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -637,7 +662,7 @@ export default function MasterData() {
                 );
               })}
               {!isLoading && !users?.length && (
-                <tr><td colSpan={(canEditUser || canDeactivate) ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                <tr><td colSpan={(canEditUser || canDeactivate || canHardDelete) ? 7 : 6} className="text-center py-8 text-muted-foreground">
                   {activeTab === "inactive" ? "Tidak ada pengguna nonaktif" : "Belum ada data pengguna"}
                 </td></tr>
               )}
@@ -737,6 +762,43 @@ export default function MasterData() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Hard Delete Confirm Dialog ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !hardDeleting && setDeleteTarget(null)}>
+          <div className="bg-card border rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h2 className="font-bold text-base">Hapus Pengguna Permanen</h2>
+                <p className="text-xs text-muted-foreground">Tindakan ini tidak dapat dibatalkan</p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-red-500/5 border border-red-500/20 p-4 text-sm">
+              <p>Anda yakin ingin menghapus permanen akun:</p>
+              <p className="font-bold mt-1">{deleteTarget.name}</p>
+              <p className="text-muted-foreground text-xs">{deleteTarget.email} · {deleteTarget.roleName}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">Jika pengguna ini memiliki data terkait (log aktivitas, task, dll), hapus permanen akan gagal. Gunakan <span className="font-medium">Nonaktifkan</span> sebagai alternatif.</p>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={hardDeleting} className="flex-1">
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleHardDelete}
+                disabled={hardDeleting}
+                className="flex-1 gap-1.5"
+              >
+                {hardDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {hardDeleting ? "Menghapus..." : "Hapus Permanen"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -228,14 +228,24 @@ router.put("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "C
   }
 });
 
-router.delete("/users/:id", authMiddleware, requireRole("Admin System"), async (req, res) => {
+router.delete("/users/:id", authMiddleware, requireRole("Superadmin", "Owner", "Admin System"), async (req, res) => {
   try {
-    const [user] = await db.update(usersTable).set({ activeStatus: false }).where(eq(usersTable.id, Number(req.params.id))).returning();
-    if (!user) { res.status(404).json({ error: "User not found" }); return; }
-    res.json({ message: "User deactivated" });
-  } catch (error) {
-    console.error("Delete user error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    const targetId = Number(req.params.id);
+    if (targetId === req.user!.userId) {
+      res.status(400).json({ error: "Tidak dapat menghapus akun sendiri" }); return;
+    }
+    const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+    if (!existing.length) { res.status(404).json({ error: "User not found" }); return; }
+    await db.delete(usersTable).where(eq(usersTable.id, targetId));
+    res.json({ message: "User permanently deleted" });
+  } catch (error: unknown) {
+    const msg = (error as Error)?.message ?? "";
+    if (msg.includes("foreign key") || msg.includes("violates") || msg.includes("constraint")) {
+      res.status(409).json({ error: "Pengguna ini tidak dapat dihapus permanen karena masih memiliki data terkait. Gunakan Nonaktifkan saja." });
+    } else {
+      console.error("Delete user error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 });
 

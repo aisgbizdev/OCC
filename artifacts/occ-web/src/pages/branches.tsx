@@ -1,9 +1,13 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, MapPin, AlertTriangle, Activity, Clock, TrendingUp, RefreshCw } from "lucide-react";
+import { Building2, MapPin, AlertTriangle, Activity, Clock, TrendingUp, RefreshCw, Plus, Trash2, X, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface BranchAnalytics {
   branchId: number;
@@ -20,6 +24,12 @@ interface BranchAnalytics {
   needsAttention: boolean;
 }
 
+interface Pt {
+  id: number;
+  name: string;
+  code: string;
+}
+
 async function fetchBranchAnalytics(): Promise<BranchAnalytics[]> {
   const token = localStorage.getItem("occ_token");
   const res = await fetch("/api/branches/analytics", {
@@ -29,15 +39,89 @@ async function fetchBranchAnalytics(): Promise<BranchAnalytics[]> {
   return res.json();
 }
 
+const EMPTY_FORM = { ptId: "", name: "", city: "" };
+
 export default function Branches() {
+  const { user: me } = useAuth();
+  const { toast } = useToast();
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["/api/branches/analytics"],
     queryFn: fetchBranchAnalytics,
     refetchInterval: 60000,
   });
 
+  const [pts, setPts] = useState<Pt[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState(EMPTY_FORM);
+  const [adding, setAdding] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<BranchAnalytics | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const canManageBranch = me?.roleName === "Owner" || me?.roleName === "Admin System" || me?.roleName === "Superadmin";
+
+  useEffect(() => {
+    const token = localStorage.getItem("occ_token");
+    fetch("/api/pts", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Pt[]) => setPts(data))
+      .catch(() => setPts([]));
+  }, []);
+
   const branches = data ?? [];
   const needsAttentionCount = branches.filter(b => b.needsAttention).length;
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addForm.ptId || !addForm.name.trim()) {
+      toast({ title: "PT dan Nama cabang wajib diisi", variant: "destructive" }); return;
+    }
+    setAdding(true);
+    const token = localStorage.getItem("occ_token");
+    try {
+      const res = await fetch("/api/branches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ ptId: Number(addForm.ptId), name: addForm.name.trim(), city: addForm.city.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast({ title: "Gagal menambah cabang", description: body.error ?? "Terjadi kesalahan", variant: "destructive" });
+      } else {
+        toast({ title: `Cabang "${addForm.name.trim()}" berhasil ditambahkan` });
+        setShowAddForm(false);
+        setAddForm(EMPTY_FORM);
+        refetch();
+      }
+    } catch {
+      toast({ title: "Gagal menambah cabang", variant: "destructive" });
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const token = localStorage.getItem("occ_token");
+    try {
+      const res = await fetch(`/api/branches/${deleteTarget.branchId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast({ title: "Gagal menghapus cabang", description: body.error ?? "Terjadi kesalahan", variant: "destructive" });
+      } else {
+        toast({ title: `Cabang "${deleteTarget.branchName}" berhasil dinonaktifkan` });
+        setDeleteTarget(null);
+        refetch();
+      }
+    } catch {
+      toast({ title: "Gagal menghapus cabang", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -48,10 +132,17 @@ export default function Branches() {
           </h1>
           <p className="text-muted-foreground mt-1">Ringkasan performa dan status seluruh cabang.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-2">
-          <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {canManageBranch && (
+            <Button size="sm" onClick={() => setShowAddForm(true)} className="gap-2">
+              <Plus className="w-4 h-4" /> Tambah Cabang
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-2">
+            <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {needsAttentionCount > 0 && (
@@ -97,14 +188,107 @@ export default function Branches() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {branches.map(branch => (
-          <BranchCard key={branch.branchId} branch={branch} />
+          <BranchCard
+            key={branch.branchId}
+            branch={branch}
+            canDelete={canManageBranch}
+            onDelete={() => setDeleteTarget(branch)}
+          />
         ))}
       </div>
+
+      {/* ── Tambah Cabang Modal ── */}
+      {showAddForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !adding && setShowAddForm(false)}>
+          <div className="bg-card border rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" />
+                <h2 className="font-bold text-base">Tambah Cabang</h2>
+              </div>
+              <button onClick={() => setShowAddForm(false)} disabled={adding} className="p-1 rounded-md hover:bg-muted transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAdd} className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">PT <span className="text-red-500">*</span></label>
+                <select
+                  value={addForm.ptId}
+                  onChange={e => setAddForm(f => ({ ...f, ptId: e.target.value }))}
+                  className="w-full h-9 px-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                >
+                  <option value="">Pilih PT</option>
+                  {pts.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Nama Cabang <span className="text-red-500">*</span></label>
+                <Input
+                  value={addForm.name}
+                  onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Contoh: Surabaya Barat"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Kota</label>
+                <Input
+                  value={addForm.city}
+                  onChange={e => setAddForm(f => ({ ...f, city: e.target.value }))}
+                  placeholder="Contoh: Surabaya"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)} disabled={adding} className="flex-1">
+                  Batal
+                </Button>
+                <Button type="submit" disabled={adding} className="flex-1 gap-1.5">
+                  {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  {adding ? "Menyimpan..." : "Tambah"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirm Modal ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !deleting && setDeleteTarget(null)}>
+          <div className="bg-card border rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h2 className="font-bold text-base">Hapus Cabang</h2>
+                <p className="text-xs text-muted-foreground">Cabang akan dinonaktifkan dari sistem</p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-red-500/5 border border-red-500/20 p-4 text-sm">
+              <p>Anda yakin ingin menonaktifkan cabang:</p>
+              <p className="font-bold mt-1">{deleteTarget.branchName}</p>
+              <p className="text-muted-foreground text-xs">{deleteTarget.ptName} {deleteTarget.city ? `· ${deleteTarget.city}` : ""}</p>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting} className="flex-1">
+                Batal
+              </Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="flex-1 gap-1.5">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {deleting ? "Menghapus..." : "Nonaktifkan"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function BranchCard({ branch }: { branch: BranchAnalytics }) {
+function BranchCard({ branch, canDelete, onDelete }: { branch: BranchAnalytics; canDelete: boolean; onDelete: () => void }) {
   const isHighComplaint = branch.activeComplaints >= 3;
   const isInactive = branch.hoursInactive !== null && branch.hoursInactive > 48;
   const hasNoActivity = branch.lastActivityAt === null;
@@ -115,7 +299,7 @@ function BranchCard({ branch }: { branch: BranchAnalytics }) {
       branch.needsAttention && "border-destructive/40 ring-1 ring-destructive/20"
     )}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-lg truncate">{branch.branchName}</h3>
             {branch.needsAttention && (
@@ -137,6 +321,15 @@ function BranchCard({ branch }: { branch: BranchAnalytics }) {
             )}
           </div>
         </div>
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
+            title="Nonaktifkan cabang"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

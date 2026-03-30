@@ -35,7 +35,7 @@ const ROLE_ORDER: Record<string, number> = {
   "SPV Dealing": 4, "Co-SPV Dealing": 4.5, "Dealer": 5, "Admin System": 6,
 };
 
-const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi", "Chief Dealing", "Co-SPV Dealing", "Admin System"];
+const CORPORATE_ROLES = ["Superadmin", "Owner", "Chief Dealing", "Co-SPV Dealing", "Admin System"];
 
 export default function Login() {
   const [users, setUsers]          = useState<LoginUser[]>([]);
