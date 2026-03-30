@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Activity, Lock, Shield, Crown, Eye,
+  Activity, Lock, Shield, Crown, Eye, EyeOff,
   Star, Users, TrendingUp, Settings, Loader2, ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,7 @@ export default function Login() {
   const [activePT, setActivePT]    = useState<string>("semua");
   const [selected, setSelected]    = useState<LoginUser | null>(null);
   const [password, setPassword]    = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const login                      = useLogin();
   const { toast }                  = useToast();
   const [, setLocation]            = useLocation();
@@ -203,14 +204,22 @@ export default function Login() {
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  type="password"
-                  className="pl-10 bg-black/40 border-white/10 h-11 rounded-xl focus:border-primary"
+                  type={showPassword ? "text" : "password"}
+                  className="pl-10 pr-10 bg-black/40 border-white/10 h-11 rounded-xl focus:border-primary"
                   placeholder="Masukkan password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   disabled={!selected}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
             <Button
