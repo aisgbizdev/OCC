@@ -7,8 +7,8 @@ import { createAuditLog, createNotification } from "../helpers/audit";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
-const SEND_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
+const SEND_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"];
 
 router.get("/messages", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {

@@ -7,8 +7,8 @@ import { createAuditLog } from "../helpers/audit";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
-const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
+const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
 
 async function enrichHandover(log: typeof handoverLogsTable.$inferSelect) {
   const creator = log.createdBy

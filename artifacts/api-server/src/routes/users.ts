@@ -34,7 +34,7 @@ async function enrichUser(user: typeof usersTable.$inferSelect) {
   };
 }
 
-router.get("/users", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Direksi"), async (req, res) => {
+router.get("/users", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Direksi"), async (req, res) => {
   try {
     const conditions: SQL[] = [];
     if (req.query.ptId) conditions.push(eq(usersTable.ptId, Number(req.query.ptId)));
@@ -168,7 +168,7 @@ router.put("/users/:id/password", authMiddleware, requireRole("Owner", "Admin Sy
 });
 
 // ── Generic :id routes — MUST come AFTER all /users/me routes ────────────────
-router.get("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Direksi"), async (req, res) => {
+router.get("/users/:id", authMiddleware, requireRole("Owner", "Admin System", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Direksi"), async (req, res) => {
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
     if (!user) { res.status(404).json({ error: "User not found" }); return; }

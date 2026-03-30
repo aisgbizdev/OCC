@@ -8,8 +8,8 @@ import { sendPushToUsers } from "../lib/push";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
-const MGMT_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
+const MGMT_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"];
 
 async function enrichTask(task: typeof tasksTable.$inferSelect) {
   const assignee = task.assignedTo ? (await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, task.assignedTo)).limit(1))[0] : null;

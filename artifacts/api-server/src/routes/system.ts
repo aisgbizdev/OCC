@@ -8,7 +8,7 @@ import { sendPushToRoles } from "../lib/push";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
 const ADMIN_ROLES = ["Owner", "Admin System"];
 
 router.get("/system-settings", authMiddleware, requireRole(...ALL_ROLES), async (_req, res) => {

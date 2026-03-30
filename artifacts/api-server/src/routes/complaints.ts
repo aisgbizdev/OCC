@@ -8,8 +8,8 @@ import { sendPushToRoles, sendPushToUsers } from "../lib/push";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
-const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
+const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"];
 
 async function enrichComplaint(complaint: typeof complaintsTable.$inferSelect) {
   const assignedUser = complaint.assignedUserId

@@ -6,7 +6,7 @@ import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/roles", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
+router.get("/roles", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const roles = await db.select().from(rolesTable).where(eq(rolesTable.activeStatus, true));
     res.json(roles);
@@ -16,7 +16,7 @@ router.get("/roles", authMiddleware, requireRole("Owner", "Direksi", "Chief Deal
   }
 });
 
-router.get("/pts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
+router.get("/pts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const pts = await db.select().from(ptsTable);
     res.json(pts);
@@ -26,7 +26,7 @@ router.get("/pts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealin
   }
 });
 
-router.get("/pts/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.get("/pts/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const [pt] = await db.select().from(ptsTable).where(eq(ptsTable.id, Number(req.params.id))).limit(1);
     if (!pt) { res.status(404).json({ error: "PT not found" }); return; }
@@ -75,7 +75,7 @@ router.delete("/pts/:id", authMiddleware, requireRole("Owner", "Admin System"), 
   }
 });
 
-router.get("/branches", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.get("/branches", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const conditions: SQL[] = [];
     if (req.query.ptId) conditions.push(eq(branchesTable.ptId, Number(req.query.ptId)));
@@ -89,7 +89,7 @@ router.get("/branches", authMiddleware, requireRole("Owner", "Direksi", "Chief D
   }
 });
 
-router.get("/branches/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.get("/branches/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const [branch] = await db.select().from(branchesTable).where(eq(branchesTable.id, Number(req.params.id))).limit(1);
     if (!branch) { res.status(404).json({ error: "Branch not found" }); return; }
@@ -138,7 +138,7 @@ router.delete("/branches/:id", authMiddleware, requireRole("Owner", "Admin Syste
   }
 });
 
-router.get("/shifts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
+router.get("/shifts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const shifts = await db.select().from(shiftsTable);
     res.json(shifts);
@@ -148,7 +148,7 @@ router.get("/shifts", authMiddleware, requireRole("Owner", "Direksi", "Chief Dea
   }
 });
 
-router.get("/shifts/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.get("/shifts/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const [shift] = await db.select().from(shiftsTable).where(eq(shiftsTable.id, Number(req.params.id))).limit(1);
     if (!shift) { res.status(404).json({ error: "Shift not found" }); return; }
@@ -198,7 +198,7 @@ router.delete("/shifts/:id", authMiddleware, requireRole("Owner", "Admin System"
   }
 });
 
-router.get("/activity-types", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
+router.get("/activity-types", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const types = await db.select().from(activityTypesTable);
     res.json(types);
@@ -208,7 +208,7 @@ router.get("/activity-types", authMiddleware, requireRole("Owner", "Direksi", "C
   }
 });
 
-router.get("/activity-types/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
+router.get("/activity-types/:id", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (req, res) => {
   try {
     const [type] = await db.select().from(activityTypesTable).where(eq(activityTypesTable.id, Number(req.params.id))).limit(1);
     if (!type) { res.status(404).json({ error: "Activity type not found" }); return; }

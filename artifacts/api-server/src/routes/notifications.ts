@@ -24,7 +24,7 @@ export async function isUserInDnd(userId: number): Promise<boolean> {
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
 
 router.get("/notifications", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {

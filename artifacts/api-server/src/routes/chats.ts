@@ -7,7 +7,7 @@ import { createAuditLog, createNotification } from "../helpers/audit";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
 
 router.get("/chats", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
@@ -41,7 +41,7 @@ router.get("/chats", authMiddleware, requireRole(...ALL_ROLES), async (req, res)
 router.post("/chats", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const { chatType, name, memberIds } = req.body;
-    if (chatType === "group" && !["Owner", "Chief Dealing", "SPV Dealing", "Admin System"].includes(req.user!.roleName)) {
+    if (chatType === "group" && !["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"].includes(req.user!.roleName)) {
       res.status(403).json({ error: "Only management can create group chats" }); return;
     }
 
@@ -68,7 +68,7 @@ router.post("/chats", authMiddleware, requireRole(...ALL_ROLES), async (req, res
   }
 });
 
-router.post("/chats/:id/members", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Admin System"), async (req, res) => {
+router.post("/chats/:id/members", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"), async (req, res) => {
   try {
     const { userId } = req.body;
     if (!userId) { res.status(400).json({ error: "userId is required" }); return; }

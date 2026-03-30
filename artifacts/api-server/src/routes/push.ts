@@ -6,7 +6,7 @@ import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
 
 router.get("/push/vapid-key", (_req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY ?? "" });

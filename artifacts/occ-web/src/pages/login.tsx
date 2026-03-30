@@ -21,20 +21,21 @@ interface LoginUser {
 }
 
 const ROLE_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
-  "Superadmin":    { color: "text-amber-400",   icon: <Shield className="w-4 h-4" /> },
-  "Owner":         { color: "text-violet-400",  icon: <Crown className="w-4 h-4" /> },
-  "Direksi":       { color: "text-blue-400",    icon: <Eye className="w-4 h-4" /> },
-  "Chief Dealing": { color: "text-emerald-400", icon: <Star className="w-4 h-4" /> },
-  "SPV Dealing":   { color: "text-orange-400",  icon: <Users className="w-4 h-4" /> },
-  "Dealer":        { color: "text-cyan-400",    icon: <TrendingUp className="w-4 h-4" /> },
-  "Admin System":  { color: "text-rose-400",    icon: <Settings className="w-4 h-4" /> },
+  "Superadmin":      { color: "text-amber-400",   icon: <Shield className="w-4 h-4" /> },
+  "Owner":           { color: "text-violet-400",  icon: <Crown className="w-4 h-4" /> },
+  "Direksi":         { color: "text-blue-400",    icon: <Eye className="w-4 h-4" /> },
+  "Chief Dealing":   { color: "text-emerald-400", icon: <Star className="w-4 h-4" /> },
+  "SPV Dealing":     { color: "text-orange-400",  icon: <Users className="w-4 h-4" /> },
+  "Co-SPV Dealing":  { color: "text-yellow-400",  icon: <Users className="w-4 h-4" /> },
+  "Dealer":          { color: "text-cyan-400",    icon: <TrendingUp className="w-4 h-4" /> },
+  "Admin System":    { color: "text-rose-400",    icon: <Settings className="w-4 h-4" /> },
 };
 const ROLE_ORDER: Record<string, number> = {
   "Superadmin": 0, "Owner": 1, "Direksi": 2, "Chief Dealing": 3,
-  "SPV Dealing": 4, "Dealer": 5, "Admin System": 6,
+  "SPV Dealing": 4, "Co-SPV Dealing": 4.5, "Dealer": 5, "Admin System": 6,
 };
 
-const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi", "Chief Dealing", "Admin System"];
+const CORPORATE_ROLES = ["Superadmin", "Owner", "Direksi", "Chief Dealing", "Co-SPV Dealing", "Admin System"];
 
 export default function Login() {
   const [users, setUsers]          = useState<LoginUser[]>([]);

@@ -15,7 +15,7 @@ import bcryptjs from "bcryptjs";
 
 // Seed version marker — update this email whenever the seed data changes
 // to force a reseed on any environment that still has the old data.
-const SEED_MARKER_EMAIL = "kiki@occ.id.v17-46cabang";
+const SEED_MARKER_EMAIL = "kiki@occ.id.v19-cospv";
 
 async function seed() {
   console.log("Seeding OCC database...");
@@ -60,13 +60,14 @@ async function seed() {
     const roles = await db
       .insert(rolesTable)
       .values([
-        { name: "Owner",         description: "Full access to entire system" },
-        { name: "Direksi",       description: "View dashboards and PT performance" },
-        { name: "Chief Dealing", description: "Manage all PT teams, assign tasks, view KPI all PT" },
-        { name: "SPV Dealing",   description: "Monitor shift, assign tasks, create complaints" },
-        { name: "Dealer",        description: "Log activities, update tasks, view personal KPI" },
-        { name: "Admin System",  description: "Manage system configuration and master data" },
-        { name: "Superadmin",    description: "Full system bypass access" },
+        { name: "Owner",           description: "Full access to entire system" },
+        { name: "Direksi",         description: "View dashboards and PT performance" },
+        { name: "Chief Dealing",   description: "Manage all PT teams, assign tasks, view KPI all PT" },
+        { name: "SPV Dealing",     description: "Monitor shift, assign tasks, create complaints" },
+        { name: "Co-SPV Dealing",  description: "Assist all SPVs cross-PT, no PT restriction" },
+        { name: "Dealer",          description: "Log activities, update tasks, view personal KPI" },
+        { name: "Admin System",    description: "Manage system configuration and master data" },
+        { name: "Superadmin",      description: "Full system bypass access" },
       ])
       .returning();
     console.log(`Created ${roles.length} roles`);
@@ -98,6 +99,7 @@ async function seed() {
     const adminRole      = roles.find((r) => r.name === "Admin System")!;
     const chiefRole      = roles.find((r) => r.name === "Chief Dealing")!;
     const spvRole        = roles.find((r) => r.name === "SPV Dealing")!;
+    const coSpvRole      = roles.find((r) => r.name === "Co-SPV Dealing")!;
     const dealerRole     = roles.find((r) => r.name === "Dealer")!;
     const direksiRole    = roles.find((r) => r.name === "Direksi")!;
     const superadminRole = roles.find((r) => r.name === "Superadmin")!;
@@ -111,6 +113,9 @@ async function seed() {
     const spvPerms     = permissions
       .filter((p) => ["dashboard.view","activity.create","activity.edit","task.create","task.edit","task.assign","complaint.create","complaint.edit","kpi.view_all","announcement.create","chat.create_group"].includes(p.code))
       .map((p) => ({ roleId: spvRole.id, permissionId: p.id }));
+    const coSpvPerms   = permissions
+      .filter((p) => ["dashboard.view","activity.create","activity.edit","task.create","task.edit","task.assign","complaint.create","complaint.edit","kpi.view_all","announcement.create","chat.create_group"].includes(p.code))
+      .map((p) => ({ roleId: coSpvRole.id, permissionId: p.id }));
     const dealerPerms  = permissions
       .filter((p) => ["dashboard.view","activity.create","activity.edit","kpi.view_own"].includes(p.code))
       .map((p) => ({ roleId: dealerRole.id, permissionId: p.id }));
@@ -120,7 +125,7 @@ async function seed() {
 
     await db.insert(rolePermissionsTable).values([
       ...ownerPerms, ...adminPerms, ...chiefPerms,
-      ...spvPerms, ...dealerPerms, ...direksiPerms,
+      ...spvPerms, ...coSpvPerms, ...dealerPerms, ...direksiPerms,
     ]);
     console.log("Role permissions assigned");
 
@@ -208,24 +213,30 @@ async function seed() {
     const activityTypes = await db
       .insert(activityTypesTable)
       .values([
-        // Dealer / Staff — semua PT
-        { name: "Validasi Data Nasabah",            category: "Akun",        weightPoints: "4"                },
-        { name: "Identifikasi Margin In (Deposit)",  category: "Transaksi",   weightPoints: "3"                },
-        { name: "Identifikasi Margin Out (WD)",      category: "Transaksi",   weightPoints: "3"                },
-        { name: "Penginputan Client Bank & NA",      category: "Akun",        weightPoints: "2"                },
-        { name: "Pengiriman Statement Nasabah",      category: "Operasional", weightPoints: "2"                },
-        { name: "Laporan Logbook / Serah Terima",    category: "Operasional", weightPoints: "2", noteRequired: true },
+        // Dealer / Staff — aktivitas harian wajib
+        { name: "Aktivasi Account",                      category: "Akun",        weightPoints: "4"                },
+        { name: "Cek Dana Masuk (Deposit)",               category: "Transaksi",   weightPoints: "3"                },
+        { name: "Cek Withdrawal",                         category: "Transaksi",   weightPoints: "3"                },
+        { name: "Cek Dana Masuk New Account / Top Up",    category: "Transaksi",   weightPoints: "3"                },
+        { name: "Input Client Bank & New Account",        category: "Akun",        weightPoints: "2"                },
+        { name: "Pengiriman Statement Nasabah",           category: "Operasional", weightPoints: "2"                },
+        { name: "Rekap Kebutuhan Barang Printing",        category: "Operasional", weightPoints: "2"                },
+        { name: "Rekap OR / Kebutuhan Operasional Cabang", category: "Operasional", weightPoints: "2"               },
+        { name: "Laporan Logbook / Serah Terima",         category: "Operasional", weightPoints: "2", noteRequired: true },
+        // Tugas tambahan / occasional
+        { name: "Pengumpulan Data Audit",                 category: "Support",     weightPoints: "3", noteRequired: true },
+        { name: "Mencari Data Account",                   category: "Support",     weightPoints: "2"                },
         // SPV — semua PT
-        { name: "Komoditi Statement & Report",       category: "Transaksi",   weightPoints: "4"                },
-        { name: "Report Daily All PT",               category: "Operasional", weightPoints: "3", noteRequired: true },
-        { name: "Prodem Monthly / Quarterly",        category: "Operasional", weightPoints: "4", noteRequired: true },
+        { name: "Komoditi Statement & Report",            category: "Transaksi",   weightPoints: "4"                },
+        { name: "Report Daily All PT",                    category: "Operasional", weightPoints: "3", noteRequired: true },
+        { name: "Prodem Monthly / Quarterly",             category: "Operasional", weightPoints: "4", noteRequired: true },
         // Semua role
-        { name: "Menangani Komplain",                category: "Support",     weightPoints: "4", noteRequired: true },
-        { name: "Investigasi Transaksi",             category: "Support",     weightPoints: "6", noteRequired: true },
-        // Error — dicatat oleh SPV untuk anggota (menggantikan modul Quality)
-        { name: "Koreksi Entri Data",                category: "Error",       weightPoints: "0", noteRequired: true },
-        { name: "Kesalahan Prosedur SOP",            category: "Error",       weightPoints: "0", noteRequired: true },
-        { name: "Kesalahan Pelaporan",               category: "Error",       weightPoints: "0", noteRequired: true },
+        { name: "Menangani Komplain",                     category: "Support",     weightPoints: "4", noteRequired: true },
+        { name: "Investigasi Transaksi",                  category: "Support",     weightPoints: "6", noteRequired: true },
+        // Error — dicatat oleh SPV untuk anggota
+        { name: "Koreksi Entri Data",                     category: "Error",       weightPoints: "0", noteRequired: true },
+        { name: "Kesalahan Prosedur SOP",                 category: "Error",       weightPoints: "0", noteRequired: true },
+        { name: "Kesalahan Pelaporan",                    category: "Error",       weightPoints: "0", noteRequired: true },
       ])
       .returning();
     console.log(`Created ${activityTypes.length} activity types`);
@@ -265,7 +276,7 @@ async function seed() {
       { name: "Fahrul",                email: "fahrul.sgb@occ.id",      passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Adid",                  email: "adid.sgb@occ.id",        passwordHash: pw, roleId: spvRole.id,        ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "SPV Dealing" },
       { name: "Abdul Aziz",            email: "aziz.sgb@occ.id",        passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Amel",                  email: "amel.sgb@occ.id",        passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: siang.id, positionTitle: "Dealer" },
+      { name: "Amel",                  email: "amel.sgb@occ.id",        passwordHash: pw, roleId: coSpvRole.id,    ptId: null,   branchId: null,   shiftId: siang.id, positionTitle: "Co-SPV Dealing" },
       { name: "Dealer SGB",            email: "dealer.sgb@occ.id",      passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "Dealer" },
       { name: "Admin SGB",             email: "admin.sgb@occ.id",       passwordHash: pw, roleId: adminRole.id,      ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Admin System" },
 

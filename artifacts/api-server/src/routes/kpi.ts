@@ -6,8 +6,8 @@ import { authMiddleware, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-const MGMT_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System"];
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Dealer", "Admin System"];
+const MGMT_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
 
 router.get("/kpi/scores", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
