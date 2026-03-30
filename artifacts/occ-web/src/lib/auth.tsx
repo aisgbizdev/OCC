@@ -8,36 +8,43 @@ interface AuthContextType {
   isLoading: boolean;
   logout: () => void;
   isAuthenticated: boolean;
+  setToken: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
-  const [token, setToken] = useState(localStorage.getItem("occ_token"));
+  const [token, setTokenState] = useState(localStorage.getItem("occ_token"));
   const queryClient = useQueryClient();
 
   const { data: user, isLoading, isError } = useGetMe({
     query: {
       queryKey: ["me"],
       enabled: !!token,
-      retry: false,
+      retry: 2,
+      retryDelay: 1000,
     }
   });
 
   useEffect(() => {
     if (isError) {
       localStorage.removeItem("occ_token");
-      setToken(null);
+      setTokenState(null);
       queryClient.clear();
       setLocation("/login");
     }
   }, [isError, setLocation, queryClient]);
 
+  const setToken = (newToken: string) => {
+    localStorage.setItem("occ_token", newToken);
+    setTokenState(newToken);
+  };
+
   const logout = () => {
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("occ_token");
-    setToken(null);
+    setTokenState(null);
     queryClient.clear();
     setLocation("/login");
   };
@@ -47,7 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: user ?? null,
       isLoading: isLoading && !!token,
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      setToken,
     }}>
       {children}
     </AuthContext.Provider>

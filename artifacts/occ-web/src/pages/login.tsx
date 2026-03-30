@@ -46,7 +46,7 @@ export default function Login() {
   const login                      = useLogin();
   const { toast }                  = useToast();
   const [, setLocation]            = useLocation();
-  const { isAuthenticated }        = useAuth();
+  const { isAuthenticated, setToken } = useAuth();
 
   useEffect(() => {
     fetch("/api/auth/users")
@@ -104,8 +104,8 @@ export default function Login() {
     if (!selected) return;
     login.mutate({ data: { email: selected.email, password } }, {
       onSuccess: (data) => {
-        localStorage.setItem("occ_token", data.token);
-        window.location.href = "/dashboard";
+        setToken(data.token);
+        setLocation("/dashboard");
       },
       onError: () => {
         toast({ title: "Login Gagal", description: "Password salah. Coba lagi.", variant: "destructive" });
