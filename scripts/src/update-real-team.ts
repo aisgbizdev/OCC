@@ -1,6 +1,4 @@
-import { db, pool } from "@workspace/db";
-import { usersTable } from "@workspace/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { pool } from "@workspace/db";
 import bcryptjs from "bcryptjs";
 
 const JD_KIKI = `Mengawasi dan melakukan pengecekan akhir atas keabsahan serta validitas data nasabah.
