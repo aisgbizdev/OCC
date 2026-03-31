@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useListActivityLogs, useListPts, useListBranches, type ActivityLogWithRelations, type Branch } from "@workspace/api-client-react";
+import { useListActivityLogs, useListPts, useListBranches, useUpdateActivityLog, useDeleteActivityLog, type ActivityLogWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Plus, Filter, Flag, Building2, MapPin } from "lucide-react";
+import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -13,6 +13,11 @@ import { cn } from "@/lib/utils";
 
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
+// Edit: Owner/Admin System bypass window; all non-Dealer roles can edit anyone's log (within window)
+const EDIT_WINDOW_BYPASS = ["Owner", "Admin System"];
+// Delete hierarchy per task spec
+const DELETE_GLOBAL_ANYTIME = ["Owner", "Superadmin"];
+const DELETE_PT_ANYTIME = ["SPV Dealing", "Co-SPV Dealing", "Chief Dealing"];
 
 type ActivityLogEnriched = ActivityLogWithRelations & {
   ptName?: string | null;
@@ -29,6 +34,11 @@ export default function ActivityLogs() {
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
 
+  const [editLog, setEditLog] = useState<ActivityLogEnriched | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [deleteLog, setDeleteLog] = useState<ActivityLogEnriched | null>(null);
+
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -36,6 +46,7 @@ export default function ActivityLogs() {
   const isSPV = SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
+  const editWindowMinutes = 60;
 
   useEffect(() => {
     if (isDireksi && user?.ptId) {
@@ -72,6 +83,32 @@ export default function ActivityLogs() {
     setFilterBranchId("");
   };
 
+  function canEdit(log: ActivityLogEnriched): boolean {
+    if (!user) return false;
+    // Owner and Admin System bypass the edit window and can edit anyone's log
+    if (EDIT_WINDOW_BYPASS.includes(user.roleName)) return true;
+    // Dealer can only edit their own logs
+    if (user.roleName === "Dealer" && log.userId !== user.userId) return false;
+    // Everyone else (SPV, Chief, Superadmin, Direksi, etc.) can edit anyone's log within window
+    const elapsed = log.createdAt ? (Date.now() - new Date(log.createdAt).getTime()) / 60000 : Infinity;
+    return elapsed <= editWindowMinutes;
+  }
+
+  function canDelete(log: ActivityLogEnriched): boolean {
+    if (!user) return false;
+    // Owner / Superadmin: global delete, anytime
+    if (DELETE_GLOBAL_ANYTIME.includes(user.roleName)) return true;
+    // SPV / Co-SPV / Chief Dealing: any log in same PT, anytime
+    if (DELETE_PT_ANYTIME.includes(user.roleName)) {
+      if (user.ptId !== null && user.ptId !== undefined && log.ptId !== user.ptId) return false;
+      return true;
+    }
+    // Dealer / Admin System / Direksi / others: only own log within edit window
+    if (log.userId !== user.userId) return false;
+    const elapsed = log.createdAt ? (Date.now() - new Date(log.createdAt).getTime()) / 60000 : Infinity;
+    return elapsed <= editWindowMinutes;
+  }
+
   async function handleFlag(logId: number) {
     if (flagging === logId) return;
     setFlagging(logId);
@@ -90,7 +127,52 @@ export default function ActivityLogs() {
     }
   }
 
+  const updateMutation = useUpdateActivityLog({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Log berhasil diperbarui" });
+        qc.invalidateQueries({ queryKey: ["/api/activity-logs"] });
+        setEditLog(null);
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { message?: string })?.message ?? "Gagal memperbarui log";
+        toast({ title: msg, variant: "destructive" });
+      },
+    },
+  });
+
+  const deleteMutation = useDeleteActivityLog({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Log berhasil dihapus" });
+        qc.invalidateQueries({ queryKey: ["/api/activity-logs"] });
+        setDeleteLog(null);
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { message?: string })?.message ?? "Gagal menghapus log";
+        toast({ title: msg, variant: "destructive" });
+      },
+    },
+  });
+
+  function openEdit(log: ActivityLogEnriched) {
+    setEditLog(log);
+    setEditQty(String(log.quantity ?? 1));
+    setEditNote(log.note ?? "");
+  }
+
+  function handleEditSave() {
+    if (!editLog) return;
+    const qty = Number(editQty);
+    if (!Number.isInteger(qty) || qty < 1) {
+      toast({ title: "Qty harus bilangan bulat positif", variant: "destructive" });
+      return;
+    }
+    updateMutation.mutate({ id: editLog.id, data: { quantity: qty, note: editNote } });
+  }
+
   const hasFilters = search || dateFrom || dateTo || filterPtId || filterBranchId;
+  const showActionsCol = true;
 
   return (
     <div className="space-y-6">
@@ -179,56 +261,85 @@ export default function ActivityLogs() {
                 <th className="px-6 py-4">Catatan</th>
                 <th className="px-6 py-4 text-right">Poin</th>
                 {isSPV && <th className="px-4 py-4 text-center">Flag</th>}
+                {showActionsCol && <th className="px-4 py-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.map((log) => (
-                <tr key={log.id} className={cn("hover:bg-muted/20 transition-colors", log.flagged && "bg-amber-500/5")}>
-                  <td className="px-6 py-4 font-mono">{log.createdAt ? format(new Date(log.createdAt), "MMM d, HH:mm") : "-"}</td>
-                  <td className="px-6 py-4 font-medium">{log.userName ?? "-"}</td>
-                  <td className="px-6 py-4">
-                    {(log.ptName || log.branchName) ? (
-                      <div className="flex flex-col gap-0.5">
-                        {log.ptName && (
-                          <span className="flex items-center gap-1 text-xs text-primary font-medium">
-                            <Building2 className="w-3 h-3 shrink-0" />{log.ptName}
-                          </span>
-                        )}
-                        {log.branchName && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin className="w-3 h-3 shrink-0" />{log.branchName}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">{log.activityTypeName ?? "-"}</td>
-                  <td className="px-6 py-4 font-mono">{log.quantity}</td>
-                  <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{log.note ?? "-"}</td>
-                  <td className="px-6 py-4 text-right font-mono font-bold text-primary">+{log.points}</td>
-                  {isSPV && (
-                    <td className="px-4 py-4 text-center">
-                      <button
-                        onClick={() => handleFlag(log.id)}
-                        disabled={flagging === log.id}
-                        title={log.flagged ? "Cabut flag" : "Tandai mencurigakan"}
-                        className={cn(
-                          "p-1.5 rounded-lg transition-colors",
-                          log.flagged
-                            ? "text-amber-500 hover:text-amber-600 bg-amber-500/10 hover:bg-amber-500/20"
-                            : "text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
-                        )}
-                      >
-                        <Flag className="w-3.5 h-3.5" fill={log.flagged ? "currentColor" : "none"} />
-                      </button>
+              {filtered.map((log) => {
+                const showEdit = canEdit(log);
+                const showDelete = canDelete(log);
+                return (
+                  <tr key={log.id} className={cn("hover:bg-muted/20 transition-colors", log.flagged && "bg-amber-500/5")}>
+                    <td className="px-6 py-4 font-mono">{log.createdAt ? format(new Date(log.createdAt), "MMM d, HH:mm") : "-"}</td>
+                    <td className="px-6 py-4 font-medium">{log.userName ?? "-"}</td>
+                    <td className="px-6 py-4">
+                      {(log.ptName || log.branchName) ? (
+                        <div className="flex flex-col gap-0.5">
+                          {log.ptName && (
+                            <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                              <Building2 className="w-3 h-3 shrink-0" />{log.ptName}
+                            </span>
+                          )}
+                          {log.branchName && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="w-3 h-3 shrink-0" />{log.branchName}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-6 py-4">{log.activityTypeName ?? "-"}</td>
+                    <td className="px-6 py-4 font-mono">{log.quantity}</td>
+                    <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{log.note ?? "-"}</td>
+                    <td className="px-6 py-4 text-right font-mono font-bold text-primary">+{log.points}</td>
+                    {isSPV && (
+                      <td className="px-4 py-4 text-center">
+                        <button
+                          onClick={() => handleFlag(log.id)}
+                          disabled={flagging === log.id}
+                          title={log.flagged ? "Cabut flag" : "Tandai mencurigakan"}
+                          className={cn(
+                            "p-1.5 rounded-lg transition-colors",
+                            log.flagged
+                              ? "text-amber-500 hover:text-amber-600 bg-amber-500/10 hover:bg-amber-500/20"
+                              : "text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
+                          )}
+                        >
+                          <Flag className="w-3.5 h-3.5" fill={log.flagged ? "currentColor" : "none"} />
+                        </button>
+                      </td>
+                    )}
+                    {showActionsCol && (
+                      <td className="px-4 py-4">
+                        <div className="flex items-center justify-center gap-1">
+                          {showEdit && (
+                            <button
+                              onClick={() => openEdit(log)}
+                              title="Edit log"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {showDelete && (
+                            <button
+                              onClick={() => setDeleteLog(log)}
+                              title="Hapus log"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
-                <tr><td colSpan={isSPV ? 8 : 7} className="text-center py-8 text-muted-foreground">Tidak ada aktivitas ditemukan</td></tr>
+                <tr><td colSpan={isSPV ? (showActionsCol ? 9 : 8) : (showActionsCol ? 8 : 7)} className="text-center py-8 text-muted-foreground">Tidak ada aktivitas ditemukan</td></tr>
               )}
             </tbody>
           </table>
@@ -237,6 +348,66 @@ export default function ActivityLogs() {
 
       <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
         <BatchActivityForm onSuccess={() => setModalOpen(false)} />
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!editLog}
+        onOpenChange={(open) => { if (!open) setEditLog(null); }}
+        title="Edit Log Aktivitas"
+        description={editLog ? `${editLog.activityTypeName} — ${editLog.userName}` : ""}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Jumlah (Qty)</label>
+            <Input
+              type="number"
+              min={1}
+              step={1}
+              value={editQty}
+              onChange={e => setEditQty(e.target.value)}
+              placeholder="1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Catatan</label>
+            <Input
+              value={editNote}
+              onChange={e => setEditNote(e.target.value)}
+              placeholder="Catatan opsional..."
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => setEditLog(null)}>Batal</Button>
+            <Button onClick={handleEditSave} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!deleteLog}
+        onOpenChange={(open) => { if (!open) setDeleteLog(null); }}
+        title="Hapus Log Aktivitas"
+        description="Tindakan ini tidak dapat dibatalkan."
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus log <span className="font-medium text-foreground">{deleteLog?.activityTypeName}</span>{" "}
+            milik <span className="font-medium text-foreground">{deleteLog?.userName}</span>{" "}
+            {deleteLog?.createdAt ? `(${format(new Date(deleteLog.createdAt), "MMM d, HH:mm")})` : ""}?
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setDeleteLog(null)}>Batal</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteLog && deleteMutation.mutate({ id: deleteLog.id })}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </div>
+        </div>
       </ResponsiveModal>
     </div>
   );

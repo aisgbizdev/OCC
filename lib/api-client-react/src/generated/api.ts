@@ -2862,6 +2862,87 @@ export const useUpdateActivityLog = <
   return useMutation(getUpdateActivityLogMutationOptions(options));
 };
 
+export const getDeleteActivityLogUrl = (id: number) => {
+  return `/api/activity-logs/${id}`;
+};
+
+export const deleteActivityLog = async (
+  id: number,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getDeleteActivityLogUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteActivityLogMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteActivityLog>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteActivityLog>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteActivityLog"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteActivityLog>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteActivityLog(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteActivityLogMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteActivityLog>>
+>;
+
+export type DeleteActivityLogMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete activity log
+ */
+export const useDeleteActivityLog = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteActivityLog>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteActivityLog>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteActivityLogMutationOptions(options));
+};
+
 /**
  * @summary List tasks
  */

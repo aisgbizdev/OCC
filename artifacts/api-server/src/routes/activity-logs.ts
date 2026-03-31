@@ -305,6 +305,53 @@ router.put("/activity-logs/:id/flag", authMiddleware, requireRole(...SPV_AND_ABO
   }
 });
 
+// Delete permission hierarchy (per task spec):
+// Owner / Superadmin → global, anytime
+// SPV Dealing / Co-SPV Dealing / Chief Dealing → any log in same PT, anytime
+// Dealer / Admin System (and others) → own log only, within edit window
+const DELETE_GLOBAL_ANYTIME = ["Owner", "Superadmin"];
+const DELETE_PT_ANYTIME = ["SPV Dealing", "Co-SPV Dealing", "Chief Dealing"];
+
+router.delete("/activity-logs/:id", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const [existing] = await db.select().from(activityLogsTable).where(eq(activityLogsTable.id, Number(req.params.id))).limit(1);
+    if (!existing) { res.status(404).json({ error: "Activity log not found" }); return; }
+
+    const caller = req.user!;
+
+    if (DELETE_GLOBAL_ANYTIME.includes(caller.roleName)) {
+      // No restriction — delete any log globally
+    } else if (DELETE_PT_ANYTIME.includes(caller.roleName)) {
+      // May delete any log within their own PT at any time
+      // If caller has no PT assigned, deny — PT-scoped roles must have a PT
+      if (caller.ptId === null || existing.ptId !== caller.ptId) {
+        res.status(403).json({ error: "Tidak bisa menghapus log di luar PT Anda" }); return;
+      }
+    } else {
+      // Dealer / Admin System / Direksi / others: only own log, within edit window
+      if (existing.userId !== caller.userId) {
+        res.status(403).json({ error: "Tidak bisa menghapus log milik orang lain" }); return;
+      }
+      const editWindowSetting = await db.select().from(systemSettingsTable)
+        .where(eq(systemSettingsTable.settingKey, "activity_edit_window_minutes")).limit(1);
+      const editWindowMinutes = editWindowSetting.length > 0 ? Number(editWindowSetting[0].settingValue) : 60;
+      const elapsed = (Date.now() - existing.createdAt.getTime()) / 60000;
+      if (elapsed > editWindowMinutes) {
+        res.status(403).json({ error: `Edit window ${editWindowMinutes} menit sudah terlewat` }); return;
+      }
+    }
+
+    const affectedUserId = existing.userId;
+    await db.delete(activityLogsTable).where(eq(activityLogsTable.id, Number(req.params.id)));
+    await updateKpiScores(affectedUserId);
+    await createAuditLog({ userId: caller.userId, actionType: "delete", module: "activity_log", entityId: String(req.params.id) });
+    res.json({ message: "Activity log deleted" });
+  } catch (error) {
+    console.error("Delete activity log error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.put("/activity-logs/:id", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
   try {
     const [existing] = await db.select().from(activityLogsTable).where(eq(activityLogsTable.id, Number(req.params.id))).limit(1);
