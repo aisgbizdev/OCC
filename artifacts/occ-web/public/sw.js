@@ -1,4 +1,4 @@
-const CACHE_NAME = "occ-shell-v3";
+const CACHE_NAME = "occ-shell-v4";
 const SHELL_ASSETS = [
   "./icon-192.png",
   "./icon-512.png",
@@ -25,6 +25,11 @@ function shouldCache(url) {
   if (u.pathname.startsWith("/@")) return false;
   if (u.pathname.startsWith("/src/")) return false;
   if (u.pathname.startsWith("/node_modules/")) return false;
+  // Never cache HTML or navigation requests — always fetch fresh so new JS hashes load correctly
+  const lastSegment = u.pathname.split("/").pop() ?? "";
+  const hasExt = lastSegment.includes(".");
+  if (!hasExt) return false; // e.g. /login, /dashboard — these return HTML
+  if (u.pathname.endsWith(".html")) return false;
   if (u.pathname.endsWith(".ts") || u.pathname.endsWith(".tsx") || u.pathname.endsWith(".js") || u.pathname.endsWith(".jsx") || u.pathname.endsWith(".css")) return false;
   return true;
 }
@@ -50,8 +55,7 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       }).catch(async () => {
-        const cached = await caches.match("./");
-        return cached ?? new Response("OCC is offline. Please reconnect.", { status: 503, headers: { "Content-Type": "text/plain" } });
+        return new Response("OCC is offline. Please reconnect.", { status: 503, headers: { "Content-Type": "text/plain" } });
       });
     })
   );
