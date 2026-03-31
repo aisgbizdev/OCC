@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { ptsTable, branchesTable, shiftsTable, activityTypesTable, rolesTable } from "@workspace/db/schema";
-import { eq, and, type SQL } from "drizzle-orm";
+import { ptsTable, branchesTable, shiftsTable, activityTypesTable, rolesTable, roleActivityTypesTable, activityLogsTable } from "@workspace/db/schema";
+import { eq, and, inArray, gte, lte, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -203,12 +203,83 @@ router.delete("/shifts/:id", authMiddleware, requireRole("Owner", "Admin System"
   }
 });
 
+const ALL_ROLES_MASTER = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
+
 router.get("/activity-types", authMiddleware, requireRole("Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"), async (_req, res) => {
   try {
     const types = await db.select().from(activityTypesTable);
     res.json(types);
   } catch (error) {
     console.error("List activity types error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/activity-types/for-role", authMiddleware, requireRole(...ALL_ROLES_MASTER), async (req, res) => {
+  try {
+    const roleId = req.user!.roleId;
+    const mappings = await db.select({ activityTypeId: roleActivityTypesTable.activityTypeId })
+      .from(roleActivityTypesTable)
+      .where(eq(roleActivityTypesTable.roleId, roleId));
+
+    if (mappings.length === 0) {
+      const allTypes = await db.select().from(activityTypesTable).where(eq(activityTypesTable.activeStatus, true));
+      res.json(allTypes);
+      return;
+    }
+
+    const ids = mappings.map(m => m.activityTypeId);
+    const types = await db.select().from(activityTypesTable)
+      .where(and(eq(activityTypesTable.activeStatus, true), inArray(activityTypesTable.id, ids)));
+    res.json(types);
+  } catch (error) {
+    console.error("List activity types for role error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/activity-types/checklist", authMiddleware, requireRole(...ALL_ROLES_MASTER), async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    const roleId = req.user!.roleId;
+
+    const dateParam = req.query.date as string | undefined;
+    const dayStart = dateParam ? new Date(dateParam) : new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const mappings = await db.select({ activityTypeId: roleActivityTypesTable.activityTypeId })
+      .from(roleActivityTypesTable)
+      .where(eq(roleActivityTypesTable.roleId, roleId));
+
+    if (mappings.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const ids = mappings.map(m => m.activityTypeId);
+    const types = await db.select().from(activityTypesTable)
+      .where(and(eq(activityTypesTable.activeStatus, true), inArray(activityTypesTable.id, ids)));
+
+    const todayLogs = await db.select({ activityTypeId: activityLogsTable.activityTypeId })
+      .from(activityLogsTable)
+      .where(and(
+        eq(activityLogsTable.userId, userId),
+        gte(activityLogsTable.createdAt, dayStart),
+        lte(activityLogsTable.createdAt, dayEnd),
+      ));
+
+    const loggedTypeIds = new Set(todayLogs.map(l => l.activityTypeId));
+
+    const checklist = types.map(t => ({
+      ...t,
+      done: loggedTypeIds.has(t.id),
+    }));
+
+    res.json(checklist);
+  } catch (error) {
+    console.error("Checklist error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -261,6 +332,38 @@ router.delete("/activity-types/:id", authMiddleware, requireRole("Owner", "Admin
     res.json({ message: "Activity type deactivated" });
   } catch (error) {
     console.error("Delete activity type error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/role-activity-types", authMiddleware, requireRole("Owner", "Admin System", "Superadmin"), async (req, res) => {
+  try {
+    const roleId = req.query.roleId ? Number(req.query.roleId) : undefined;
+    const rows = roleId
+      ? await db.select().from(roleActivityTypesTable).where(eq(roleActivityTypesTable.roleId, roleId))
+      : await db.select().from(roleActivityTypesTable);
+    res.json(rows);
+  } catch (error) {
+    console.error("List role activity types error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/role-activity-types", authMiddleware, requireRole("Owner", "Admin System", "Superadmin"), async (req, res) => {
+  try {
+    const { roleId, activityTypeIds } = req.body;
+    if (!roleId || !Array.isArray(activityTypeIds)) {
+      res.status(400).json({ error: "roleId and activityTypeIds[] are required" }); return;
+    }
+    await db.delete(roleActivityTypesTable).where(eq(roleActivityTypesTable.roleId, roleId));
+    if (activityTypeIds.length > 0) {
+      await db.insert(roleActivityTypesTable).values(
+        activityTypeIds.map((id: number) => ({ roleId, activityTypeId: id }))
+      );
+    }
+    res.json({ message: "Role activity types updated" });
+  } catch (error) {
+    console.error("Update role activity types error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

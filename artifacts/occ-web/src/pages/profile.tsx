@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { User, Lock, Building2, Clock, Shield, Moon } from "lucide-react";
+import { User, Lock, Building2, Clock, Shield, Moon, BookOpen } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 async function apiPut(url: string, body: object) {
@@ -241,6 +241,22 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Job Description ── */}
+      {(user as { jobDescription?: string | null })?.jobDescription && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" /> Jobdesk Saya
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+              {(user as { jobDescription?: string | null }).jobDescription}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Change Password ── */}
       <Card>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useListActivityLogs, useListPts, useListBranches, useUpdateActivityLog, useDeleteActivityLog, type ActivityLogWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2 } from "lucide-react";
+import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -25,8 +25,18 @@ type ActivityLogEnriched = ActivityLogWithRelations & {
   flagged?: boolean;
 };
 
+type ChecklistItem = {
+  id: number;
+  name: string;
+  category?: string | null;
+  weightPoints: string;
+  activeStatus: boolean;
+  done: boolean;
+};
+
 export default function ActivityLogs() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [presetActivityTypeId, setPresetActivityTypeId] = useState<number | undefined>(undefined);
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -38,6 +48,9 @@ export default function ActivityLogs() {
   const [editQty, setEditQty] = useState("");
   const [editNote, setEditNote] = useState("");
   const [deleteLog, setDeleteLog] = useState<ActivityLogEnriched | null>(null);
+
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [checklistLoading, setChecklistLoading] = useState(true);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,6 +66,23 @@ export default function ActivityLogs() {
       setFilterPtId(String(user.ptId));
     }
   }, [isDireksi, user?.ptId]);
+
+  async function fetchChecklist() {
+    try {
+      const res = await fetch("/api/activity-types/checklist");
+      if (res.ok) {
+        const data = await res.json();
+        setChecklist(data);
+      }
+    } catch {
+    } finally {
+      setChecklistLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchChecklist();
+  }, []);
 
   const { data: pts } = useListPts();
   const { data: branches } = useListBranches(
@@ -171,8 +201,25 @@ export default function ActivityLogs() {
     updateMutation.mutate({ id: editLog.id, data: { quantity: qty, note: editNote } });
   }
 
+  function openFormWithType(activityTypeId: number) {
+    setPresetActivityTypeId(activityTypeId);
+    setModalOpen(true);
+  }
+
+  function handleModalClose(open: boolean) {
+    setModalOpen(open);
+    if (!open) {
+      setPresetActivityTypeId(undefined);
+      fetchChecklist();
+    }
+  }
+
   const hasFilters = search || dateFrom || dateTo || filterPtId || filterBranchId;
   const showActionsCol = true;
+
+  const donePct = checklist.length > 0
+    ? Math.round((checklist.filter(c => c.done).length / checklist.length) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -181,10 +228,61 @@ export default function ActivityLogs() {
           <h1 className="text-3xl font-bold tracking-tight">Log Aktivitas</h1>
           <p className="text-muted-foreground mt-1">Lacak operasional harian dan KPI.</p>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="hidden md:flex gap-2">
+        <Button onClick={() => { setPresetActivityTypeId(undefined); setModalOpen(true); }} className="hidden md:flex gap-2">
           <Plus className="w-4 h-4" /> Log Aktivitas
         </Button>
       </div>
+
+      {checklist.length > 0 && (
+        <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-primary" />
+              <h2 className="font-semibold text-sm">Checklist Hari Ini</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {checklist.filter(c => c.done).length}/{checklist.length} selesai
+              </span>
+              <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${donePct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          {checklistLoading ? (
+            <div className="px-5 py-4 text-sm text-muted-foreground">Memuat checklist...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-border">
+              {checklist.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => !item.done && openFormWithType(item.id)}
+                  disabled={item.done}
+                  title={item.done ? "Sudah dicatat hari ini" : `Klik untuk log: ${item.name}`}
+                  className={cn(
+                    "flex items-center gap-3 px-5 py-3 text-left transition-colors text-sm",
+                    item.done
+                      ? "cursor-default opacity-60"
+                      : "hover:bg-muted/40 cursor-pointer group"
+                  )}
+                >
+                  {item.done ? (
+                    <CheckSquare className="w-4 h-4 text-green-500 shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
+                  )}
+                  <span className={cn("leading-snug", item.done && "line-through text-muted-foreground")}>
+                    {item.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -346,8 +444,11 @@ export default function ActivityLogs() {
         </div>
       </div>
 
-      <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
-        <BatchActivityForm onSuccess={() => setModalOpen(false)} />
+      <ResponsiveModal open={modalOpen} onOpenChange={handleModalClose} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
+        <BatchActivityForm
+          onSuccess={() => handleModalClose(false)}
+          presetActivityTypeId={presetActivityTypeId}
+        />
       </ResponsiveModal>
 
       <ResponsiveModal

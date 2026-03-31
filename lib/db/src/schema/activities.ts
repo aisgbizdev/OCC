@@ -1,9 +1,10 @@
-import { pgTable, serial, varchar, boolean, timestamp, integer, numeric, text, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, boolean, timestamp, integer, numeric, text, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 import { ptsTable, branchesTable, shiftsTable } from "./organization";
+import { rolesTable } from "./roles";
 
 export const activityTypesTable = pgTable("activity_types", {
   id: serial("id").primaryKey(),
@@ -38,8 +39,22 @@ export const activityLogsTable = pgTable("activity_logs", {
   index("activity_logs_created_at_idx").on(table.createdAt),
 ]);
 
+export const roleActivityTypesTable = pgTable("role_activity_types", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id").notNull().references(() => rolesTable.id, { onDelete: "cascade" }),
+  activityTypeId: integer("activity_type_id").notNull().references(() => activityTypesTable.id, { onDelete: "cascade" }),
+}, (table) => [
+  uniqueIndex("role_activity_type_unique").on(table.roleId, table.activityTypeId),
+]);
+
+export const roleActivityTypesRelations = relations(roleActivityTypesTable, ({ one }) => ({
+  role: one(rolesTable, { fields: [roleActivityTypesTable.roleId], references: [rolesTable.id] }),
+  activityType: one(activityTypesTable, { fields: [roleActivityTypesTable.activityTypeId], references: [activityTypesTable.id] }),
+}));
+
 export const activityTypesRelations = relations(activityTypesTable, ({ many }) => ({
   activityLogs: many(activityLogsTable),
+  roleActivityTypes: many(roleActivityTypesTable),
 }));
 
 export const activityLogsRelations = relations(activityLogsTable, ({ one }) => ({
@@ -57,3 +72,7 @@ export type ActivityType = typeof activityTypesTable.$inferSelect;
 export const insertActivityLogSchema = createInsertSchema(activityLogsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLogsTable.$inferSelect;
+
+export const insertRoleActivityTypeSchema = createInsertSchema(roleActivityTypesTable).omit({ id: true });
+export type InsertRoleActivityType = z.infer<typeof insertRoleActivityTypeSchema>;
+export type RoleActivityType = typeof roleActivityTypesTable.$inferSelect;

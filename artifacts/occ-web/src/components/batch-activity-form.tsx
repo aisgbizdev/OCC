@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2, Save, AlertCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import type { UserWithRelations } from "@workspace/api-client-react";
+
+type ActivityTypeItem = {
+  id: number;
+  name: string;
+  category?: string | null;
+  weightPoints: string;
+  activeStatus: boolean;
+};
 
 type RowItem = {
   activityTypeId: string;
@@ -23,14 +31,16 @@ type DuplicateWarning = {
 };
 
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
-export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
-  const { data: types } = useListActivityTypes();
+export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSuccess: () => void; presetActivityTypeId?: number }) {
+  const { data: allTypes } = useListActivityTypes();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { user } = useAuth();
 
   const isSPVOrAbove = SPV_AND_ABOVE.includes(user?.roleName ?? "");
+  const isChiefOrAbove = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const myPtId = user?.ptId;
 
   const { data: teamUsersRaw = [] } = useListUsers({ ptId: myPtId ?? undefined });
@@ -40,9 +50,46 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
       )
     : [];
 
-  const [rows, setRows] = useState<RowItem[]>([{ activityTypeId: "", quantity: 1, note: "", targetUserId: "" }]);
+  const [roleTypes, setRoleTypes] = useState<ActivityTypeItem[]>([]);
+  const [roleTypesLoading, setRoleTypesLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRoleTypes() {
+      try {
+        const res = await fetch("/api/activity-types/for-role");
+        if (res.ok) {
+          const data = await res.json();
+          setRoleTypes(data);
+        } else {
+          setRoleTypes((allTypes ?? []) as ActivityTypeItem[]);
+        }
+      } catch {
+        setRoleTypes((allTypes ?? []) as ActivityTypeItem[]);
+      } finally {
+        setRoleTypesLoading(false);
+      }
+    }
+    fetchRoleTypes();
+  }, [allTypes]);
+
+  const displayTypes = isChiefOrAbove
+    ? ((allTypes ?? []) as ActivityTypeItem[]).filter(t => t.activeStatus)
+    : roleTypes.filter(t => t.activeStatus);
+
+  const [rows, setRows] = useState<RowItem[]>([{
+    activityTypeId: presetActivityTypeId ? String(presetActivityTypeId) : "",
+    quantity: 1,
+    note: "",
+    targetUserId: "",
+  }]);
   const [isPending, setIsPending] = useState(false);
   const [duplicateWarnings, setDuplicateWarnings] = useState<DuplicateWarning[] | null>(null);
+
+  useEffect(() => {
+    if (presetActivityTypeId && rows.length === 1 && rows[0].activityTypeId === "") {
+      setRows([{ activityTypeId: String(presetActivityTypeId), quantity: 1, note: "", targetUserId: "" }]);
+    }
+  }, [presetActivityTypeId]);
 
   const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "" }]);
   const handleRemove = (index: number) => setRows(rows.filter((_, i) => i !== index));
@@ -58,7 +105,7 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
 
   function isErrorType(activityTypeId: string): boolean {
     if (!activityTypeId) return false;
-    const found = (types ?? []).find(t => String(t.id) === activityTypeId);
+    const found = (allTypes ?? []).find(t => String(t.id) === activityTypeId);
     return (found as { category?: string | null } | undefined)?.category === "Error";
   }
 
@@ -99,6 +146,7 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
       toast({ title: "Berhasil", description: `${validRows.length} aktivitas dicatat` });
       qc.invalidateQueries({ queryKey: ["/api/activity-logs"] });
       qc.invalidateQueries({ queryKey: ["/api/kpi/scores"] });
+      qc.invalidateQueries({ queryKey: ["/api/activity-types/checklist"] });
       setDuplicateWarnings(null);
       onSuccess();
     } catch {
@@ -162,11 +210,13 @@ export function BatchActivityForm({ onSuccess }: { onSuccess: () => void }) {
                   value={row.activityTypeId}
                   onChange={(e) => handleChange(i, "activityTypeId", e.target.value)}
                   required
+                  disabled={roleTypesLoading}
                 >
-                  <option value="" disabled>Pilih Tipe Aktivitas...</option>
-                  {(types ?? []).filter(t => t.activeStatus).map(t => {
-                    const tc = t as typeof t & { category?: string | null };
-                    const isErrType = tc.category === "Error";
+                  <option value="" disabled>
+                    {roleTypesLoading ? "Memuat..." : "Pilih Tipe Aktivitas..."}
+                  </option>
+                  {displayTypes.map(t => {
+                    const isErrType = t.category === "Error";
                     return (
                       <option key={t.id} value={t.id}>
                         {isErrType ? "⚠ " : ""}{t.name} {isErrType ? "(Error)" : `(+${t.weightPoints} poin)`}
