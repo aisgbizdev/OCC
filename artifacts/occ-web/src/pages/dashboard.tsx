@@ -295,10 +295,10 @@ function SupervisorDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Aktivitas Tim Hari Ini" value={String(todayLogs.length)} icon={Activity} color="text-blue-400" />
-        <StatCard title="Dealer Aktif" value={String(scores?.length ?? 0)} icon={Users} color="text-emerald-400" />
-        <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" />
-        <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" />
+        <StatCard title="Aktivitas Tim Hari Ini" value={String(todayLogs.length)} icon={Activity} color="text-blue-400" href="/activity-logs" />
+        <StatCard title="Dealer Aktif" value={String(scores?.length ?? 0)} icon={Users} color="text-emerald-400" href="/kpi" />
+        <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" href="/tasks" />
+        <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" href="/complaints" />
       </div>
 
       <SpvKpiTrendChart trend={trendData} />
@@ -427,10 +427,10 @@ function ManagementDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" />
-        <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" />
-        <StatCard title="Dealer Inaktif" value={String(inactiveCount)} icon={Clock} color="text-orange-400" />
-        <StatCard title="Top Skor Harian" value={String(topLeader?.currentDailyScore ?? 0)} icon={TrendingUp} color="text-emerald-400" />
+        <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" href="/complaints" />
+        <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" href="/tasks" />
+        <StatCard title="Dealer Inaktif" value={String(inactiveCount)} icon={Clock} color="text-orange-400" href="/activity-logs" />
+        <StatCard title="Top Skor Harian" value={String(topLeader?.currentDailyScore ?? 0)} icon={TrendingUp} color="text-emerald-400" href="/kpi" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -533,9 +533,9 @@ function ManagementDashboard() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color }: { title: string; value: string; icon: LucideIcon; color: string }) {
-  return (
-    <div className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+function StatCard({ title, value, icon: Icon, color, href }: { title: string; value: string; icon: LucideIcon; color: string; href?: string }) {
+  const inner = (
+    <div className={`bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group ${href ? "cursor-pointer hover:border-primary/40 active:scale-[0.98]" : ""}`}>
       <div className="flex justify-between items-start">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
@@ -547,4 +547,6 @@ function StatCard({ title, value, icon: Icon, color }: { title: string; value: s
       </div>
     </div>
   );
+  if (href) return <Link href={href}>{inner}</Link>;
+  return inner;
 }

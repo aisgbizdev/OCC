@@ -26,6 +26,7 @@ export default function Tasks() {
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterAssignedTo, setFilterAssignedTo] = useState("");
 
   useEffect(() => {
     if (isDireksi && user?.ptId) {
@@ -38,13 +39,19 @@ export default function Tasks() {
     filterPtId ? { ptId: Number(filterPtId) } : undefined
   );
 
+  const { data: allUsers } = useListUsers();
+
+  const assignedToParam = isChief && filterAssignedTo && filterAssignedTo !== "0" ? Number(filterAssignedTo) : undefined;
+
   const { data: tasks } = useListTasks({
     ptId: isChief && filterPtId ? Number(filterPtId) : undefined,
+    assignedTo: assignedToParam,
     status: filterStatus || undefined,
   });
 
   const filteredTasks = (tasks as TaskEnriched[] | undefined)?.filter(task => {
     if (isChief && filterBranchId && task.branchId !== Number(filterBranchId)) return false;
+    if (isChief && filterAssignedTo === "0" && task.assignedTo !== null) return false;
     return true;
   });
 
@@ -83,7 +90,7 @@ export default function Tasks() {
     });
   }, [updateTask, toast, qc]);
 
-  const hasFilters = filterPtId || filterBranchId || filterStatus;
+  const hasFilters = filterPtId || filterBranchId || filterStatus || filterAssignedTo;
 
   return (
     <div className="space-y-6">
@@ -140,11 +147,25 @@ export default function Tasks() {
                 ))}
               </select>
             </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                className="h-9 px-3 rounded-md bg-background border text-sm min-w-[180px]"
+                value={filterAssignedTo}
+                onChange={e => setFilterAssignedTo(e.target.value)}
+              >
+                <option value="">Semua Assignee</option>
+                <option value="0">Tidak di-assign</option>
+                {(allUsers as UserWithRelations[] | undefined)?.filter((u: UserWithRelations) => u.activeStatus).map((u: UserWithRelations) => (
+                  <option key={u.id} value={u.id}>{u.name} ({u.roleName ?? "-"})</option>
+                ))}
+              </select>
+            </div>
           </>
         )}
 
         {hasFilters && (
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); setFilterStatus(""); }}>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); setFilterStatus(""); setFilterAssignedTo(""); }}>
             <Filter className="w-3.5 h-3.5" /> Reset Filter
           </Button>
         )}
