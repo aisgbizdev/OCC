@@ -110,29 +110,32 @@ roles, permissions, role_permissions, users, pts, branches, shifts, activity_typ
 
 **Superadmin bypass**: `requireRole()` middleware always calls `next()` if `roleName === "Superadmin"`.
 
-## Demo Accounts (32 users, password: password123)
+## Real Team Accounts (43 users, password: password123) — Seed v23-real-team
 
-### Korporat / Divisi (5 — muncul di tab "Semua" login)
-- superadmin@occ.id (Superadmin) — full bypass access
-- owner@occ.id (Owner)
-- dir.utama@occ.id (Direksi — Direktur Utama)
-- dir.kepatuhan@occ.id (Direksi — Direktur Kepatuhan)
-- kiki@occ.id (Chief Dealing — 1 orang untuk seluruh Divisi Operational)
+### Seed marker: `kiki@occ.id.v23-real-team` (Kiki Zainab Prameswari — Chief Dealing)
 
-### SGB — nama asli dari KPI-OPR Excel (7)
-- eko.sgb@occ.id (SPV Dealing — Shift Pagi)
-- fahrul.sgb@occ.id (SPV Dealing — Shift Malam)
-- adid.sgb@occ.id (SPV Dealing — Shift Malam)
-- aziz.sgb@occ.id (Dealer — Abdul Aziz, Shift Pagi)
-- amel.sgb@occ.id (Dealer — Shift Siang)
-- dealer.sgb@occ.id (Dealer — Shift Malam)
-- admin.sgb@occ.id (Admin System)
+### HQ / Lintas-PT (8 — ptId=null, tampil "Head Quarters")
+- superadmin@occ.id (Super Admin — Superadmin)
+- owner@occ.id (Admin Owner — Owner)
+- kiki@occ.id.v23-real-team (Kiki Zainab Prameswari — Chief Dealing)
+- amel.sgb@occ.id (Amelia Rosita R — Co-SPV Dealing, Pagi)
+- rusnawati@occ.id (Rusnawati — Co-SPV Dealing, Pagi)
+- eko.sgb@occ.id (Eko Hadi — SPV Dealing, Pagi)
+- fahrul.sgb@occ.id (Fahrul Rozi — SPV Dealing, Malam)
+- adid.sgb@occ.id (Mujaddid Sabillah — SPV Dealing, Malam)
 
-### PT lain — RFB, KPF, BPF, EWF (5 per PT = 20)
-- spv1/spv2.<pt>@occ.id (SPV Dealing — Pagi/Malam)
-- dealer1/dealer2.<pt>@occ.id (Dealer — Pagi/Siang)
-- admin.<pt>@occ.id (Admin System)
-- (ganti <pt> dengan rfb / kpf / bpf / ewf)
+### Per PT — Direksi (2 per PT × 5 PT = 10)
+- du_<ptcode>@occ.id (Direktur Utama) | dk_<ptcode>@occ.id (Direktur Kepatuhan)
+
+### Per PT — Dealers real (4 per PT × 5 PT = 20)
+- SGB: yehezkiel.sgb (Pagi) / dwi.sgb (Siang) / farid.sgb (Malam) / haikal.sgb (Malam)
+- RFB: annisa.rfb (Pagi) / andreas.rfb (Siang) / zahri.rfb (Malam) / giovanny.rfb (Malam)
+- KPF: tiara.kpf (Pagi) / ellin.kpf (Siang) / bahagia.kpf (Malam) / yudhistira.kpf (Malam)
+- BPF: linda.bpf (Pagi) / bayu.bpf (Siang) / yulsa.bpf (Malam) / sahlan.bpf (Malam)
+- EWF: hadi.ewf (Pagi) / nilam.ewf (Siang) / andhika.ewf (Malam) / daniel.ewf (Malam)
+
+### Per PT — Admin System (5)
+- admin.sgb@occ.id / admin.rfb@occ.id / admin.kpf@occ.id / admin.bpf@occ.id / admin.ewf@occ.id
 
 ## Login UX
 

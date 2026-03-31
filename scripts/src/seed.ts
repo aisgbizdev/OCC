@@ -15,7 +15,7 @@ import bcryptjs from "bcryptjs";
 
 // Seed version marker — update this email whenever the seed data changes
 // to force a reseed on any environment that still has the old data.
-const SEED_MARKER_EMAIL = "kiki@occ.id.v22-spv-hq";
+const SEED_MARKER_EMAIL = "kiki@occ.id.v23-real-team";
 
 async function seed() {
   console.log("Seeding OCC database...");
@@ -263,52 +263,157 @@ async function seed() {
     const b4 = firstBranchByPtId.get(ewf.id)!;
     const [pagi, siang, malam] = shifts;
 
+    // ── Job descriptions ────────────────────────────────────────────────
+    const JD_KIKI = `Mengawasi dan melakukan pengecekan akhir atas keabsahan serta validitas data nasabah.
+Memastikan proses pengiriman User ID dan Password kepada nasabah berjalan tepat, aman, dan sesuai prosedur.
+Memastikan format SMS, E-mail, Nomor Account, dan Password Nasabah sesuai dengan data yang diberikan pedagang/marketing.
+Mengontrol ketepatan proses input Client Bank agar sesuai dengan data yang terdaftar.
+Mengawasi proses prodem bulanan, kuartalan, serta perubahan upline sesuai ketentuan perusahaan.
+Melakukan crosscheck data marketing seluruh PT untuk memastikan kelayakan promo/demosi.
+Memastikan proses promo, demosi, dan evaluasi marketing sesuai syarat, ketentuan, dan scheme commission yang berlaku.
+Mengontrol dan menyetujui perubahan upline berdasarkan permintaan cabang, baik normal case maupun special case.
+Mengawasi penyusunan laporan bulanan, kuartalan, semester, dan tahunan secara tepat waktu dan akurat.
+Memastikan laporan dapat digunakan oleh BRM, CBO, dan CEO sebagai bahan monitoring dan evaluasi.
+Mengontrol pendataan performa kantor cabang dan marketing seluruh PT.
+Menjaga kualitas laporan agar informatif, rapi, dan dapat menjadi dasar pengambilan keputusan manajemen.`;
+
+    const JD_EKO = `Melakukan pemeriksaan keabsahan dan validitas data nasabah secara teliti dan akurat.
+Memastikan proses pengiriman User ID dan Password kepada nasabah sesuai prosedur.
+Memastikan format SMS, E-mail, Nomor Account, dan Password Nasabah sesuai data dari pedagang.
+Memastikan proses input Client Bank sudah sesuai dengan data pada e-form.
+Menyiapkan data dan dokumen untuk keperluan audit internal maupun eksternal.
+Menyediakan data pendukung audit Bappebti/BBJ.
+Meneliti akun nonaktif yang menjadi temuan audit, termasuk nomor rekening dan sisa equity.
+Menyiapkan data untuk kebutuhan pengaduan akun nasabah yang diproses DIRKEP.
+Melakukan perhitungan transaksi komoditi statement secara akurat.
+Mencocokkan data transaksi komoditi dengan data di Jafets.
+Menyusun dan merekap report komoditi statement secara berkala.
+Melakukan rekap jumlah peserta reward kuartalan dan tahunan.
+Menjaga ketelitian dalam proses administrasi, dokumen, dan pelaporan.`;
+
+    const JD_SPV_MALAM = `Mengawasi proses validasi data nasabah sesuai SOP.
+Memastikan pencocokan margin dengan data Etrade seluruh PT.
+Menyusun dan memeriksa report harian secara akurat dan tepat waktu.
+Menyiapkan daily report untuk BRM, CBO, dan CEO setiap hari setelah market close.
+Memastikan pengiriman statement berjalan sesuai prosedur.
+Mengecek email log statement di BDC.
+Memastikan pengiriman email statement melalui Zimbra berjalan baik.
+Melakukan backup email statement ke Outlook secara berkala.
+Mengawasi kualitas kerja dan akurasi operasional pada shift yang dipimpin.`;
+
+    const JD_RUSNA = `Melakukan pemeriksaan keabsahan dan validitas data nasabah secara teliti.
+Memastikan proses pengiriman User ID dan Password kepada nasabah berjalan dengan benar.
+Memastikan format SMS, E-mail, Nomor Account, dan Password Nasabah sesuai data pedagang.
+Memastikan input Client Bank sesuai dengan data pada e-form.
+Melakukan update NA (new account) yang telah aktif ke program BAS.
+Menangani proses open account house, margin in, dan margin out account house sesuai ketentuan.
+Melakukan permintaan Acc Demo untuk kebutuhan operasional.
+Melakukan pengecekan registrasi nasabah house pada e-form.
+Mengonfirmasi dana masuk untuk new account atau top up account house.
+Memverifikasi data agar dapat diinput ke program BAS dengan benar.
+Melakukan pengecekan withdrawal account house pada Etrade.
+Melakukan input withdrawal house ke program BAS.
+Melakukan pengecekan logbook pergantian shift dari pagi ke sore.
+Melakukan pengecekan margin pada Etrade.
+Menyusun dan menyampaikan laporan harian kepada Supervisor melalui logbook.
+Menjaga ketelitian dalam kontrol administrasi dan operasional harian.`;
+
+    const JD_AMEL = `Melakukan pemeriksaan keabsahan dan validitas data nasabah secara teliti dan sesuai prosedur.
+Memastikan proses pengiriman User ID dan Password kepada nasabah berjalan dengan benar.
+Memastikan format SMS, E-mail, Nomor Account, dan Password Nasabah sesuai data dari pedagang.
+Memastikan proses input Client Bank sesuai dengan data pada e-form.
+Menyiapkan data dan dokumen untuk keperluan audit.
+Menyediakan data pendukung audit Bappebti/BBJ.
+Melakukan crosscheck akun nonaktif yang menjadi temuan audit, termasuk nomor rekening dan sisa equity.
+Menyiapkan data untuk kebutuhan pengaduan akun nasabah yang diproses DIRKEP.
+Melakukan perhitungan transaksi komoditi statement secara akurat.
+Mencocokkan data transaksi komoditi dengan data pada Jafets.
+Menyusun dan merekap report komoditi statement secara berkala.
+Melakukan rekap jumlah peserta reward kuartalan dan tahunan.
+Menjaga ketelitian dalam seluruh proses data, dokumen, dan laporan.`;
+
+    const JD_DEALER_PAGI_SIANG = `Melakukan pemeriksaan keabsahan dan validitas data nasabah.
+Mengecek recording dan video verifikasi WPB serta aktivasi Kepala Cabang sebelum pengiriman User ID & Password.
+Memastikan pengiriman User ID & Password sesuai data pada e-form atau surat pernyataan.
+Memastikan format SMS, e-mail, nomor account, dan password nasabah sesuai data dari pedagang.
+Memastikan input Client Bank sesuai data pada e-form.
+Melakukan update NA (new account) yang telah aktif ke program BAS.
+Mengidentifikasi slip setoran margin sesuai bukti setoran pada rekening terpisah.
+Mengidentifikasi nama pengirim pada slip setoran margin.
+Mencatat margin in ke Buku KU dan melaporkannya ke finance.
+Memastikan OR sesuai dengan nominal dan data nasabah saat key in di Etrade.
+Memastikan withdrawal nasabah sesuai data Client Bank di BAS.
+Menyerahkan list withdrawal ke finance sesuai data di Etrade.
+Mencatat seluruh pekerjaan ke logbook saat serah terima shift.
+Memastikan surat pernyataan perubahan data nasabah terkirim ke pedagang melalui email.`;
+
+    const JD_DEALER_MALAM = `Melakukan seluruh proses validasi data nasabah, input client bank, dan update account.
+Mengidentifikasi margin in/out dan memastikan kesesuaian data transaksi.
+Mencatat margin ke Buku KU dan menyerahkan data terkait ke finance.
+Memastikan pekerjaan operasional tercatat dalam logbook.
+Menjaga kelancaran serah terima pekerjaan antar shift.
+Melakukan penginputan report XLS agar sesuai dengan data pada program BDC.
+Melakukan pengiriman statement ke email nasabah melalui BDC.
+Memastikan email statement telah berhasil terkirim ke nasabah.
+Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila diperlukan.`;
+
     await db.insert(usersTable).values([
       // ── Korporat / Lintas-PT (tanpa PT spesifik) ──────────────────────
-      { name: "Super Admin",           email: "superadmin@occ.id",          passwordHash: pw, roleId: superadminRole.id, ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "Superadmin" },
-      { name: "Admin Owner",           email: "owner@occ.id",               passwordHash: pw, roleId: ownerRole.id,      ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "Owner" },
-      { name: "Kiki",                  email: "kiki@occ.id.v22-spv-hq",     passwordHash: pw, roleId: chiefRole.id,      ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "Chief Dealing" },
-      { name: "Amel",                  email: "amel.sgb@occ.id",            passwordHash: pw, roleId: coSpvRole.id,      ptId: null,   branchId: null,   shiftId: siang.id, positionTitle: "Co-SPV Dealing" },
+      { name: "Super Admin",              email: "superadmin@occ.id",          passwordHash: pw, roleId: superadminRole.id, ptId: null, branchId: null, shiftId: pagi.id,  positionTitle: "Superadmin" },
+      { name: "Admin Owner",              email: "owner@occ.id",               passwordHash: pw, roleId: ownerRole.id,      ptId: null, branchId: null, shiftId: pagi.id,  positionTitle: "Owner" },
+      { name: "Kiki Zainab Prameswari",   email: "kiki@occ.id.v23-real-team",  passwordHash: pw, roleId: chiefRole.id,      ptId: null, branchId: null, shiftId: pagi.id,  positionTitle: "Chief Dealing",  jobDescription: JD_KIKI },
+      { name: "Amelia Rosita R",          email: "amel.sgb@occ.id",            passwordHash: pw, roleId: coSpvRole.id,      ptId: null, branchId: null, shiftId: pagi.id,  positionTitle: "Co-SPV Dealing", jobDescription: JD_AMEL },
+      { name: "Rusnawati",                email: "rusnawati@occ.id",           passwordHash: pw, roleId: coSpvRole.id,      ptId: null, branchId: null, shiftId: pagi.id,  positionTitle: "Co-SPV Dealing", jobDescription: JD_RUSNA },
+      { name: "Eko Hadi",                 email: "eko.sgb@occ.id",             passwordHash: pw, roleId: spvRole.id,        ptId: null, branchId: null, shiftId: pagi.id,  positionTitle: "SPV Dealing",    jobDescription: JD_EKO },
+      { name: "Fahrul Rozi",              email: "fahrul.sgb@occ.id",          passwordHash: pw, roleId: spvRole.id,        ptId: null, branchId: null, shiftId: malam.id, positionTitle: "SPV Dealing",    jobDescription: JD_SPV_MALAM },
+      { name: "Mujaddid Sabillah",        email: "adid.sgb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: null, branchId: null, shiftId: malam.id, positionTitle: "SPV Dealing",    jobDescription: JD_SPV_MALAM },
 
-      // ── SGB — Direktur & Tim Operasional ──────────────────────────────
-      { name: "Iriawan Widadi",        email: "du_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Ahmad Fauzi",           email: "dk_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Eko",                   email: "eko.sgb@occ.id",             passwordHash: pw, roleId: spvRole.id,        ptId: null,   branchId: null,   shiftId: pagi.id,  positionTitle: "SPV Dealing" },
-      { name: "Fahrul",                email: "fahrul.sgb@occ.id",          passwordHash: pw, roleId: spvRole.id,        ptId: null,   branchId: null,   shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Adid",                  email: "adid.sgb@occ.id",            passwordHash: pw, roleId: spvRole.id,        ptId: null,   branchId: null,   shiftId: malam.id, positionTitle: "SPV Dealing" },
-      { name: "Abdul Aziz",            email: "aziz.sgb@occ.id",            passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Budi Santoso",          email: "dealer.sgb@occ.id",          passwordHash: pw, roleId: dealerRole.id,     ptId: sgb.id, branchId: b0.id,  shiftId: malam.id, positionTitle: "Dealer" },
-      { name: "Siti Nuraini",          email: "admin.sgb@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: sgb.id, branchId: b0.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
+      // ── SGB ────────────────────────────────────────────────────────────
+      { name: "Iriawan Widadi",           email: "du_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Ahmad Fauzi",              email: "dk_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Yehezkiel Vava Ringgo",    email: "yehezkiel.sgb@occ.id",       passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Dwi Astuti",               email: "dwi.sgb@occ.id",             passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Farid Astra Ridha",        email: "farid.sgb@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Muhammad Haikal Isa",      email: "haikal.sgb@occ.id",          passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Siti Nuraini",             email: "admin.sgb@occ.id",           passwordHash: pw, roleId: adminRole.id,   ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── RFB ────────────────────────────────────────────────────────────
-      { name: "Riyan Kurniawan",       email: "du_rfb@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Mega Helia Purnama Putri", email: "dk_rfb@occ.id",           passwordHash: pw, roleId: direksiRole.id,    ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Reza Aditya",           email: "dealer1.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Maya Indah",            email: "dealer2.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: rfb.id, branchId: b1.id,  shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Fitri Handayani",       email: "admin.rfb@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: rfb.id, branchId: b1.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Riyan Kurniawan",          email: "du_rfb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Mega Helia Purnama Putri", email: "dk_rfb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "An Nisa Rahmalia",         email: "annisa.rfb@occ.id",          passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Andreas Blasius David",    email: "andreas.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Muhammad Zahri",           email: "zahri.rfb@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Giovanny",                 email: "giovanny.rfb@occ.id",        passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Fitri Handayani",          email: "admin.rfb@occ.id",           passwordHash: pw, roleId: adminRole.id,   ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── KPF ────────────────────────────────────────────────────────────
-      { name: "Lukman Wahyudin",       email: "du_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Egi Ramadian NP",       email: "dk_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Fajar Nugraha",         email: "dealer1.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Indah Permata",         email: "dealer2.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: kpf.id, branchId: b2.id,  shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Toni Saputra",          email: "admin.kpf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: kpf.id, branchId: b2.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Lukman Wahyudin",          email: "du_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Egi Ramadian NP",          email: "dk_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Tiara Destia Ramadhan",    email: "tiara.kpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Ellin Jackline",           email: "ellin.kpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Bahagia Sihura",           email: "bahagia.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Yudhistira Agustin",       email: "yudhistira.kpf@occ.id",      passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Toni Saputra",             email: "admin.kpf@occ.id",           passwordHash: pw, roleId: adminRole.id,   ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── BPF ────────────────────────────────────────────────────────────
-      { name: "Nurwanto",              email: "du_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Akhmad Royani",         email: "dk_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Galih Prakoso",         email: "dealer1.bpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Putri Amalia",          email: "dealer2.bpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: bpf.id, branchId: b3.id,  shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Erwin Setiawan",        email: "admin.bpf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: bpf.id, branchId: b3.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Nurwanto",                 email: "du_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Akhmad Royani",            email: "dk_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Linda Evans",              email: "linda.bpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Bayu Setiawan",            email: "bayu.bpf@occ.id",            passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Yulsa",                    email: "yulsa.bpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Sahlan",                   email: "sahlan.bpf@occ.id",          passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Erwin Setiawan",           email: "admin.bpf@occ.id",           passwordHash: pw, roleId: adminRole.id,   ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Admin System" },
 
       // ── EWF ────────────────────────────────────────────────────────────
-      { name: "Agus Wijayanto",        email: "du_ewf@occ.id",              passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Utama" },
-      { name: "Fadly Khairuzzadhi, M.H.", email: "dk_ewf@occ.id",           passwordHash: pw, roleId: direksiRole.id,    ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Bayu Setiabudi",        email: "dealer1.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Dealer" },
-      { name: "Ayu Ratnasari",         email: "dealer2.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,     ptId: ewf.id, branchId: b4.id,  shiftId: siang.id, positionTitle: "Dealer" },
-      { name: "Widi Hartono",          email: "admin.ewf@occ.id",           passwordHash: pw, roleId: adminRole.id,      ptId: ewf.id, branchId: b4.id,  shiftId: pagi.id,  positionTitle: "Admin System" },
+      { name: "Agus Wijayanto",           email: "du_ewf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
+      { name: "Fadly Khairuzzadhi, M.H.", email: "dk_ewf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
+      { name: "Hadi Susanto",             email: "hadi.ewf@occ.id",            passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Nilam Larassita",          email: "nilam.ewf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
+      { name: "Andhika",                  email: "andhika.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Daniel Simorangkir",       email: "daniel.ewf@occ.id",          passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
+      { name: "Widi Hartono",             email: "admin.ewf@occ.id",           passwordHash: pw, roleId: adminRole.id,   ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Admin System" },
     ]);
-    console.log("Created 32 users (4 korporat + 3 SPV HQ + 5 SGB + 5×4 PT lain)");
+    console.log("Created 43 users (8 HQ + 5×Direksi×2 + 5×Dealer×4 + 5×Admin)");
 
     await db.insert(systemSettingsTable).values([
       { settingKey: "daily_target_points",          settingValue: "40", description: "Daily KPI target points per dealer" },
@@ -320,21 +425,19 @@ async function seed() {
     ]);
     console.log("Created system settings");
 
-    console.log("\n✓ Seed complete! 40 demo accounts (password: password123)");
-    console.log("─── Korporat/Lintas-PT ────────────────────────────────────");
-    console.log("  superadmin@occ.id | owner@occ.id | kiki@occ.id.v22-spv-hq | amel.sgb@occ.id");
-    console.log("  eko.sgb@occ.id | fahrul.sgb@occ.id | adid.sgb@occ.id (SPV HQ, cross-PT)");
-    console.log("─── SGB ───────────────────────────────────────────────────");
-    console.log("  du_sgb@occ.id (Iriawan Widadi) | dk_sgb@occ.id (Ahmad Fauzi)");
-    console.log("  eko.sgb / fahrul.sgb / adid.sgb | aziz.sgb / dealer.sgb | admin.sgb");
-    console.log("─── RFB ───────────────────────────────────────────────────");
-    console.log("  du_rfb@occ.id (Riyan Kurniawan) | dk_rfb@occ.id (Mega Helia Purnama Putri)");
-    console.log("─── KPF ───────────────────────────────────────────────────");
-    console.log("  du_kpf@occ.id (Lukman Wahyudin) | dk_kpf@occ.id (Egi Ramadian NP)");
-    console.log("─── BPF ───────────────────────────────────────────────────");
-    console.log("  du_bpf@occ.id (Nurwanto) | dk_bpf@occ.id (Akhmad Royani)");
-    console.log("─── EWF ───────────────────────────────────────────────────");
-    console.log("  du_ewf@occ.id (Agus Wijayanto) | dk_ewf@occ.id (Fadly Khairuzzadhi, M.H.)");
+    console.log("\n✓ Seed complete! 43 users (password: password123)");
+    console.log("─── HQ/Lintas-PT ──────────────────────────────────────────");
+    console.log("  superadmin@occ.id | owner@occ.id");
+    console.log("  kiki@occ.id.v23-real-team (Kiki Zainab Prameswari — Chief)");
+    console.log("  amel.sgb@occ.id (Amelia Rosita R — Co-SPV) | rusnawati@occ.id (Rusnawati — Co-SPV)");
+    console.log("  eko.sgb@occ.id (Eko Hadi — SPV Pagi) | fahrul.sgb@occ.id (Fahrul Rozi — SPV Malam)");
+    console.log("  adid.sgb@occ.id (Mujaddid Sabillah — SPV Malam)");
+    console.log("─── Dealers per PT (4 each: Pagi/Siang/Malam/Malam) ──────");
+    console.log("  SGB: yehezkiel / dwi / farid / haikal");
+    console.log("  RFB: annisa / andreas / zahri / giovanny");
+    console.log("  KPF: tiara / ellin / bahagia / yudhistira");
+    console.log("  BPF: linda / bayu / yulsa / sahlan");
+    console.log("  EWF: hadi / nilam / andhika / daniel");
   } // end if (!skipMainSeed)
 
   // ── Error Activity Types (idempotent, always runs) ───────────────────────

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, boolean, timestamp, integer, index, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, boolean, timestamp, integer, index, foreignKey, text } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   branchId: integer("branch_id").references(() => branchesTable.id),
   shiftId: integer("shift_id").references(() => shiftsTable.id),
   positionTitle: varchar("position_title", { length: 100 }),
+  jobDescription: text("job_description"),
   supervisorId: integer("supervisor_id"),
   activeStatus: boolean("active_status").notNull().default(true),
   dndEnabled: boolean("dnd_enabled").notNull().default(false),
