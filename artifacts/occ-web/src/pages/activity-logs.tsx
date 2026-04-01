@@ -115,10 +115,11 @@ export default function ActivityLogs() {
 
   function canEdit(log: ActivityLogEnriched): boolean {
     if (!user) return false;
+    const roleName = user.roleName ?? "";
     // Owner and Admin System bypass the edit window and can edit anyone's log
-    if (EDIT_WINDOW_BYPASS.includes(user.roleName)) return true;
+    if (EDIT_WINDOW_BYPASS.includes(roleName)) return true;
     // Dealer can only edit their own logs
-    if (user.roleName === "Dealer" && log.userId !== user.userId) return false;
+    if (roleName === "Dealer" && log.userId !== user.id) return false;
     // Everyone else (SPV, Chief, Superadmin, Direksi, etc.) can edit anyone's log within window
     const elapsed = log.createdAt ? (Date.now() - new Date(log.createdAt).getTime()) / 60000 : Infinity;
     return elapsed <= editWindowMinutes;
@@ -126,15 +127,16 @@ export default function ActivityLogs() {
 
   function canDelete(log: ActivityLogEnriched): boolean {
     if (!user) return false;
+    const roleName = user.roleName ?? "";
     // Owner / Superadmin: global delete, anytime
-    if (DELETE_GLOBAL_ANYTIME.includes(user.roleName)) return true;
+    if (DELETE_GLOBAL_ANYTIME.includes(roleName)) return true;
     // SPV / Co-SPV / Chief Dealing: any log in same PT, anytime
-    if (DELETE_PT_ANYTIME.includes(user.roleName)) {
+    if (DELETE_PT_ANYTIME.includes(roleName)) {
       if (user.ptId !== null && user.ptId !== undefined && log.ptId !== user.ptId) return false;
       return true;
     }
     // Dealer / Admin System / Direksi / others: only own log within edit window
-    if (log.userId !== user.userId) return false;
+    if (log.userId !== user.id) return false;
     const elapsed = log.createdAt ? (Date.now() - new Date(log.createdAt).getTime()) / 60000 : Infinity;
     return elapsed <= editWindowMinutes;
   }
