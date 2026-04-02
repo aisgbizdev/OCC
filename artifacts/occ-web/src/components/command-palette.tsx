@@ -7,6 +7,8 @@ import {
   Plus, ClipboardList, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { UserWithRelations } from "@workspace/api-client-react";
+import { canAccessPage, canCreate } from "@/lib/access-control";
 
 interface CommandItem {
   id: string;
@@ -15,39 +17,40 @@ interface CommandItem {
   href?: string;
   icon: React.ElementType;
   keywords: string[];
-  adminOnly?: boolean;
   group: string;
   action?: "log-activity" | "new-task" | "new-complaint";
+  pageKey?: Parameters<typeof canAccessPage>[0];
+  createModule?: Parameters<typeof canCreate>[0];
 }
 
 const COMMAND_ITEMS: CommandItem[] = [
-  { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, keywords: ["home", "beranda", "dashboard"], group: "Navigasi" },
-  { id: "activity", label: "Log Aktivitas", href: "/activity-logs", icon: Activity, keywords: ["aktivitas", "log", "kegiatan", "activity"], group: "Navigasi" },
-  { id: "kpi", label: "KPI & Ranking", href: "/kpi", icon: BarChart2, keywords: ["kpi", "skor", "ranking", "poin", "score"], group: "Navigasi" },
-  { id: "tasks", label: "Tugas", href: "/tasks", icon: CheckSquare, keywords: ["task", "tugas", "pekerjaan", "todo"], group: "Navigasi" },
-  { id: "complaints", label: "Komplain", href: "/complaints", icon: AlertTriangle, keywords: ["komplain", "keluhan", "complaint"], group: "Navigasi" },
-  { id: "handover", label: "Handover Shift", href: "/handover", icon: Repeat, keywords: ["handover", "pergantian", "shift", "serah"], group: "Navigasi" },
-  { id: "messages", label: "Pesan Internal", href: "/messages", icon: MessageSquare, keywords: ["pesan", "message", "dm", "direct"], group: "Komunikasi" },
-  { id: "chats", label: "Chat Grup", href: "/chats", icon: MessageCircle, keywords: ["chat", "grup", "obrolan", "group"], group: "Komunikasi" },
-  { id: "announcements", label: "Pengumuman", href: "/announcements", icon: Megaphone, keywords: ["pengumuman", "announcement", "info", "berita"], group: "Komunikasi" },
-  { id: "notifications", label: "Notifikasi", href: "/notifications", icon: Bell, keywords: ["notifikasi", "notification", "alert", "pemberitahuan"], group: "Komunikasi" },
-  { id: "users", label: "Master Data Users", href: "/users", icon: Users, keywords: ["users", "pengguna", "akun", "user", "master"], group: "Admin", adminOnly: true },
-  { id: "system", label: "System Settings", href: "/system", icon: Settings, keywords: ["system", "settings", "konfigurasi", "pengaturan"], group: "Admin", adminOnly: true },
-  { id: "action-log", label: "Log Aktivitas Baru", description: "Tambah entri log aktivitas", icon: Activity, keywords: ["log", "aktivitas", "tambah", "catat", "input"], group: "Quick Action", action: "log-activity" },
-  { id: "action-task", label: "Buat Tugas Baru", description: "Assign tugas baru ke anggota", icon: ClipboardList, keywords: ["tugas", "buat", "task", "tambah", "assign", "baru"], group: "Quick Action", action: "new-task" },
-  { id: "action-complaint", label: "Lapor Komplain", description: "Catat komplain pelanggan", icon: Plus, keywords: ["komplain", "lapor", "keluhan", "complaint", "tambah"], group: "Quick Action", action: "new-complaint" },
+  { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, keywords: ["home", "beranda", "dashboard"], group: "Navigasi", pageKey: "dashboard" },
+  { id: "activity", label: "Log Aktivitas", href: "/activity-logs", icon: Activity, keywords: ["aktivitas", "log", "kegiatan", "activity"], group: "Navigasi", pageKey: "activityLogs" },
+  { id: "kpi", label: "KPI & Ranking", href: "/kpi", icon: BarChart2, keywords: ["kpi", "skor", "ranking", "poin", "score"], group: "Navigasi", pageKey: "kpi" },
+  { id: "tasks", label: "Tugas", href: "/tasks", icon: CheckSquare, keywords: ["task", "tugas", "pekerjaan", "todo"], group: "Navigasi", pageKey: "tasks" },
+  { id: "complaints", label: "Komplain", href: "/complaints", icon: AlertTriangle, keywords: ["komplain", "keluhan", "complaint"], group: "Navigasi", pageKey: "complaints" },
+  { id: "handover", label: "Handover Shift", href: "/handover", icon: Repeat, keywords: ["handover", "pergantian", "shift", "serah"], group: "Navigasi", pageKey: "handover" },
+  { id: "messages", label: "Pesan Internal", href: "/messages", icon: MessageSquare, keywords: ["pesan", "message", "dm", "direct"], group: "Komunikasi", pageKey: "messages" },
+  { id: "chats", label: "Chat Grup", href: "/chats", icon: MessageCircle, keywords: ["chat", "grup", "obrolan", "group"], group: "Komunikasi", pageKey: "chats" },
+  { id: "announcements", label: "Pengumuman", href: "/announcements", icon: Megaphone, keywords: ["pengumuman", "announcement", "info", "berita"], group: "Komunikasi", pageKey: "announcements" },
+  { id: "notifications", label: "Notifikasi", href: "/notifications", icon: Bell, keywords: ["notifikasi", "notification", "alert", "pemberitahuan"], group: "Komunikasi", pageKey: "notifications" },
+  { id: "users", label: "Master Data Users", href: "/users", icon: Users, keywords: ["users", "pengguna", "akun", "user", "master"], group: "Admin", pageKey: "users" },
+  { id: "system", label: "System Settings", href: "/system", icon: Settings, keywords: ["system", "settings", "konfigurasi", "pengaturan"], group: "Admin", pageKey: "system" },
+  { id: "action-log", label: "Log Aktivitas Baru", description: "Tambah entri log aktivitas", icon: Activity, keywords: ["log", "aktivitas", "tambah", "catat", "input"], group: "Quick Action", action: "log-activity", createModule: "activityLog" },
+  { id: "action-task", label: "Buat Tugas Baru", description: "Assign tugas baru ke anggota", icon: ClipboardList, keywords: ["tugas", "buat", "task", "tambah", "assign", "baru"], group: "Quick Action", action: "new-task", createModule: "task" },
+  { id: "action-complaint", label: "Lapor Komplain", description: "Catat komplain pelanggan", icon: Plus, keywords: ["komplain", "lapor", "keluhan", "complaint", "tambah"], group: "Quick Action", action: "new-complaint", createModule: "complaint" },
 ];
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
-  isAdmin: boolean;
+  user: UserWithRelations;
   onLogActivity?: () => void;
   onNewTask?: () => void;
   onNewComplaint?: () => void;
 }
 
-export function CommandPalette({ open, onClose, isAdmin, onLogActivity, onNewTask, onNewComplaint }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, user, onLogActivity, onNewTask, onNewComplaint }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -55,7 +58,8 @@ export function CommandPalette({ open, onClose, isAdmin, onLogActivity, onNewTas
   const listRef = useRef<HTMLDivElement>(null);
 
   const items = COMMAND_ITEMS.filter(item => {
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.pageKey && !canAccessPage(item.pageKey, user)) return false;
+    if (item.createModule && !canCreate(item.createModule, user)) return false;
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (

@@ -13,12 +13,14 @@ import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { canCreate } from "@/lib/access-control";
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export default function Complaints() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+  const canCreateComplaint = canCreate("complaint", user);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [filterPtId, setFilterPtId] = useState("");
@@ -54,9 +56,11 @@ export default function Complaints() {
           <h1 className="text-3xl font-bold tracking-tight">Komplain & SLA</h1>
           <p className="text-muted-foreground mt-1">Catat dan monitor keluhan masuk dari cabang maupun internal.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Komplain Baru
-        </Button>
+        {canCreateComplaint && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Komplain Baru
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -156,7 +160,7 @@ export default function Complaints() {
         )}
       </div>
 
-      <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Laporkan Komplain" description="Catat komplain atau masalah operasional baru.">
+      <ResponsiveModal open={createOpen && canCreateComplaint} onOpenChange={setCreateOpen} title="Laporkan Komplain" description="Catat komplain atau masalah operasional baru.">
         <CreateComplaintForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
     </div>
@@ -164,9 +168,11 @@ export default function Complaints() {
 }
 
 function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
   const createComplaint = useCreateComplaint();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const canCreateComplaint = canCreate("complaint", user);
   const [form, setForm] = useState({
     title: "",
     complaintType: "external",
@@ -187,6 +193,10 @@ function CreateComplaintForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreateComplaint) {
+      toast({ title: "Anda tidak memiliki akses", variant: "destructive" });
+      return;
+    }
     createComplaint.mutate({ data: {
       title: form.title,
       complaintType: form.complaintType,

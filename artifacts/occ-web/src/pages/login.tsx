@@ -35,7 +35,9 @@ const ROLE_ORDER: Record<string, number> = {
   "SPV Dealing": 4, "Co-SPV Dealing": 4.5, "Dealer": 5, "Admin System": 6,
 };
 
-const CORPORATE_ROLES = ["Superadmin", "Owner", "Chief Dealing", "Co-SPV Dealing", "Admin System"];
+function isCorporateOrDivision(user: LoginUser): boolean {
+  return user.ptId === null;
+}
 
 export default function Login() {
   const [users, setUsers]          = useState<LoginUser[]>([]);
@@ -64,7 +66,7 @@ export default function Login() {
   const ptOptions = (() => {
     const seen = new Map<string, string>();
     for (const u of users) {
-      if (!CORPORATE_ROLES.includes(u.roleName ?? "") && u.ptCode && u.ptName) {
+      if (!isCorporateOrDivision(u) && u.ptCode && u.ptName) {
         if (!seen.has(u.ptCode)) seen.set(u.ptCode, u.ptName);
       }
     }
@@ -79,9 +81,9 @@ export default function Login() {
 
   const filteredUsers = (() => {
     if (activePT === "semua") {
-      return users.filter(u => CORPORATE_ROLES.includes(u.roleName ?? ""));
+      return users.filter((u) => isCorporateOrDivision(u));
     }
-    return users.filter(u => u.ptCode === activePT && !CORPORATE_ROLES.includes(u.roleName ?? ""));
+    return users.filter((u) => u.ptCode === activePT && !isCorporateOrDivision(u));
   })().sort((a, b) => {
     const oA = ROLE_ORDER[a.roleName ?? ""] ?? 99;
     const oB = ROLE_ORDER[b.roleName ?? ""] ?? 99;

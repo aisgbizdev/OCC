@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { canCreate, canDelete } from "@/lib/access-control";
 
 interface BranchAnalytics {
   branchId: number;
@@ -57,7 +58,7 @@ export default function Branches() {
   const [deleteTarget, setDeleteTarget] = useState<BranchAnalytics | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const canManageBranch = me?.roleName === "Owner" || me?.roleName === "Admin System" || me?.roleName === "Superadmin";
+  const canManageBranch = canCreate("branchOverview", me) || canDelete("branchOverview", me);
 
   useEffect(() => {
     const token = localStorage.getItem("occ_token");

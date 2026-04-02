@@ -10,14 +10,11 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { can, canCreate, canDeleteActivityLog, canEditActivityLog } from "@/lib/access-control";
 
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 // Edit: Owner/Admin System bypass window; all non-Dealer roles can edit anyone's log (within window)
-const EDIT_WINDOW_BYPASS = ["Owner", "Admin System"];
-// Delete hierarchy per task spec
-const DELETE_GLOBAL_ANYTIME = ["Owner", "Superadmin"];
-const DELETE_PT_ANYTIME = ["SPV Dealing", "Co-SPV Dealing", "Chief Dealing"];
 
 type ActivityLogEnriched = ActivityLogWithRelations & {
   ptName?: string | null;
@@ -56,9 +53,10 @@ export default function ActivityLogs() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const isSPV = SPV_AND_ABOVE.includes(user?.roleName ?? "");
+  const isSPV = can("activityLog", "flag", user);
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
+  const canCreateLog = canCreate("activityLog", user);
   const editWindowMinutes = 60;
 
   useEffect(() => {
@@ -114,31 +112,11 @@ export default function ActivityLogs() {
   };
 
   function canEdit(log: ActivityLogEnriched): boolean {
-    if (!user) return false;
-    const roleName = user.roleName ?? "";
-    // Owner and Admin System bypass the edit window and can edit anyone's log
-    if (EDIT_WINDOW_BYPASS.includes(roleName)) return true;
-    // Dealer can only edit their own logs
-    if (roleName === "Dealer" && log.userId !== user.id) return false;
-    // Everyone else (SPV, Chief, Superadmin, Direksi, etc.) can edit anyone's log within window
-    const elapsed = log.createdAt ? (Date.now() - new Date(log.createdAt).getTime()) / 60000 : Infinity;
-    return elapsed <= editWindowMinutes;
+    return canEditActivityLog(user, log, editWindowMinutes);
   }
 
   function canDelete(log: ActivityLogEnriched): boolean {
-    if (!user) return false;
-    const roleName = user.roleName ?? "";
-    // Owner / Superadmin: global delete, anytime
-    if (DELETE_GLOBAL_ANYTIME.includes(roleName)) return true;
-    // SPV / Co-SPV / Chief Dealing: any log in same PT, anytime
-    if (DELETE_PT_ANYTIME.includes(roleName)) {
-      if (user.ptId !== null && user.ptId !== undefined && log.ptId !== user.ptId) return false;
-      return true;
-    }
-    // Dealer / Admin System / Direksi / others: only own log within edit window
-    if (log.userId !== user.id) return false;
-    const elapsed = log.createdAt ? (Date.now() - new Date(log.createdAt).getTime()) / 60000 : Infinity;
-    return elapsed <= editWindowMinutes;
+    return canDeleteActivityLog(user, log, editWindowMinutes);
   }
 
   async function handleFlag(logId: number) {
@@ -230,9 +208,11 @@ export default function ActivityLogs() {
           <h1 className="text-3xl font-bold tracking-tight">Log Aktivitas</h1>
           <p className="text-muted-foreground mt-1">Lacak operasional harian dan KPI.</p>
         </div>
-        <Button onClick={() => { setPresetActivityTypeId(undefined); setModalOpen(true); }} className="hidden md:flex gap-2">
-          <Plus className="w-4 h-4" /> Log Aktivitas
-        </Button>
+        {canCreateLog && (
+          <Button onClick={() => { setPresetActivityTypeId(undefined); setModalOpen(true); }} className="hidden md:flex gap-2">
+            <Plus className="w-4 h-4" /> Log Aktivitas
+          </Button>
+        )}
       </div>
 
       {checklist.length > 0 && (
@@ -261,8 +241,8 @@ export default function ActivityLogs() {
               {checklist.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => !item.done && openFormWithType(item.id)}
-                  disabled={item.done}
+                  onClick={() => !item.done && canCreateLog && openFormWithType(item.id)}
+                  disabled={item.done || !canCreateLog}
                   title={item.done ? "Sudah dicatat hari ini" : `Klik untuk log: ${item.name}`}
                   className={cn(
                     "flex items-center gap-3 px-5 py-3 text-left transition-colors text-sm",
@@ -446,7 +426,7 @@ export default function ActivityLogs() {
         </div>
       </div>
 
-      <ResponsiveModal open={modalOpen} onOpenChange={handleModalClose} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
+      <ResponsiveModal open={modalOpen && canCreateLog} onOpenChange={handleModalClose} title="Log Aktivitas" description="Tambah satu atau beberapa aktivitas sekaligus.">
         <BatchActivityForm
           onSuccess={() => handleModalClose(false)}
           presetActivityTypeId={presetActivityTypeId}

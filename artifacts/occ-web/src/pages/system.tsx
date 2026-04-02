@@ -7,6 +7,7 @@ import { AlertTriangle, Clock, Settings, History, Pencil, Check, X } from "lucid
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+import { canEdit, canView } from "@/lib/access-control";
 
 interface InactiveDealer {
   userId: number;
@@ -98,13 +99,13 @@ function SettingRow({ setting, canEdit }: { setting: SystemSetting; canEdit: boo
 
 export default function SystemPage() {
   const { user } = useAuth();
-  const { data: inactivityRaw } = useCheckInactivity();
+  const canEditSettings = canEdit("systemSetting", user);
+  const canViewAudit = canView("auditLog", user);
+  const { data: inactivityRaw } = useCheckInactivity({ query: { queryKey: ["/api/inactivity/check"], enabled: !!user } });
   const { data: settings } = useListSystemSettings();
-  const { data: auditRaw } = useListAuditLogs();
+  const { data: auditRaw } = useListAuditLogs(undefined, { query: { queryKey: ["/api/audit-logs"], enabled: canViewAudit } });
   const inactivity = parseInactivity(inactivityRaw);
-
-  const canEdit = ["Superadmin", "Admin System", "Owner"].includes(user?.roleName ?? "");
-  const auditLogs = (Array.isArray(auditRaw) ? auditRaw : []).slice(0, 20);
+  const auditLogs = canViewAudit ? (Array.isArray(auditRaw) ? auditRaw : []).slice(0, 20) : [];
 
   return (
     <div className="space-y-6">
@@ -162,11 +163,11 @@ export default function SystemPage() {
         <div className="bg-card border rounded-2xl p-6 shadow-sm space-y-3">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" /> Konfigurasi Sistem
-            {canEdit && <span className="text-xs font-normal text-muted-foreground ml-1">(klik ✏️ untuk edit)</span>}
+            {canEditSettings && <span className="text-xs font-normal text-muted-foreground ml-1">(klik ✏️ untuk edit)</span>}
           </h2>
           <div className="space-y-2 group">
             {(settings as SystemSetting[] | undefined)?.map(s => (
-              <SettingRow key={s.settingKey} setting={s} canEdit={canEdit} />
+              <SettingRow key={s.settingKey} setting={s} canEdit={canEditSettings} />
             ))}
             {!settings?.length && (
               <p className="text-sm text-muted-foreground text-center py-4">Memuat pengaturan...</p>
@@ -179,6 +180,9 @@ export default function SystemPage() {
         <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
           <History className="w-5 h-5 text-muted-foreground" /> Riwayat Audit (20 terakhir)
         </h2>
+        {!canViewAudit && (
+          <p className="text-sm text-muted-foreground mb-4">Anda tidak memiliki akses ke data audit log.</p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs uppercase text-muted-foreground border-b">

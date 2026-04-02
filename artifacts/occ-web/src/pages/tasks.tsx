@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { canCreate, canUpdateTask } from "@/lib/access-control";
 
 type TaskEnriched = TaskWithRelations & {
   ptName?: string | null;
@@ -22,6 +23,7 @@ export default function Tasks() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
+  const canCreateTask = canCreate("task", user);
 
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
@@ -99,9 +101,11 @@ export default function Tasks() {
           <h1 className="text-3xl font-bold tracking-tight">Manajemen Tugas</h1>
           <p className="text-muted-foreground mt-1">Lacak dan perbarui operasi yang ditugaskan.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Tugas Baru
-        </Button>
+        {canCreateTask && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Tugas Baru
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -190,7 +194,7 @@ export default function Tasks() {
         )}
       </div>
 
-      <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Buat Tugas" description="Assign tugas baru ke anggota tim.">
+      <ResponsiveModal open={createOpen && canCreateTask} onOpenChange={setCreateOpen} title="Buat Tugas" description="Assign tugas baru ke anggota tim.">
         <CreateTaskForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
 
@@ -214,6 +218,7 @@ interface SwipeableTaskCardProps {
 }
 
 function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: SwipeableTaskCardProps) {
+  const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number | null>(null);
   const startYRef = useRef<number | null>(null);
@@ -222,6 +227,7 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
   const [swipeAction, setSwipeAction] = useState<"complete" | "detail" | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const THRESHOLD = 80;
+  const canUpdateThisTask = canUpdateTask(user, task);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (isAnimating) return;
@@ -255,7 +261,7 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
     if (startXRef.current === null) return;
     const dx = currentXRef.current;
 
-    if (dx > THRESHOLD && task.status !== "completed") {
+    if (dx > THRESHOLD && task.status !== "completed" && canUpdateThisTask) {
       setIsAnimating(true);
       setSwipeOffset(200);
       setTimeout(() => {
@@ -276,7 +282,7 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
     startXRef.current = null;
     startYRef.current = null;
     currentXRef.current = 0;
-  }, [task, onComplete, onDetail]);
+  }, [task, onComplete, onDetail, canUpdateThisTask]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl" ref={cardRef}>
@@ -322,7 +328,12 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
           }`}>
             {task.priority.toUpperCase()}
           </div>
-          <button onClick={() => onStatusToggle(task.id, task.status)} className="text-muted-foreground hover:text-primary transition-colors">
+          <button
+            onClick={() => canUpdateThisTask && onStatusToggle(task.id, task.status)}
+            disabled={!canUpdateThisTask}
+            className="text-muted-foreground enabled:hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={canUpdateThisTask ? "Ubah status tugas" : "Anda tidak memiliki akses"}
+          >
             {task.status === "completed" ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
              task.status === "in_progress" ? <Clock className="w-6 h-6 text-amber-500" /> :
              <Circle className="w-6 h-6" />}
@@ -374,6 +385,8 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
 }
 
 function TaskDetail({ task, onComplete, onClose }: { task: TaskEnriched; onComplete: (t: TaskEnriched) => void; onClose: () => void }) {
+  const { user } = useAuth();
+  const canUpdateThisTask = canUpdateTask(user, task);
   const priorityLabel: Record<string, string> = { low: "Rendah", medium: "Sedang", high: "Tinggi" };
   const statusLabel: Record<string, string> = { new: "Baru", in_progress: "Sedang Berjalan", completed: "Selesai" };
 
@@ -428,7 +441,7 @@ function TaskDetail({ task, onComplete, onClose }: { task: TaskEnriched; onCompl
         />
       </div>
 
-      {task.status !== "completed" && (
+      {task.status !== "completed" && canUpdateThisTask && (
         <div className="pt-2 border-t flex gap-2 justify-end">
           <Button variant="outline" onClick={onClose}>Tutup</Button>
           <Button
@@ -444,14 +457,20 @@ function TaskDetail({ task, onComplete, onClose }: { task: TaskEnriched; onCompl
 }
 
 function CreateTaskForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
   const createTask = useCreateTask();
   const { data: users } = useListUsers();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const canCreateTask = canCreate("task", user);
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", assignedTo: "", deadline: "" });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreateTask) {
+      toast({ title: "Anda tidak memiliki akses", variant: "destructive" });
+      return;
+    }
     createTask.mutate({ data: {
       title: form.title,
       description: form.description || undefined,
@@ -502,7 +521,7 @@ function CreateTaskForm({ onSuccess }: { onSuccess: () => void }) {
         </select>
       </div>
       <div className="flex justify-end pt-4 border-t">
-        <Button type="submit" disabled={createTask.isPending} className="px-8">
+        <Button type="submit" disabled={createTask.isPending || !canCreateTask} className="px-8">
           {createTask.isPending ? "Membuat..." : "Buat Tugas"}
         </Button>
       </div>

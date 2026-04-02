@@ -30,7 +30,7 @@ type DuplicateWarning = {
   message: string;
 };
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSuccess: () => void; presetActivityTypeId?: number }) {

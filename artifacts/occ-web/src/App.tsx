@@ -26,6 +26,7 @@ class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { 
 import "./lib/fetch-interceptor"; // Import interceptor before anything else
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AppLayout } from "@/components/layout";
+import { canAccessPage, type PageKey } from "@/lib/access-control";
 
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -47,7 +48,7 @@ import Branches from "@/pages/branches";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
+function ProtectedRoute({ component: Component, page }: { component: React.ComponentType; page: PageKey }) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -70,12 +71,12 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
 
   if (!isAuthenticated) return null;
 
-  if (allowedRoles && user && !allowedRoles.includes(user.roleName ?? "")) {
+  if (user && !canAccessPage(page, user)) {
     return (
       <AppLayout>
         <div className="flex h-full items-center justify-center py-24 text-muted-foreground flex-col gap-3">
           <p className="text-lg font-semibold">Akses Ditolak</p>
-          <p className="text-sm">Halaman ini hanya tersedia untuk {allowedRoles.join(", ")}.</p>
+          <p className="text-sm">Anda tidak memiliki akses ke halaman ini.</p>
         </div>
       </AppLayout>
     );
@@ -92,22 +93,22 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/dashboard"><ProtectedRoute component={Dashboard} /></Route>
-      <Route path="/activity-logs"><ProtectedRoute component={ActivityLogs} /></Route>
-      <Route path="/kpi"><ProtectedRoute component={KPI} /></Route>
-      <Route path="/tasks"><ProtectedRoute component={Tasks} /></Route>
-      <Route path="/complaints"><ProtectedRoute component={Complaints} /></Route>
-      <Route path="/announcements"><ProtectedRoute component={Announcements} /></Route>
-      <Route path="/messages"><ProtectedRoute component={Messages} /></Route>
-      <Route path="/chats"><ProtectedRoute component={Chats} /></Route>
-      <Route path="/handover"><ProtectedRoute component={Handover} /></Route>
-      <Route path="/notifications"><ProtectedRoute component={Notifications} /></Route>
-      <Route path="/system"><ProtectedRoute component={SystemSettings} /></Route>
-      <Route path="/users"><ProtectedRoute component={MasterData} /></Route>
+      <Route path="/dashboard"><ProtectedRoute component={Dashboard} page="dashboard" /></Route>
+      <Route path="/activity-logs"><ProtectedRoute component={ActivityLogs} page="activityLogs" /></Route>
+      <Route path="/kpi"><ProtectedRoute component={KPI} page="kpi" /></Route>
+      <Route path="/tasks"><ProtectedRoute component={Tasks} page="tasks" /></Route>
+      <Route path="/complaints"><ProtectedRoute component={Complaints} page="complaints" /></Route>
+      <Route path="/announcements"><ProtectedRoute component={Announcements} page="announcements" /></Route>
+      <Route path="/messages"><ProtectedRoute component={Messages} page="messages" /></Route>
+      <Route path="/chats"><ProtectedRoute component={Chats} page="chats" /></Route>
+      <Route path="/handover"><ProtectedRoute component={Handover} page="handover" /></Route>
+      <Route path="/notifications"><ProtectedRoute component={Notifications} page="notifications" /></Route>
+      <Route path="/system"><ProtectedRoute component={SystemSettings} page="system" /></Route>
+      <Route path="/users"><ProtectedRoute component={MasterData} page="users" /></Route>
       <Route path="/wallboard" component={Wallboard} />
-      <Route path="/branches"><ProtectedRoute component={Branches} allowedRoles={["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"]} /></Route>
+      <Route path="/branches"><ProtectedRoute component={Branches} page="branches" /></Route>
       <Route path="/quality"><QualityRedirect /></Route>
-      <Route path="/profile"><ProtectedRoute component={Profile} /></Route>
+      <Route path="/profile"><ProtectedRoute component={Profile} page="profile" /></Route>
       <Route path="/"><RootRedirect /></Route>
       <Route component={NotFound} />
     </Switch>

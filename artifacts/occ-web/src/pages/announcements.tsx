@@ -8,14 +8,13 @@ import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-
-const ANNOUNCE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+import { canCreate } from "@/lib/access-control";
 
 export default function Announcements() {
   const { data: announcements } = useListAnnouncements();
   const { user } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
-  const canCreate = user && ANNOUNCE_ROLES.includes(user.roleName ?? "");
+  const canCreateAnnouncement = canCreate("announcement", user);
 
   return (
     <div className="space-y-6">
@@ -24,7 +23,7 @@ export default function Announcements() {
           <h1 className="text-3xl font-bold tracking-tight">Pengumuman</h1>
           <p className="text-muted-foreground mt-1">Komunikasi resmi dan pemberitahuan.</p>
         </div>
-        {canCreate && (
+        {canCreateAnnouncement && (
           <Button onClick={() => setCreateOpen(true)} className="gap-2">
             <Plus className="w-4 h-4" /> Buat Pengumuman
           </Button>
@@ -62,7 +61,7 @@ export default function Announcements() {
         )}
       </div>
 
-      <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Buat Pengumuman" description="Broadcast pesan ke seluruh tim.">
+      <ResponsiveModal open={createOpen && canCreateAnnouncement} onOpenChange={setCreateOpen} title="Buat Pengumuman" description="Broadcast pesan ke seluruh tim.">
         <CreateAnnouncementForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
     </div>
@@ -70,13 +69,19 @@ export default function Announcements() {
 }
 
 function CreateAnnouncementForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
   const createAnn = useCreateAnnouncement();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const canCreateAnnouncement = canCreate("announcement", user);
   const [form, setForm] = useState({ title: "", content: "", priority: "normal", targetScope: "all" });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreateAnnouncement) {
+      toast({ title: "Anda tidak memiliki akses", variant: "destructive" });
+      return;
+    }
     createAnn.mutate({ data: {
       title: form.title,
       content: form.content,
@@ -121,7 +126,7 @@ function CreateAnnouncementForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       </div>
       <div className="flex justify-end pt-4 border-t">
-        <Button type="submit" disabled={createAnn.isPending} className="px-8">
+        <Button type="submit" disabled={createAnn.isPending || !canCreateAnnouncement} className="px-8">
           {createAnn.isPending ? "Mengirim..." : "Kirim Pengumuman"}
         </Button>
       </div>

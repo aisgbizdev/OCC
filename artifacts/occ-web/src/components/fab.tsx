@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Activity, CheckSquare, AlertTriangle, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { canCreate } from "@/lib/access-control";
 
 export function FAB({
   onLogActivity,
@@ -19,15 +20,17 @@ export function FAB({
   const { user } = useAuth();
   if (!user) return null;
 
-  const canAnnounce = ["Owner", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"].includes(user.roleName ?? "");
-
   const actions = [
     { label: "Log Aktivitas", icon: Activity, onClick: onLogActivity, color: "bg-blue-500" },
-    { label: "Tugas Baru", icon: CheckSquare, onClick: onNewTask, color: "bg-emerald-500" },
-    { label: "Komplain Baru", icon: AlertTriangle, onClick: onNewComplaint, color: "bg-amber-500" },
   ];
 
-  if (canAnnounce) {
+  if (canCreate("task", user)) {
+    actions.push({ label: "Tugas Baru", icon: CheckSquare, onClick: onNewTask, color: "bg-emerald-500" });
+  }
+  if (canCreate("complaint", user)) {
+    actions.push({ label: "Komplain Baru", icon: AlertTriangle, onClick: onNewComplaint, color: "bg-amber-500" });
+  }
+  if (canCreate("announcement", user)) {
     actions.push({ label: "Pengumuman", icon: Megaphone, onClick: onNewAnnouncement, color: "bg-purple-500" });
   }
 

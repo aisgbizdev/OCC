@@ -12,6 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import {
+  canCreate,
+  canDelete,
+  canEdit,
+  canResetPassword as canResetPasswordAction,
+} from "@/lib/access-control";
 
 interface Role {
   id: number;
@@ -120,16 +126,12 @@ export default function MasterData() {
   const [resettingPw, setResettingPw] = useState(false);
 
   const isSuperAdmin = me?.roleName === "Superadmin";
-  const isAdminSystem = me?.roleName === "Admin System";
-  const isOwner = me?.roleName === "Owner";
-  const isChiefDealing = me?.roleName === "Chief Dealing";
-
-  const canAddUser = isSuperAdmin || isAdminSystem || isOwner;
-  const canEditUser = isSuperAdmin || isAdminSystem || isOwner || isChiefDealing;
-  const canDeactivate = isSuperAdmin || isAdminSystem;
-  const canHardDelete = isSuperAdmin || isOwner;
-  const canEditRolePt = isSuperAdmin || isOwner || isChiefDealing;
-  const canResetPassword = isSuperAdmin || isAdminSystem || isOwner;
+  const canAddUser = canCreate("user", me);
+  const canEditUser = canEdit("user", me);
+  const canDeactivate = isSuperAdmin || me?.roleName === "Admin System";
+  const canHardDelete = canDelete("user", me);
+  const canEditRolePt = isSuperAdmin || me?.roleName === "Owner" || me?.roleName === "Chief Dealing";
+  const canResetPassword = canResetPasswordAction("user", me);
 
   const defaultRoleId = roles.length > 0 ? (roles.find(r => r.name === "Dealer")?.id ?? roles[0]?.id ?? 0) : 0;
 

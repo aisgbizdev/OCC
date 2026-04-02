@@ -1,12 +1,22 @@
 import { useState, useRef, useEffect } from "react";
-import { useListChats, useListChatMessages, useSendChatMessage, type ChatMessage } from "@workspace/api-client-react";
+import {
+  useListChats,
+  useListChatMessages,
+  useSendChatMessage,
+  useCreateChat,
+  useListUsers,
+  type ChatMessage,
+  type UserWithRelations,
+} from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Hash, ArrowLeft, Send } from "lucide-react";
+import { Hash, ArrowLeft, Send, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { ResponsiveModal } from "@/components/responsive-modal";
+import { canCreate, canCreateGroupChat } from "@/lib/access-control";
 
 export default function Chats() {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
@@ -15,12 +25,81 @@ export default function Chats() {
 }
 
 function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const { data: chats } = useListChats();
+  const { data: users } = useListUsers();
+  const createChat = useCreateChat();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState({
+    chatType: "personal",
+    name: "",
+    memberIds: [] as number[],
+  });
+
+  const canCreateChat = canCreate("chat", user);
+  const canCreateGroup = canCreateGroupChat(user);
+
+  const visibleUsers = (users as UserWithRelations[] | undefined)?.filter(
+    (u) => u.activeStatus && u.id !== user?.id,
+  ) ?? [];
+
+  const toggleMember = (userId: number, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      memberIds: checked ? [...prev.memberIds, userId] : prev.memberIds.filter((id) => id !== userId),
+    }));
+  };
+
+  const submitCreateChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canCreateChat) {
+      toast({ title: "Anda tidak memiliki akses", variant: "destructive" });
+      return;
+    }
+    if (form.chatType === "group" && !canCreateGroup) {
+      toast({ title: "Anda tidak memiliki akses membuat group chat", variant: "destructive" });
+      return;
+    }
+    if (form.memberIds.length === 0) {
+      toast({ title: "Pilih minimal 1 anggota", variant: "destructive" });
+      return;
+    }
+
+    createChat.mutate(
+      {
+        data: {
+          chatType: form.chatType,
+          name: form.name || undefined,
+          memberIds: form.memberIds,
+        },
+      },
+      {
+        onSuccess: (chat) => {
+          toast({ title: "Chat room berhasil dibuat" });
+          qc.invalidateQueries({ queryKey: ["/api/chats"] });
+          setCreateOpen(false);
+          setForm({ chatType: "personal", name: "", memberIds: [] });
+          if (chat?.id) onSelect(chat.id);
+        },
+        onError: () => toast({ title: "Gagal membuat chat room", variant: "destructive" }),
+      },
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Chat Rooms</h1>
-        <p className="text-muted-foreground mt-1">Komunikasi internal tim operasional.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Chat Rooms</h1>
+          <p className="text-muted-foreground mt-1">Komunikasi internal tim operasional.</p>
+        </div>
+        {canCreateChat && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Chat Baru
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {chats?.map(chat => (
@@ -47,6 +126,63 @@ function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
           <div className="col-span-3 text-center py-12 text-muted-foreground">Belum ada chat room yang tersedia.</div>
         )}
       </div>
+
+      <ResponsiveModal
+        open={createOpen && canCreateChat}
+        onOpenChange={setCreateOpen}
+        title="Buat Chat Room"
+        description="Buat personal chat atau group chat untuk koordinasi tim."
+      >
+        <form onSubmit={submitCreateChat} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tipe Chat</label>
+            <select
+              className="w-full h-10 px-3 rounded-md bg-background border text-sm"
+              value={form.chatType}
+              onChange={(e) => setForm((p) => ({ ...p, chatType: e.target.value, memberIds: [] }))}
+            >
+              <option value="personal">Personal</option>
+              {canCreateGroup && <option value="group">Group</option>}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nama Room (opsional)</label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder={form.chatType === "group" ? "Contoh: Shift Pagi SGB" : "Opsional"}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {form.chatType === "group" ? "Pilih Anggota Group" : "Pilih User"}
+            </label>
+            <div className="max-h-56 overflow-y-auto border rounded-lg p-3 space-y-2 bg-background">
+              {visibleUsers.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.memberIds.includes(u.id)}
+                    onChange={(e) => toggleMember(u.id, e.target.checked)}
+                  />
+                  <span>{u.name} ({u.roleName ?? "-"})</span>
+                </label>
+              ))}
+              {visibleUsers.length === 0 && (
+                <p className="text-sm text-muted-foreground">Tidak ada user lain yang bisa dipilih.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t">
+            <Button type="submit" disabled={createChat.isPending || !canCreateChat} className="px-8">
+              {createChat.isPending ? "Membuat..." : "Buat Chat"}
+            </Button>
+          </div>
+        </form>
+      </ResponsiveModal>
     </div>
   );
 }

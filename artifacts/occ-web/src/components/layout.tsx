@@ -15,34 +15,35 @@ import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { CommandPalette } from "@/components/command-palette";
 import { useSwipe } from "@/hooks/use-swipe";
+import { canAccessPage, canView } from "@/lib/access-control";
+import type { PageKey } from "@/lib/access-control";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  minRole?: string[];
+  page: PageKey;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/activity-logs", label: "Aktivitas", icon: Activity },
-  { href: "/kpi", label: "KPI & Rank", icon: BarChart2 },
-  { href: "/tasks", label: "Tugas", icon: CheckSquare },
-  { href: "/complaints", label: "Komplain", icon: AlertTriangle },
-  { href: "/handover", label: "Handover", icon: Repeat },
-  { href: "/branches", label: "Branch Overview", icon: Building2, minRole: ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"] },
-  { href: "/messages", label: "Pesan", icon: MessageSquare },
-  { href: "/chats", label: "Chat", icon: MessageCircle },
-  { href: "/announcements", label: "Pengumuman", icon: Megaphone },
-  { href: "/notifications", label: "Notifikasi", icon: Bell },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
+  { href: "/activity-logs", label: "Aktivitas", icon: Activity, page: "activityLogs" },
+  { href: "/kpi", label: "KPI & Rank", icon: BarChart2, page: "kpi" },
+  { href: "/tasks", label: "Tugas", icon: CheckSquare, page: "tasks" },
+  { href: "/complaints", label: "Komplain", icon: AlertTriangle, page: "complaints" },
+  { href: "/handover", label: "Handover", icon: Repeat, page: "handover" },
+  { href: "/branches", label: "Branch Overview", icon: Building2, page: "branches" },
+  { href: "/chats", label: "Chat", icon: MessageCircle, page: "chats" },
+  { href: "/announcements", label: "Pengumuman", icon: Megaphone, page: "announcements" },
+  { href: "/notifications", label: "Notifikasi", icon: Bell, page: "notifications" },
 ];
 
 const MOBILE_BOTTOM_NAV = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { href: "/activity-logs", icon: Activity, label: "Aktivitas" },
-  { href: "/kpi", icon: BarChart2, label: "KPI" },
-  { href: "/tasks", icon: CheckSquare, label: "Tugas" },
-  { href: "/complaints", icon: AlertTriangle, label: "Komplain" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Home", page: "dashboard" as const },
+  { href: "/activity-logs", icon: Activity, label: "Aktivitas", page: "activityLogs" as const },
+  { href: "/kpi", icon: BarChart2, label: "KPI", page: "kpi" as const },
+  { href: "/tasks", icon: CheckSquare, label: "Tugas", page: "tasks" as const },
+  { href: "/complaints", icon: AlertTriangle, label: "Komplain", page: "complaints" as const },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -91,7 +92,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) return <>{children}</>;
 
-  const isAdmin = ["Owner", "Admin System", "Superadmin"].includes(user.roleName ?? "");
+  const canAccessUsersPage = canAccessPage("users", user);
+  const canAccessSystemPage = canAccessPage("system", user);
+  const canViewWallboard = canView("wallboard", user);
+  const showAdminSection = canAccessUsersPage || canAccessSystemPage || canViewWallboard;
+
+  const visibleNavItems = NAV_ITEMS.filter((item) => canAccessPage(item.page, user));
+  const visibleBottomNav = MOBILE_BOTTOM_NAV.filter((item) => canAccessPage(item.page, user));
 
   return (
     <SidebarProvider style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>
@@ -121,7 +128,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
-            {NAV_ITEMS.filter(item => !item.minRole || item.minRole.includes(user.roleName ?? "")).map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = location === item.href;
               return (
                 <Link key={item.href} href={item.href} className={cn(
@@ -137,20 +144,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               );
             })}
 
-            {isAdmin && (
+            {showAdminSection && (
               <>
                 <div className="pt-6 pb-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</div>
-                <Link href="/users" className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  location === "/users" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
-                )}><Users className="w-4 h-4" /> Users</Link>
-                <Link href="/system" className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  location === "/system" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
-                )}><Settings className="w-4 h-4" /> System</Link>
-                <a href="/wallboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted border border-transparent transition-all">
-                  <Monitor className="w-4 h-4" /> TV Wallboard
-                </a>
+                {canAccessUsersPage && (
+                  <Link href="/users" className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                    location === "/users" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
+                  )}><Users className="w-4 h-4" /> Users</Link>
+                )}
+                {canAccessSystemPage && (
+                  <Link href="/system" className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                    location === "/system" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
+                  )}><Settings className="w-4 h-4" /> System</Link>
+                )}
+                {canViewWallboard && (
+                  <a href="/wallboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted border border-transparent transition-all">
+                    <Monitor className="w-4 h-4" /> TV Wallboard
+                  </a>
+                )}
               </>
             )}
           </nav>
@@ -197,7 +210,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
-                {NAV_ITEMS.filter(item => !item.minRole || item.minRole.includes(user.roleName ?? "")).map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive = location === item.href;
                   return (
                     <Link key={item.href} href={item.href} className={cn(
@@ -213,20 +226,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   );
                 })}
 
-                {isAdmin && (
+                {showAdminSection && (
                   <>
                     <div className="pt-4 pb-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</div>
-                    <Link href="/users" className={cn(
-                      "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
-                      location === "/users" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
-                    )}><Users className="w-5 h-5" /> Master Data</Link>
-                    <Link href="/system" className={cn(
-                      "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
-                      location === "/system" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
-                    )}><Settings className="w-5 h-5" /> System</Link>
-                    <a href="/wallboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted border border-transparent transition-all">
-                      <Monitor className="w-5 h-5" /> TV Wallboard
-                    </a>
+                    {canAccessUsersPage && (
+                      <Link href="/users" className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
+                        location === "/users" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
+                      )}><Users className="w-5 h-5" /> Master Data</Link>
+                    )}
+                    {canAccessSystemPage && (
+                      <Link href="/system" className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
+                        location === "/system" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted border border-transparent"
+                      )}><Settings className="w-5 h-5" /> System</Link>
+                    )}
+                    {canViewWallboard && (
+                      <a href="/wallboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted border border-transparent transition-all">
+                        <Monitor className="w-5 h-5" /> TV Wallboard
+                      </a>
+                    )}
                   </>
                 )}
               </nav>
@@ -301,7 +320,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur border-t border-border flex items-center z-40 safe-bottom">
-          {MOBILE_BOTTOM_NAV.map(item => {
+          {visibleBottomNav.map(item => {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href} className={cn(
@@ -337,7 +356,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <CommandPalette
           open={commandOpen}
           onClose={closeCommand}
-          isAdmin={isAdmin}
+          user={user}
           onLogActivity={() => setActivityModalOpen(true)}
           onNewTask={() => setLocation("/tasks")}
           onNewComplaint={() => setLocation("/complaints")}

@@ -19,12 +19,14 @@ import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { canCreate } from "@/lib/access-control";
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export default function Handover() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+  const canCreateHandover = canCreate("handover", user);
 
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
@@ -94,9 +96,11 @@ NOTES: ${log.notes ?? "-"}`;
           <h1 className="text-3xl font-bold tracking-tight">Shift Handover</h1>
           <p className="text-muted-foreground mt-1">Laporan transisi shift terstruktur.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Handover Baru
-        </Button>
+        {canCreateHandover && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Handover Baru
+          </Button>
+        )}
       </div>
 
       {isChief && (
@@ -205,7 +209,7 @@ NOTES: ${log.notes ?? "-"}`;
         )}
       </div>
 
-      <ResponsiveModal open={createOpen} onOpenChange={setCreateOpen} title="Checklist Handover Shift" description="Lengkapi semua poin sebelum submit.">
+      <ResponsiveModal open={createOpen && canCreateHandover} onOpenChange={setCreateOpen} title="Checklist Handover Shift" description="Lengkapi semua poin sebelum submit.">
         <HandoverChecklistForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
     </div>
@@ -213,12 +217,14 @@ NOTES: ${log.notes ?? "-"}`;
 }
 
 function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
   const createHandover = useCreateHandoverLog();
   const { data: shifts } = useListShifts();
   const { data: tasks } = useListTasks({ status: "in_progress" });
   const { data: complaints } = useListComplaints({ status: "open" });
   const { toast } = useToast();
   const qc = useQueryClient();
+  const canCreateHandover = canCreate("handover", user);
 
   const [fromShiftId, setFromShiftId] = useState("");
   const [toShiftId, setToShiftId] = useState("");
@@ -237,6 +243,10 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreateHandover) {
+      toast({ title: "Anda tidak memiliki akses", variant: "destructive" });
+      return;
+    }
     if (!allChecked) {
       toast({ title: "Belum Lengkap", description: "Lengkapi semua poin checklist", variant: "destructive" });
       return;
@@ -300,7 +310,7 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="flex justify-between items-center pt-4 border-t">
         <span className="text-xs text-muted-foreground">{allChecked ? "✅ Semua item selesai" : "⚠️ Lengkapi semua item"}</span>
-        <Button type="submit" disabled={createHandover.isPending || !allChecked} className="px-8">
+        <Button type="submit" disabled={createHandover.isPending || !allChecked || !canCreateHandover} className="px-8">
           {createHandover.isPending ? "Mengirim..." : "Submit Handover"}
         </Button>
       </div>
