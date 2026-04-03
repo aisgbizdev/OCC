@@ -1,4 +1,0 @@
-Server listening on port 8080
-undefined
-C:\laragon\www\OCC\artifacts\api-server:
- ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 4294967295: tsx ./src/index.ts
