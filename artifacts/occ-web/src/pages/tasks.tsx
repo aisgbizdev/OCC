@@ -11,6 +11,7 @@ import { ResponsiveModal } from "@/components/responsive-modal";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { canCreate, canUpdateTask } from "@/lib/access-control";
+import { TaskDetailModal } from "@/components/task-detail-modal";
 
 type TaskEnriched = TaskWithRelations & {
   ptName?: string | null;
@@ -204,7 +205,17 @@ export default function Tasks() {
         title="Detail Tugas"
         description={detailTask?.title}
       >
-        {detailTask && <TaskDetail task={detailTask} onComplete={handleComplete} onClose={() => setDetailTask(null)} />}
+        {detailTask && (
+          <TaskDetailModal
+            task={detailTask}
+            allUsers={allUsers as UserWithRelations[] | undefined}
+            onClose={() => setDetailTask(null)}
+            onUpdated={() => {
+              qc.invalidateQueries({ queryKey: ["/api/tasks"] });
+              setDetailTask(null);
+            }}
+          />
+        )}
       </ResponsiveModal>
     </div>
   );
@@ -384,77 +395,6 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
   );
 }
 
-function TaskDetail({ task, onComplete, onClose }: { task: TaskEnriched; onComplete: (t: TaskEnriched) => void; onClose: () => void }) {
-  const { user } = useAuth();
-  const canUpdateThisTask = canUpdateTask(user, task);
-  const priorityLabel: Record<string, string> = { low: "Rendah", medium: "Sedang", high: "Tinggi" };
-  const statusLabel: Record<string, string> = { new: "Baru", in_progress: "Sedang Berjalan", completed: "Selesai" };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-          task.priority === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-          task.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-          'bg-blue-500/10 text-blue-400 border-blue-500/20'
-        }`}>
-          Prioritas: {priorityLabel[task.priority] ?? task.priority}
-        </span>
-        <span className="px-2.5 py-1 rounded-full text-xs font-semibold border bg-muted text-muted-foreground border-border">
-          {statusLabel[task.status] ?? task.status}
-        </span>
-      </div>
-
-      {task.description && (
-        <p className="text-sm text-muted-foreground">{task.description}</p>
-      )}
-
-      <div className="space-y-2 text-sm">
-        {(task.ptName || task.branchName) && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Cabang</span>
-            <span className="font-medium flex items-center gap-1.5">
-              {task.ptName && <span className="text-primary">{task.ptName}</span>}
-              {task.ptName && task.branchName && <span className="text-muted-foreground">·</span>}
-              {task.branchName && <span>{task.branchName}</span>}
-            </span>
-          </div>
-        )}
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Ditugaskan ke</span>
-          <span className="font-medium">{task.assigneeName ?? "Tidak di-assign"}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tenggat</span>
-          <span className="font-medium">{task.deadline ? format(new Date(task.deadline), "dd MMM yyyy") : "Tanpa tenggat"}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Progress</span>
-          <span className="font-medium">{task.progressPercent}%</span>
-        </div>
-      </div>
-
-      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-        <div
-          className={`h-full transition-all duration-500 ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
-          style={{ width: `${task.progressPercent}%` }}
-        />
-      </div>
-
-      {task.status !== "completed" && canUpdateThisTask && (
-        <div className="pt-2 border-t flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose}>Tutup</Button>
-          <Button
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => { onComplete(task); onClose(); }}
-          >
-            <Check className="w-4 h-4" /> Tandai Selesai
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function CreateTaskForm({ onSuccess }: { onSuccess: () => void }) {
   const { user } = useAuth();

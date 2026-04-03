@@ -134,4 +134,30 @@ router.post("/handover-logs", authMiddleware, requireRole(...CREATE_ROLES), asyn
   }
 });
 
+router.patch("/handover-logs/:id", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const [existing] = await db.select().from(handoverLogsTable)
+      .where(eq(handoverLogsTable.id, Number(req.params.id))).limit(1);
+    if (!existing) { res.status(404).json({ error: "Handover log not found" }); return; }
+
+    const isCreator = existing.createdBy === req.user!.userId;
+    const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(req.user!.roleName);
+    if (!isCreator && !isManager) {
+      res.status(403).json({ error: "Only creator or manager can update handover" }); return;
+    }
+
+    const updateData: Partial<typeof handoverLogsTable.$inferInsert> = {};
+    if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+    if (isManager && req.body.pendingTasks !== undefined) updateData.pendingTasks = req.body.pendingTasks;
+
+    const [updated] = await db.update(handoverLogsTable).set(updateData)
+      .where(eq(handoverLogsTable.id, Number(req.params.id))).returning();
+    await createAuditLog({ userId: req.user!.userId, actionType: "update", module: "handover", entityId: String(updated.id) });
+    res.json(await enrichHandover(updated));
+  } catch (error) {
+    console.error("Update handover log error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

@@ -13,7 +13,7 @@ import {
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter } from "lucide-react";
+import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,39 @@ export default function Handover() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const { toast } = useToast();
+  const qcMain = useQueryClient();
+
+  const [editLog, setEditLog] = useState<HandoverLogWithRelations | null>(null);
+  const [editNotes, setEditNotes] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(user?.roleName ?? "");
+
+  const handleEditNotes = (log: HandoverLogWithRelations) => {
+    setEditLog(log);
+    setEditNotes(log.notes ?? "");
+  };
+
+  const handleSaveNotes = async () => {
+    if (!editLog) return;
+    setSavingEdit(true);
+    const tkn = localStorage.getItem("occ_token");
+    try {
+      const res = await fetch(`/api/handover-logs/${editLog.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tkn}` },
+        body: JSON.stringify({ notes: editNotes }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Catatan diperbarui" });
+      qcMain.invalidateQueries({ queryKey: ["/api/handover-logs"] });
+      setEditLog(null);
+    } catch {
+      toast({ title: "Gagal menyimpan catatan", variant: "destructive" });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const handlePtChange = (ptId: string) => {
     setFilterPtId(ptId);
@@ -170,6 +203,11 @@ NOTES: ${log.notes ?? "-"}`;
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {(isManager || (log as HandoverLogWithRelations & { createdBy?: number }).createdBy === user?.id) && (
+                    <Button variant="ghost" size="icon" onClick={() => handleEditNotes(log)} title="Edit catatan">
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" onClick={() => handleShare(log)} title="Bagikan laporan">
                     <Share2 className="w-4 h-4" />
                   </Button>
@@ -210,13 +248,38 @@ NOTES: ${log.notes ?? "-"}`;
       </div>
 
       <ResponsiveModal open={createOpen && canCreateHandover} onOpenChange={setCreateOpen} title="Checklist Handover Shift" description="Lengkapi semua poin sebelum submit.">
-        <HandoverChecklistForm onSuccess={() => setCreateOpen(false)} />
+        <HandoverChecklistForm onSuccess={() => setCreateOpen(false)} lastLog={filteredLogs[0] as HandoverLogWithRelations | undefined} />
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!editLog}
+        onOpenChange={(open) => { if (!open) setEditLog(null); }}
+        title="Edit Catatan Handover"
+        description={editLog ? `Handover ${editLog.fromShiftName ?? ""} → ${editLog.toShiftName ?? ""}` : undefined}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Catatan / Update</label>
+            <textarea
+              className="w-full min-h-[120px] px-3 py-2 rounded-md bg-background border text-sm resize-none"
+              value={editNotes}
+              onChange={e => setEditNotes(e.target.value)}
+              placeholder="Tambahkan catatan atau update untuk shift ini..."
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setEditLog(null)}>Batal</Button>
+            <Button onClick={handleSaveNotes} disabled={savingEdit}>
+              {savingEdit ? "Menyimpan..." : "Simpan Catatan"}
+            </Button>
+          </div>
+        </div>
       </ResponsiveModal>
     </div>
   );
 }
 
-function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
+function HandoverChecklistForm({ onSuccess, lastLog }: { onSuccess: () => void; lastLog?: HandoverLogWithRelations }) {
   const { user } = useAuth();
   const createHandover = useCreateHandoverLog();
   const { data: shifts } = useListShifts();
@@ -228,6 +291,8 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
   const complaints = (allComplaints as ComplaintWithRelations[] | undefined)?.filter(
     c => c.status !== "closed" && c.status !== "resolved"
   );
+
+  const lastHandoverComplaints = lastLog?.pendingComplaints ?? "";
   const { toast } = useToast();
   const qc = useQueryClient();
   const canCreateHandover = canCreate("handover", user);
@@ -295,7 +360,30 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="space-y-3">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Checklist Handover</h3>
-        <ChecklistItem checked={checks.reviewedComplaints} onChange={v => setChecks({...checks, reviewedComplaints: v})} label="Review Komplain Tertunda" detail={`${complaints?.length ?? 0} komplain terbuka`} color="text-destructive" />
+        <ChecklistItem checked={checks.reviewedComplaints} onChange={v => setChecks({...checks, reviewedComplaints: v})} label="Review Komplain Tertunda" detail={`${complaints?.length ?? 0} komplain terbuka`} color="text-destructive">
+          {complaints && complaints.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {complaints.map(c => {
+                const isCarryOver = lastHandoverComplaints.includes(c.title);
+                return (
+                  <div key={c.id} className="flex items-center gap-2 text-xs">
+                    <span className={`px-2 py-0.5 rounded-full font-medium border ${
+                      c.severity === "high" ? "bg-destructive/10 text-destructive border-destructive/20" :
+                      c.severity === "medium" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                      "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                    }`}>{c.severity}</span>
+                    <span className="text-muted-foreground truncate">{c.title}</span>
+                    {isCarryOver && (
+                      <span className="ml-auto flex items-center gap-0.5 text-orange-400 font-medium whitespace-nowrap shrink-0">
+                        <RefreshCw className="w-3 h-3" /> Carry-over
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ChecklistItem>
         <ChecklistItem checked={checks.reviewedTasks} onChange={v => setChecks({...checks, reviewedTasks: v})} label="Review Tugas Belum Selesai" detail={`${tasks?.length ?? 0} tugas berjalan`} color="text-amber-500" />
         <ChecklistItem checked={checks.systemStatus} onChange={v => setChecks({...checks, systemStatus: v})} label="Verifikasi Status Sistem" color="text-emerald-500">
           <select className="w-full h-9 px-3 mt-2 rounded-md bg-background border text-sm" value={systemStatusNote} onChange={e => setSystemStatusNote(e.target.value)}>
