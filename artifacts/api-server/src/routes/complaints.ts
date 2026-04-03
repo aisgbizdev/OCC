@@ -2,18 +2,20 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import {
   complaintsTable, usersTable, ptsTable, branchesTable,
-  complaintCommentsTable, complaintHistoryTable,
+  complaintCommentsTable, complaintHistoryTable, rolesTable,
 } from "@workspace/db/schema";
-import { eq, and, desc, asc, inArray, type SQL } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, or, isNull, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 import { createAuditLog, createNotification, notifyMultipleUsers } from "../helpers/audit";
 import { sendPushToRoles, sendPushToUsers } from "../lib/push";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
-const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
+const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+const SPV_NOTIFY_ROLES = ["SPV Dealing", "Co-SPV Dealing", "Chief Dealing", "Owner", "Direksi", "Superadmin"];
 
 async function enrichComplaint(complaint: typeof complaintsTable.$inferSelect) {
   const assignedUser = complaint.assignedUserId
@@ -170,12 +172,34 @@ router.post("/complaints/:id/comments", authMiddleware, requireRole(...ALL_ROLES
     }
 
     if (!isSpvOrAbove) {
-      sendPushToRoles(["SPV Dealing", "Chief Dealing", "Owner", "Superadmin"], {
-        title: `Komplain dikomentari: ${complaint.title}`,
-        body: `${commenterName}: ${content.trim().slice(0, 80)}`,
-        url: `/complaints`,
-        tag: `complaint-comment-${cid}`,
-      }).catch(console.error);
+      const ptId = complaint.ptId;
+      const spvUsers = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .innerJoin(rolesTable, eq(usersTable.roleId, rolesTable.id))
+        .where(
+          and(
+            inArray(rolesTable.name, SPV_NOTIFY_ROLES),
+            ptId !== null
+              ? or(eq(usersTable.ptId, ptId), isNull(usersTable.ptId))
+              : isNull(usersTable.ptId),
+            eq(usersTable.activeStatus, true),
+          )
+        );
+      const spvIds = spvUsers.map(u => u.id).filter(id => id !== req.user!.userId && !notifySet.has(id));
+      if (spvIds.length > 0) {
+        await notifyMultipleUsers(spvIds, {
+          type: "complaint_comment",
+          title: `Komplain dikomentari: ${complaint.title}`,
+          content: `${commenterName}: ${content.trim().slice(0, 100)}`,
+        });
+        sendPushToUsers(spvIds, {
+          title: `Komplain dikomentari: ${complaint.title}`,
+          body: `${commenterName}: ${content.trim().slice(0, 80)}`,
+          url: `/complaints`,
+          tag: `complaint-comment-${cid}`,
+        }).catch(console.error);
+      }
     }
 
     res.status(201).json({
@@ -244,7 +268,7 @@ router.post("/complaints", authMiddleware, requireRole(...CREATE_ROLES), async (
   }
 });
 
-router.put("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), async (req, res) => {
+router.put("/complaints/:id", authMiddleware, requireRole(...UPDATE_ROLES), async (req, res) => {
   try {
     const cid = Number(req.params.id);
     const [existing] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);

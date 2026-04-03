@@ -227,7 +227,7 @@ export function ComplaintDetailModal({
 
   const canManage = CAN_CREATE_ROLES.includes(user?.roleName ?? "");
 
-  const { data: complaint, isLoading } = useQuery<ComplaintDetail>({
+  const { data: complaint, isLoading, isError, refetch } = useQuery<ComplaintDetail>({
     queryKey: ["/api/complaints", complaintId],
     queryFn: () => apiFetch(`/api/complaints/${complaintId}`),
     enabled: !!complaintId && open,
@@ -280,9 +280,20 @@ export function ComplaintDetailModal({
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
       <div className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-background border rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-        {isLoading || !complaint ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : isError || !complaint ? (
+          <div className="flex flex-col items-center justify-center py-16 px-6 gap-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <X className="w-6 h-6 text-destructive" />
+            </div>
+            <p className="text-center text-muted-foreground text-sm">Gagal memuat detail komplain.</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => refetch()}>Coba Lagi</Button>
+              <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Tutup</Button>
+            </div>
           </div>
         ) : (
           <>
