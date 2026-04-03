@@ -115,7 +115,7 @@ const TYPE_LABELS: Record<string, string> = {
   system: "Sistem",
 };
 
-const CAN_CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const CAN_UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 
 async function apiFetch(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -225,7 +225,7 @@ export function ComplaintDetailModal({
   const { toast } = useToast();
   const [commentText, setCommentText] = useState("");
 
-  const canManage = CAN_CREATE_ROLES.includes(user?.roleName ?? "");
+  const canManage = CAN_UPDATE_ROLES.includes(user?.roleName ?? "");
 
   const { data: complaint, isLoading, isError, refetch } = useQuery<ComplaintDetail>({
     queryKey: ["/api/complaints", complaintId],

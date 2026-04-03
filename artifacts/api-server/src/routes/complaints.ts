@@ -308,24 +308,38 @@ router.put("/complaints/:id", authMiddleware, requireRole(...UPDATE_ROLES), asyn
       historyEntries.push({ complaintId: cid, userId: req.user!.userId, changeType: "severity_changed", oldValue: existing.severity, newValue: req.body.severity });
       updateData.severity = req.body.severity;
     }
-    if (req.body.followUp !== undefined) {
-      historyEntries.push({ complaintId: cid, userId: req.user!.userId, changeType: "followup_updated", note: req.body.followUp?.slice(0, 200) });
+    if (req.body.followUp !== undefined && req.body.followUp !== existing.followUp) {
+      historyEntries.push({
+        complaintId: cid,
+        userId: req.user!.userId,
+        changeType: "followup_updated",
+        oldValue: existing.followUp ?? undefined,
+        newValue: (req.body.followUp as string)?.slice(0, 500) ?? undefined,
+      });
       updateData.followUp = req.body.followUp;
     }
-    if (req.body.chronology !== undefined) {
-      historyEntries.push({ complaintId: cid, userId: req.user!.userId, changeType: "chronology_updated" });
+    if (req.body.chronology !== undefined && req.body.chronology !== existing.chronology) {
+      historyEntries.push({
+        complaintId: cid,
+        userId: req.user!.userId,
+        changeType: "chronology_updated",
+        oldValue: existing.chronology ? existing.chronology.slice(0, 100) : undefined,
+        newValue: (req.body.chronology as string)?.slice(0, 100) ?? undefined,
+      });
       updateData.chronology = req.body.chronology;
     }
     if (req.body.assignedUserId !== undefined) {
       const oldAssignee = existing.assignedUserId;
-      const newAssignee = req.body.assignedUserId;
+      const newAssignee: number | null = req.body.assignedUserId ?? null;
       if (oldAssignee !== newAssignee) {
         const [newUser] = newAssignee
           ? await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, newAssignee)).limit(1)
           : [null];
         historyEntries.push({ complaintId: cid, userId: req.user!.userId, changeType: "assignee_changed", oldValue: oldAssignee ? String(oldAssignee) : undefined, newValue: newAssignee ? newUser?.name ?? String(newAssignee) : "Unassigned" });
-        await createNotification({ userId: newAssignee, type: "complaint_assigned", title: `Komplain ditugaskan: ${existing.title}` });
-        sendPushToUsers([newAssignee], { title: "Komplain Ditugaskan ke Anda", body: existing.title, url: `/complaints`, tag: `complaint-assign-${cid}` }).catch(console.error);
+        if (newAssignee) {
+          await createNotification({ userId: newAssignee, type: "complaint_assigned", title: `Komplain ditugaskan: ${existing.title}` });
+          sendPushToUsers([newAssignee], { title: "Komplain Ditugaskan ke Anda", body: existing.title, url: `/complaints`, tag: `complaint-assign-${cid}` }).catch(console.error);
+        }
       }
       updateData.assignedUserId = newAssignee;
     }
