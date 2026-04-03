@@ -220,8 +220,14 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
   const { user } = useAuth();
   const createHandover = useCreateHandoverLog();
   const { data: shifts } = useListShifts();
-  const { data: tasks } = useListTasks({ status: "in_progress" });
-  const { data: complaints } = useListComplaints({ status: "open" });
+  const { data: allTasks } = useListTasks();
+  const { data: allComplaints } = useListComplaints();
+  const tasks = (allTasks as TaskWithRelations[] | undefined)?.filter(
+    t => t.status !== "completed" && t.status !== "cancelled"
+  );
+  const complaints = (allComplaints as ComplaintWithRelations[] | undefined)?.filter(
+    c => c.status !== "closed" && c.status !== "resolved"
+  );
   const { toast } = useToast();
   const qc = useQueryClient();
   const canCreateHandover = canCreate("handover", user);
@@ -237,8 +243,8 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
   const [systemStatusNote, setSystemStatusNote] = useState("All systems operational");
   const [notes, setNotes] = useState("");
 
-  const pendingTaskNames = (tasks as TaskWithRelations[] | undefined)?.map(t => `• ${t.title} (${t.assigneeName ?? "-"})`).join("\n") ?? "None";
-  const openComplaintNames = (complaints as ComplaintWithRelations[] | undefined)?.map(c => `• ${c.title} [${c.severity}]`).join("\n") ?? "None";
+  const pendingTaskNames = tasks?.map(t => `• ${t.title} (${t.assigneeName ?? "-"}) [${t.status}]`).join("\n") || "None";
+  const openComplaintNames = complaints?.map(c => `• ${c.title} [${c.severity}] (${c.status})`).join("\n") || "None";
   const allChecked = checks.reviewedComplaints && checks.reviewedTasks && checks.systemStatus && checks.activitiesLogged;
 
   const handleSubmit = (e: React.FormEvent) => {

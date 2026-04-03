@@ -5,17 +5,27 @@ import {
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { AlertTriangle, Plus, Building2, MapPin, Filter } from "lucide-react";
+import { AlertTriangle, Plus, Building2, MapPin, Filter, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SlaTimer } from "@/components/sla-timer";
 import { ResponsiveModal } from "@/components/responsive-modal";
+import { ComplaintDetailModal } from "@/components/complaint-detail-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { canCreate } from "@/lib/access-control";
+import { cn } from "@/lib/utils";
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
+
+const STATUS_COLORS: Record<string, string> = {
+  open: "text-blue-400",
+  in_progress: "text-amber-400",
+  escalated: "text-destructive",
+  resolved: "text-green-400",
+  closed: "text-muted-foreground",
+};
 
 export default function Complaints() {
   const { user } = useAuth();
@@ -23,6 +33,7 @@ export default function Complaints() {
   const canCreateComplaint = canCreate("complaint", user);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -37,7 +48,7 @@ export default function Complaints() {
     status: filterStatus || undefined,
   });
 
-  const filteredComplaints = (complaints ?? []).filter(comp => {
+  const filteredComplaints = (complaints ?? []).filter((comp: { branchId?: number | null }) => {
     if (isChief && filterBranchId && comp.branchId !== Number(filterBranchId)) return false;
     return true;
   });
@@ -72,8 +83,9 @@ export default function Complaints() {
           <option value="">Semua Status</option>
           <option value="open">Open</option>
           <option value="in_progress">In Progress</option>
-          <option value="resolved">Resolved</option>
-          <option value="closed">Closed</option>
+          <option value="escalated">Eskalasi</option>
+          <option value="resolved">Selesai</option>
+          <option value="closed">Ditutup</option>
         </select>
 
         {isChief && (
@@ -115,17 +127,48 @@ export default function Complaints() {
         )}
       </div>
 
-      <div className="space-y-4">
-        {filteredComplaints.map(comp => (
-          <div key={comp.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:border-primary/50 transition-colors flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="p-3 rounded-xl bg-destructive/10 text-destructive shrink-0">
+      <div className="space-y-3">
+        {filteredComplaints.map((comp: {
+          id: number;
+          title: string;
+          complaintType: string;
+          severity: string;
+          status: string;
+          ptName?: string | null;
+          branchName?: string | null;
+          chronology?: string | null;
+          creatorName?: string | null;
+          createdAt?: string | Date | null;
+          slaStatus?: string;
+          commentCount?: number;
+          branchId?: number | null;
+        }) => (
+          <button
+            key={comp.id}
+            type="button"
+            onClick={() => setDetailId(comp.id)}
+            className="w-full text-left bg-card border rounded-2xl p-5 shadow-sm hover:border-primary/50 hover:bg-card/80 transition-all flex flex-col sm:flex-row sm:items-center gap-4 cursor-pointer"
+          >
+            <div className={cn(
+              "p-3 rounded-xl shrink-0",
+              comp.slaStatus === "critical" ? "bg-destructive/10 text-destructive" :
+              comp.slaStatus === "warning" ? "bg-amber-500/10 text-amber-500" :
+              "bg-muted text-muted-foreground"
+            )}>
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h3 className="font-bold text-lg truncate">{comp.title}</h3>
-                <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-muted text-muted-foreground">{comp.complaintType}</span>
-                <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md ${comp.severity === 'high' ? 'bg-destructive/20 text-destructive' : 'bg-amber-500/20 text-amber-500'}`}>{comp.severity}</span>
+                <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-muted text-muted-foreground">
+                  {comp.complaintType === "external" ? "EXTERNAL" : comp.complaintType === "internal" ? "INTERNAL" : "SISTEM"}
+                </span>
+                <span className={cn(
+                  "px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md",
+                  comp.severity === "high" ? "bg-destructive/20 text-destructive" :
+                  comp.severity === "medium" ? "bg-amber-500/20 text-amber-500" :
+                  "bg-green-500/20 text-green-400"
+                )}>{comp.severity === "high" ? "HIGH" : comp.severity === "medium" ? "MEDIUM" : "LOW"}</span>
               </div>
               {(comp.ptName || comp.branchName) && (
                 <div className="flex flex-wrap items-center gap-3 mb-1">
@@ -142,18 +185,31 @@ export default function Complaints() {
                 </div>
               )}
               <p className="text-sm text-muted-foreground line-clamp-1">{comp.chronology ?? ""}</p>
-              <div className="text-xs text-muted-foreground mt-2 flex items-center gap-3">
+              <div className="text-xs text-muted-foreground mt-2 flex flex-wrap items-center gap-2">
                 <span>Oleh {comp.creatorName ?? "-"}</span>
                 <span>•</span>
-                <span>{comp.createdAt ? format(new Date(comp.createdAt), "MMM d, yyyy HH:mm") : "-"}</span>
+                <span>{comp.createdAt ? format(new Date(comp.createdAt), "d MMM yyyy HH:mm") : "-"}</span>
                 <span>•</span>
-                <span className="capitalize text-foreground font-medium">Status: {comp.status.replace("_", " ")}</span>
+                <span className={cn("font-semibold capitalize", STATUS_COLORS[comp.status])}>
+                  {comp.status === "in_progress" ? "In Progress" :
+                   comp.status === "escalated" ? "Eskalasi" :
+                   comp.status === "resolved" ? "Selesai" :
+                   comp.status === "closed" ? "Ditutup" : "Open"}
+                </span>
+                {(comp.commentCount ?? 0) > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" />{comp.commentCount} komentar
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <div className="shrink-0 flex items-center justify-between sm:flex-col sm:items-end gap-2 border-t sm:border-t-0 pt-4 sm:pt-0">
-              <SlaTimer createdAt={comp.createdAt} status={comp.status} />
+              <SlaTimer createdAt={comp.createdAt ? String(comp.createdAt) : undefined} status={comp.status} />
             </div>
-          </div>
+          </button>
         ))}
         {filteredComplaints.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">Belum ada komplain.</div>
@@ -163,6 +219,12 @@ export default function Complaints() {
       <ResponsiveModal open={createOpen && canCreateComplaint} onOpenChange={setCreateOpen} title="Laporkan Komplain" description="Catat komplain atau masalah operasional baru.">
         <CreateComplaintForm onSuccess={() => setCreateOpen(false)} />
       </ResponsiveModal>
+
+      <ComplaintDetailModal
+        complaintId={detailId}
+        open={!!detailId}
+        onOpenChange={(v) => { if (!v) setDetailId(null); }}
+      />
     </div>
   );
 }
