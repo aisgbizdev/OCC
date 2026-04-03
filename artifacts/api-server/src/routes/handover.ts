@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { handoverLogsTable, usersTable, ptsTable, branchesTable, shiftsTable } from "@workspace/db/schema";
-import { eq, and, desc, type SQL } from "drizzle-orm";
+import { handoverLogsTable, usersTable, ptsTable, branchesTable, shiftsTable, tasksTable } from "@workspace/db/schema";
+import { eq, and, desc, inArray, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 import { createAuditLog } from "../helpers/audit";
 
@@ -71,19 +71,57 @@ router.get("/handover-logs/:id", authMiddleware, requireRole(...ALL_ROLES), asyn
 
 router.post("/handover-logs", authMiddleware, requireRole(...CREATE_ROLES), async (req, res) => {
   try {
-    const { ptId, branchId, fromShiftId, toShiftId, summary, pendingActivities, pendingTasks, pendingComplaints, notes } = req.body;
+    const { fromShiftId, toShiftId, pendingActivities, pendingComplaints, notes } = req.body;
     if (!fromShiftId || !toShiftId) {
       res.status(400).json({ error: "fromShiftId and toShiftId are required" }); return;
     }
+
+    const userRecord = await db.select({ branchId: usersTable.branchId })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user!.userId))
+      .limit(1);
+
+    const userPtId: number | null = req.user!.ptId;
+    const userBranchId: number | null = userRecord[0]?.branchId ?? null;
+
+    const taskConditions: SQL[] = [eq(tasksTable.status, "in_progress")];
+    if (userPtId !== null) taskConditions.push(eq(tasksTable.ptId, userPtId));
+    if (userBranchId !== null) taskConditions.push(eq(tasksTable.branchId, userBranchId));
+
+    const inProgressTasks = await db
+      .select({ title: tasksTable.title, assignedTo: tasksTable.assignedTo })
+      .from(tasksTable)
+      .where(and(...taskConditions));
+
+    const assigneeIds = inProgressTasks.map(t => t.assignedTo).filter((id): id is number => id !== null);
+    const assigneeNames: Record<number, string> = {};
+    if (assigneeIds.length > 0) {
+      const assignees = await db.select({ id: usersTable.id, name: usersTable.name })
+        .from(usersTable)
+        .where(inArray(usersTable.id, assigneeIds));
+      for (const a of assignees) assigneeNames[a.id] = a.name;
+    }
+
+    const serverPendingTasks = inProgressTasks.length > 0
+      ? inProgressTasks.map(t => `• ${t.title} (${t.assignedTo ? (assigneeNames[t.assignedTo] ?? "-") : "-"})`).join("\n")
+      : "None";
+
+    const taskCount = inProgressTasks.length;
+    const systemStatusNote = req.body.systemStatusNote ?? "All systems operational";
+    const complaintCount = typeof req.body.complaintCount === "number" ? req.body.complaintCount : null;
+    const serverSummary = complaintCount !== null
+      ? `Checklist selesai. Sistem: ${systemStatusNote}. ${taskCount} tugas berjalan, ${complaintCount} komplain terbuka.`
+      : `Checklist selesai. ${taskCount} tugas berjalan.`;
+
     const [log] = await db.insert(handoverLogsTable).values({
-      ptId: ptId ?? req.user!.ptId,
-      branchId: branchId ?? null,
+      ptId: userPtId,
+      branchId: userBranchId,
       fromShiftId,
       toShiftId,
       createdBy: req.user!.userId,
-      summary: summary ?? null,
+      summary: serverSummary,
       pendingActivities: pendingActivities ?? null,
-      pendingTasks: pendingTasks ?? null,
+      pendingTasks: serverPendingTasks,
       pendingComplaints: pendingComplaints ?? null,
       notes: notes ?? null,
     }).returning();

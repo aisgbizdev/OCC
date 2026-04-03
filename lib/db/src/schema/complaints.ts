@@ -27,15 +27,6 @@ export const complaintsTable = pgTable("complaints", {
   index("complaints_created_at_idx").on(table.createdAt),
 ]);
 
-export const complaintsRelations = relations(complaintsTable, ({ one, many }) => ({
-  pt: one(ptsTable, { fields: [complaintsTable.ptId], references: [ptsTable.id] }),
-  branch: one(branchesTable, { fields: [complaintsTable.branchId], references: [branchesTable.id] }),
-  assignedUser: one(usersTable, { fields: [complaintsTable.assignedUserId], references: [usersTable.id], relationName: "assignedComplaints" }),
-  creator: one(usersTable, { fields: [complaintsTable.createdBy], references: [usersTable.id], relationName: "createdComplaints" }),
-  comments: many(complaintCommentsTable),
-  history: many(complaintHistoryTable),
-}));
-
 export const insertComplaintSchema = createInsertSchema(complaintsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertComplaint = z.infer<typeof insertComplaintSchema>;
 export type Complaint = typeof complaintsTable.$inferSelect;
@@ -50,11 +41,6 @@ export const complaintCommentsTable = pgTable("complaint_comments", {
   index("complaint_comments_complaint_id_idx").on(table.complaintId),
   index("complaint_comments_created_at_idx").on(table.createdAt),
 ]);
-
-export const complaintCommentsRelations = relations(complaintCommentsTable, ({ one }) => ({
-  complaint: one(complaintsTable, { fields: [complaintCommentsTable.complaintId], references: [complaintsTable.id] }),
-  user: one(usersTable, { fields: [complaintCommentsTable.userId], references: [usersTable.id] }),
-}));
 
 export type ComplaintComment = typeof complaintCommentsTable.$inferSelect;
 
@@ -72,9 +58,23 @@ export const complaintHistoryTable = pgTable("complaint_history", {
   index("complaint_history_created_at_idx").on(table.createdAt),
 ]);
 
+export type ComplaintHistory = typeof complaintHistoryTable.$inferSelect;
+
+export const complaintsRelations = relations(complaintsTable, ({ one, many }) => ({
+  pt: one(ptsTable, { fields: [complaintsTable.ptId], references: [ptsTable.id] }),
+  branch: one(branchesTable, { fields: [complaintsTable.branchId], references: [branchesTable.id] }),
+  assignedUser: one(usersTable, { fields: [complaintsTable.assignedUserId], references: [usersTable.id], relationName: "assignedComplaints" }),
+  creator: one(usersTable, { fields: [complaintsTable.createdBy], references: [usersTable.id], relationName: "createdComplaints" }),
+  comments: many(complaintCommentsTable),
+  history: many(complaintHistoryTable),
+}));
+
+export const complaintCommentsRelations = relations(complaintCommentsTable, ({ one }) => ({
+  complaint: one(complaintsTable, { fields: [complaintCommentsTable.complaintId], references: [complaintsTable.id] }),
+  user: one(usersTable, { fields: [complaintCommentsTable.userId], references: [usersTable.id] }),
+}));
+
 export const complaintHistoryRelations = relations(complaintHistoryTable, ({ one }) => ({
   complaint: one(complaintsTable, { fields: [complaintHistoryTable.complaintId], references: [complaintsTable.id] }),
   user: one(usersTable, { fields: [complaintHistoryTable.userId], references: [usersTable.id] }),
 }));
-
-export type ComplaintHistory = typeof complaintHistoryTable.$inferSelect;

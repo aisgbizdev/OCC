@@ -407,9 +407,9 @@ export interface CreateHandoverLogRequest {
   branchId?: number;
   fromShiftId: number;
   toShiftId: number;
-  summary?: string;
+  systemStatusNote?: string;
+  complaintCount?: number;
   pendingActivities?: string;
-  pendingTasks?: string;
   pendingComplaints?: string;
   notes?: string;
 }

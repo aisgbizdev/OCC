@@ -243,7 +243,6 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
   const [systemStatusNote, setSystemStatusNote] = useState("All systems operational");
   const [notes, setNotes] = useState("");
 
-  const pendingTaskNames = tasks?.map(t => `• ${t.title} (${t.assigneeName ?? "-"}) [${t.status}]`).join("\n") || "None";
   const openComplaintNames = complaints?.map(c => `• ${c.title} [${c.severity}] (${c.status})`).join("\n") || "None";
   const allChecked = checks.reviewedComplaints && checks.reviewedTasks && checks.systemStatus && checks.activitiesLogged;
 
@@ -260,9 +259,9 @@ function HandoverChecklistForm({ onSuccess }: { onSuccess: () => void }) {
     createHandover.mutate({ data: {
       fromShiftId: Number(fromShiftId),
       toShiftId: Number(toShiftId),
-      summary: `Checklist selesai. Sistem: ${systemStatusNote}. ${tasks?.length ?? 0} tugas berjalan, ${complaints?.length ?? 0} komplain terbuka.`,
+      systemStatusNote,
+      complaintCount: complaints?.length ?? 0,
       pendingActivities: checks.activitiesLogged ? "Semua aktivitas shift ini sudah dilog" : "Ada aktivitas yang belum dilog",
-      pendingTasks: pendingTaskNames,
       pendingComplaints: openComplaintNames,
       notes: notes || undefined,
     }}, {
