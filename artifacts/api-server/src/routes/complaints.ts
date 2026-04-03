@@ -355,8 +355,8 @@ router.put("/complaints/:id", authMiddleware, requireRole(...UPDATE_ROLES), asyn
     }
 
     const notifySet = new Set<number>();
-    if (existing.createdBy && existing.createdBy !== req.user!.userId) notifySet.add(existing.createdBy);
-    if (existing.assignedUserId && existing.assignedUserId !== req.user!.userId) notifySet.add(existing.assignedUserId);
+    if (updated.createdBy && updated.createdBy !== req.user!.userId) notifySet.add(updated.createdBy);
+    if (updated.assignedUserId && updated.assignedUserId !== req.user!.userId) notifySet.add(updated.assignedUserId);
 
     if (req.body.status !== undefined) {
       const notifyIds = Array.from(notifySet);
@@ -371,8 +371,12 @@ router.put("/complaints/:id", authMiddleware, requireRole(...UPDATE_ROLES), asyn
       }
     }
 
+    const commentRows = await db.select({ id: complaintCommentsTable.id })
+      .from(complaintCommentsTable).where(eq(complaintCommentsTable.complaintId, cid));
+    const commentCount = commentRows.length;
+
     await createAuditLog({ userId: req.user!.userId, actionType: "update", module: "complaint", entityId: String(updated.id), newValue: JSON.stringify({ status: updated.status, severity: updated.severity }) });
-    res.json({ ...await enrichComplaint(updated), commentCount: 0 });
+    res.json({ ...await enrichComplaint(updated), commentCount });
   } catch (error) {
     console.error("Update complaint error:", error);
     res.status(500).json({ error: "Internal server error" });
