@@ -1,8 +1,8 @@
 # OCC — Operational Control Center
 ## Dokumen Panduan Lengkap
 
-**Versi:** 1.5  
-**Tanggal:** Maret 2026  
+**Versi:** 1.6  
+**Tanggal:** April 2026  
 **Untuk:** Tim Dealing, Divisi Operasional, Solid Group  
 
 ---
@@ -53,7 +53,7 @@
 ### Cakupan
 - 5 PT: **SGB, RFB, KPF, BPF, EWF**
 - 3 Shift: **Pagi, Siang, Malam**
-- 7 Role pengguna
+- 8 Role pengguna
 - Akses via browser (desktop & mobile) + bisa diinstall sebagai PWA
 
 ---
@@ -68,14 +68,14 @@ Halaman login menampilkan tab filter yang menentukan siapa yang muncul di dropdo
 
 | Pilihan Tab | Menampilkan Siapa |
 |---|---|
-| **Semua PT — Korporat & Divisi** | Superadmin, Owner, Direksi, Chief Dealing, **Admin System** |
+| **Semua PT — Korporat & Divisi** | Superadmin, Owner, Direksi, Chief Dealing, **Co-SPV Dealing**, **Admin System** |
 | **SGB** | SPV Dealing dan Dealer yang terdaftar di PT SGB |
 | **RFB** | SPV Dealing dan Dealer yang terdaftar di PT RFB |
 | **KPF** | SPV Dealing dan Dealer yang terdaftar di PT KPF |
 | **BPF** | SPV Dealing dan Dealer yang terdaftar di PT BPF |
 | **EWF** | SPV Dealing dan Dealer yang terdaftar di PT EWF |
 
-> **Penting:** Admin System dikategorikan sebagai "korporat" di sistem, sehingga selalu muncul di tab **"Semua PT"** — bukan di tab PT masing-masing. Jika Anda Admin System dan tidak menemukan nama Anda di tab PT, cari di tab "Semua PT".
+> **Penting:** Admin System dan Co-SPV Dealing dikategorikan sebagai "korporat" di sistem (tidak terikat satu PT), sehingga selalu muncul di tab **"Semua PT"** — bukan di tab PT masing-masing.
 
 **Langkah 2 — Pilih Nama**
 
@@ -101,6 +101,7 @@ Ketik password Anda lalu klik **Masuk**.
 Owner
 ├── Direksi (Direktur Utama, Direktur Kepatuhan)
 └── Chief Dealing (level Divisi Operasional)
+    ├── Co-SPV Dealing (wakil / pendamping Chief, level HQ)
     ├── PT SGB
     │   ├── SPV Dealing (Pagi / Malam)
     │   ├── Dealer
@@ -111,7 +112,7 @@ Owner
     └── PT EWF (struktur sama)
 ```
 
-### 7 Role & Deskripsi
+### 8 Role & Deskripsi
 
 | No | Role | Deskripsi Singkat |
 |---|---|---|
@@ -119,9 +120,10 @@ Owner
 | 2 | **Owner** | Akses operasional penuh. Bisa lihat semua PT, semua modul, kelola user. |
 | 3 | **Direksi** | Akses baca di sebagian besar modul. Dapat melihat dan mencatat quality error. Tidak bisa input aktivitas, keluhan, atau pengumuman. |
 | 4 | **Chief Dealing** | Kelola tim dealing, assign tugas, lihat KPI semua PT, buat keluhan/pengumuman, catat quality error, edit data user. |
-| 5 | **SPV Dealing** | Monitor shift, assign tugas ke dealer, kelola keluhan, catat quality error, isi handover shift. |
-| 6 | **Dealer** | Log aktivitas harian, lihat & update tugas yang di-assign ke diri sendiri, isi handover shift, lihat KPI. |
-| 7 | **Admin System** | Kelola master data (user, PT, shift, tipe aktivitas), pengaturan sistem, reset password. |
+| 5 | **Co-SPV Dealing** | Wakil/pendamping Chief Dealing di level HQ (tidak terikat satu PT). Hak akses setara SPV Dealing — monitor shift, assign tugas, kelola keluhan, catat quality error, isi handover. |
+| 6 | **SPV Dealing** | Monitor shift di PT masing-masing, assign tugas ke dealer, kelola keluhan, catat quality error, isi handover shift. |
+| 7 | **Dealer** | Log aktivitas harian, lihat & update tugas yang di-assign ke diri sendiri, isi handover shift, lihat KPI. |
+| 8 | **Admin System** | Kelola master data (user, PT, shift, tipe aktivitas), pengaturan sistem, reset password. |
 
 ### Shift Kerja
 
@@ -145,83 +147,87 @@ Tabel ini mencerminkan implementasi aktual di backend (berdasarkan `requireRole`
 
 ### Log Aktivitas
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat log | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Input / Log baru | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Edit log (dalam jendela waktu) | ✅ | ✅ | ❌ | ✅ | ✅ | ⚠️ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat log | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Input / Log baru | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edit log (dalam jendela waktu) | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Tandai log mencurigakan | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
 
 > ⚠️ **Dealer** hanya bisa melihat log aktivitas **milik diri sendiri**. Log dealer lain tidak tampil.
 
 ### KPI & Leaderboard
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat skor & leaderboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Lihat daftar snapshot | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Generate snapshot KPI | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat skor & leaderboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Lihat daftar snapshot | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Generate snapshot KPI | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ### Tugas (Task)
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat daftar tugas | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Lihat detail tugas & komentar | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Buat & assign tugas | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| Update status tugas | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Tulis komentar | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Hapus tugas | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat daftar tugas | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Lihat detail & komentar (modal tiket) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Buat & assign tugas | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Edit judul / deskripsi / prioritas / assignee | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Update status & progress | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Tulis komentar | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Hapus tugas | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
 
 > ⚠️ **Dealer** hanya bisa melihat, update, dan berkomentar pada tugas yang **di-assign ke diri sendiri**. Tugas orang lain tidak terlihat.
 
 ### Keluhan (Complaint)
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat semua keluhan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Buat / update / hapus keluhan | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat semua keluhan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat / update / hapus keluhan | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
 
 > Dealer dan Direksi tidak bisa membuat atau mengubah keluhan.
 
 ### Pengumuman
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat pengumuman | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Buat / edit / hapus | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat pengumuman | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat / edit / hapus | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ |
 
 ### Pesan Resmi
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat pesan | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Kirim pesan baru | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Konfirmasi penerimaan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat pesan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Kirim pesan baru | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Konfirmasi penerimaan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 > ⚠️ **Dealer** hanya melihat pesan yang ditujukan langsung ke dirinya, pesan broadcast (all), atau pesan yang dikirim oleh dirinya sendiri. Dealer **tidak bisa mengirim** pesan baru.
 
 ### Chat
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat & kirim pesan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat & kirim pesan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### Handover Shift
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat laporan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Buat laporan | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat laporan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Buat laporan | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edit catatan handover | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
 
-> Direksi hanya bisa melihat laporan handover, tidak bisa membuat.
+> Direksi hanya bisa melihat laporan handover, tidak bisa membuat.  
+> ⚠️ **Dealer** hanya bisa mengedit catatan handover yang **dibuat oleh dirinya sendiri**.
 
 ### Quality Control
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat tipe error & record | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Catat kesalahan | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Hapus record | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat tipe error & record | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Catat kesalahan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Hapus record | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 > Dealer dan Admin System tidak memiliki akses ke modul Quality Control.  
 > Direksi dapat melihat dan mencatat kesalahan (tidak hanya view-only di modul ini).
@@ -232,23 +238,23 @@ Semua role memiliki akses penuh ke notifikasi, halaman profil diri sendiri, dan 
 
 ### Master Data — Manajemen User
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Lihat daftar user | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Tambah user baru | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| Edit data user | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| Hapus user | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Reset password user lain | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Lihat daftar user | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Tambah user baru | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Edit data user | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Hapus user | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Reset password user lain | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-> **Catatan UI:** Link menu "Master Data > Users" di sidebar hanya tampil bagi Owner, Admin System, dan Superadmin. Chief Dealing, SPV Dealing, dan Direksi dapat mengakses endpoint API `/users` namun **tidak mendapat link menu di UI saat ini**. Chief Dealing yang ingin mengelola user perlu mengakses URL `/users` secara langsung.
+> **Catatan UI:** Link menu "Master Data > Users" di sidebar hanya tampil bagi Owner, Admin System, dan Superadmin. Chief Dealing, SPV Dealing, Co-SPV Dealing, dan Direksi dapat mengakses endpoint API `/users` namun **tidak mendapat link menu di UI saat ini**. Chief Dealing yang ingin mengelola user perlu mengakses URL `/users` secara langsung.
 
 ### Master Data — PT, Branch, Shift, Tipe Aktivitas & Pengaturan Sistem
 
-| Aksi | Superadmin | Owner | Direksi | Chief | SPV | Dealer | Admin |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Kelola PT/Branch/Shift/Tipe Aktivitas | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Edit parameter sistem | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Lihat audit log | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Aksi | Superadmin | Owner | Direksi | Chief | Co-SPV | SPV | Dealer | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Kelola PT/Branch/Shift/Tipe Aktivitas | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Edit parameter sistem | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Lihat audit log | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
@@ -352,6 +358,20 @@ Kolom: **Waktu | Dealer | Tipe Aktivitas | Qty | Catatan | Poin**
 
 Filter: cari nama dealer / tipe aktivitas, filter rentang tanggal.
 
+### Fitur Flag Log Mencurigakan (SPV / Chief / Owner)
+
+SPV Dealing, Co-SPV Dealing, Chief Dealing, dan Owner dapat menandai log aktivitas yang dirasa tidak wajar dengan **ikon bendera 🚩** di setiap baris log.
+
+**Cara menandai:**
+1. Temukan baris log yang mencurigakan (misalnya qty sangat tinggi, waktu tidak masuk akal)
+2. Klik ikon 🚩 di baris tersebut
+3. Log akan ditandai sebagai **mencurigakan** — ikon berubah warna merah dan baris mendapat highlight
+
+**Cara menghapus flag:**
+- Klik ikon 🚩 merah yang sama untuk melepas tanda
+
+> Log yang di-flag tetap dihitung dalam KPI. Flag hanya berfungsi sebagai penanda visual untuk tindak lanjut — tidak otomatis mengurangi poin atau memblokir dealer.
+
 ---
 
 ## 7. Modul KPI & Leaderboard
@@ -405,7 +425,7 @@ Dealer **hanya bisa melihat tugas yang di-assign ke dirinya sendiri**. Tugas mil
 
 ### Cara Buat Tugas
 
-*Berlaku untuk: Owner, Chief Dealing, SPV Dealing, Admin System*
+*Berlaku untuk: Owner, Chief Dealing, Co-SPV Dealing, SPV Dealing, Admin System*
 
 1. Klik **"+ Tugas Baru"**
 2. Isi form:
@@ -421,19 +441,49 @@ Dealer **hanya bisa melihat tugas yang di-assign ke dirinya sendiri**. Tugas mil
 3. Klik **"Buat Tugas"**
 4. Anggota yang di-assign akan mendapat **notifikasi otomatis**
 
-### Status Tugas
+### Modal Tiket Tugas
 
-| Status | Progress | Keterangan |
-|---|---|---|
-| **New** | 0% | Baru dibuat, belum dimulai |
-| **In Progress** | 50% | Sedang dikerjakan |
-| **Completed** | 100% | Selesai |
+Klik kartu tugas mana saja untuk membuka **modal tiket** yang menampilkan detail lengkap tugas dalam satu panel:
 
-Klik ikon status di kartu tugas untuk mengubah status.
+#### Stepper Status (di bagian atas modal)
 
-### Komentar Tugas
+Status tugas ditampilkan secara visual sebagai alur langkah berurutan:
 
-Semua role bisa membaca dan menulis komentar — namun Dealer hanya pada tugas yang di-assign ke dirinya.
+```
+[ Baru ] ──► [ Berjalan ] ──► [ Selesai ]
+```
+
+Klik langsung pada label status di stepper untuk memindahkan tugas ke status tersebut.
+
+| Status | Keterangan |
+|---|---|
+| **Baru** | Baru dibuat, belum dikerjakan |
+| **Berjalan** | Sedang dalam proses pengerjaan |
+| **Selesai** | Tugas telah diselesaikan |
+
+#### Progress Slider
+
+Di bawah stepper terdapat **slider progress (0–100%)** yang menunjukkan persentase penyelesaian lebih detail.
+
+- **Manager role** (Owner/Chief/Co-SPV/SPV/Admin) dapat menggeser slider ke angka berapa saja
+- **Dealer** dapat mengupdate progress hanya pada tugas yang di-assign ke dirinya
+- Progress berubah otomatis ke 0% saat status "Baru", 100% saat "Selesai"
+
+#### Mode Edit (Khusus Manager)
+
+Manager dapat mengedit detail tugas langsung dari dalam modal tanpa menutupnya:
+
+1. Klik ikon **✏️ Edit** di pojok kanan atas modal
+2. Field yang bisa diedit: Judul, Deskripsi, Prioritas, Assign Ke, Tenggat, Progress
+3. Klik **"Simpan"** untuk menyimpan, atau **"Batal"** untuk membatalkan
+
+#### Thread Komentar
+
+Bagian bawah modal menampilkan **thread komentar** gaya chat:
+- Komentar milik Anda muncul di **kanan** (gelembung biru)
+- Komentar orang lain di **kiri** (gelembung abu)
+- Ketik komentar di kotak input bawah → tekan Enter atau klik kirim (→)
+- Setiap komentar menampilkan nama, waktu, dan isi pesan
 
 ---
 
@@ -488,6 +538,25 @@ Sistem memberlakukan alur status yang ketat — tidak semua perubahan status dii
 | **Closed** | Ditutup permanen | — (tidak bisa berubah) |
 
 **Status Escalated** digunakan saat keluhan memerlukan perhatian dari Chief Dealing, Owner, atau Direksi. Perubahan ke status "Escalated" secara otomatis mengirimkan push notification ke Chief Dealing, Owner, dan Direksi.
+
+### Modal Tiket Keluhan
+
+Klik kartu keluhan mana saja untuk membuka **modal tiket keluhan** yang menampilkan detail lengkap dan riwayat penanganan:
+
+#### Tab Ringkasan
+- Judul, tipe, urgensi, status saat ini, SLA timer
+- Cabang/PT sumber keluhan
+- Kronologi lengkap
+- Tombol ubah status dan opsi assign
+
+#### Tab Timeline / Riwayat
+- Riwayat semua perubahan status secara kronologis
+- Setiap entri menampilkan: aksi, pelaku, waktu
+
+#### Thread Komentar Internal
+- Bagian bawah modal berisi komentar internal antar tim
+- Format chat: komentar Anda di kanan, orang lain di kiri
+- Ketik di kotak input → tekan Enter atau klik kirim
 
 ### Notifikasi Otomatis
 - Keluhan baru → push notif ke **SPV, Chief Dealing, Owner**
@@ -623,6 +692,15 @@ Dokumentasi serah terima shift agar informasi penting tidak hilang saat perganti
 | Verifikasi Status Sistem | Pilih: Normal / Ada masalah kecil / Terganggu / Gangguan kritis |
 | Semua Aktivitas Telah Dilog | Semua aktivitas shift sudah diinput |
 
+#### Indikator Carry-Over Komplain
+
+Saat mengisi item checklist "Review Komplain Tertunda", sistem otomatis menampilkan **daftar komplain yang masih terbuka** beserta label carry-over:
+
+- **🔁 Carry-over** — komplain sudah ada sejak handover shift sebelumnya dan belum resolved
+- Badge warna urgensi (🔴 Tinggi / 🟡 Sedang / ⚪ Rendah) ditampilkan di setiap item
+
+Ini memastikan shift berikutnya mengetahui persis komplain mana yang warisan dari shift lama.
+
 4. Isi **Catatan Khusus** (opsional)
 5. Klik **"Submit Handover"**
 
@@ -634,6 +712,22 @@ Laporan menampilkan:
 - Daftar **tugas yang sedang berjalan** (diambil otomatis dari sistem)
 - Daftar **komplain terbuka** (diambil otomatis dari sistem)
 - Catatan khusus
+
+### Fitur Edit Catatan Handover
+
+Catatan khusus pada laporan handover yang sudah di-submit **dapat diedit** setelahnya, tanpa perlu membuat laporan baru.
+
+**Siapa yang bisa mengedit:**
+- Pembuat laporan handover (creator) — bisa edit catatan miliknya sendiri
+- Manager role (Owner, Chief, Co-SPV, SPV, Admin) — bisa edit catatan siapapun
+
+**Cara mengedit:**
+1. Temukan kartu laporan handover yang ingin diubah catatannya
+2. Klik ikon **✏️ pensil** di pojok kanan kartu
+3. Modal edit terbuka — ubah isi catatan
+4. Klik **"Simpan"** untuk menyimpan perubahan
+
+> Fitur ini berguna jika ada informasi tambahan yang perlu ditambahkan setelah handover di-submit, atau untuk memperbaiki typo.
 
 ### Fitur Salin & Bagikan Laporan
 
@@ -1037,7 +1131,7 @@ Total: **32 akun aktif**
 
 ### Korporat & Divisi (Tab: Semua PT)
 
-Semua akun berikut muncul di tab **"Semua PT"**, termasuk semua Admin System karena dikategorikan sebagai korporat.
+Semua akun berikut muncul di tab **"Semua PT"**, termasuk semua Admin System dan Co-SPV Dealing karena dikategorikan sebagai korporat (tidak terikat satu PT).
 
 | Email | Nama | Role |
 |---|---|---|
@@ -1046,6 +1140,8 @@ Semua akun berikut muncul di tab **"Semua PT"**, termasuk semua Admin System kar
 | dir.utama@occ.id | Direktur Utama | Direksi |
 | dir.kepatuhan@occ.id | Direktur Kepatuhan | Direksi |
 | kiki@occ.id | Kiki | Chief Dealing |
+| amelia@occ.id | Amelia | Co-SPV Dealing |
+| rusnawati@occ.id | Rusnawati | Co-SPV Dealing |
 | admin.sgb@occ.id | Admin SGB | Admin System |
 | admin.rfb@occ.id | Fitri Handayani | Admin System |
 | admin.kpf@occ.id | Toni Saputra | Admin System |
@@ -1101,6 +1197,7 @@ Semua akun berikut muncul di tab **"Semua PT"**, termasuk semua Admin System kar
 
 ---
 
-*Dokumen ini dibuat dari source code OCC versi 1.5 — Maret 2026.*  
-*Fitur yang dicakup: Log Aktivitas, KPI, Tugas, Keluhan, Pengumuman, Pesan, Chat, Handover, Quality Control, Notifikasi (Grouped + DND), TV Wallboard, Command Palette, Swipe Mobile, KPI Trend Sparkline.*  
+*Dokumen ini dibuat dari source code OCC versi 1.6 — April 2026.*  
+*Fitur yang dicakup: Log Aktivitas (+ Flag Mencurigakan), KPI, Tugas (Modal Tiket + Stepper + Progress Slider + Komentar), Keluhan (Modal Tiket + Timeline + Komentar), Pengumuman, Pesan, Chat, Handover (+ Edit Catatan + Carry-Over Komplain), Quality Control, Notifikasi (Grouped + DND), TV Wallboard, Command Palette, Swipe Mobile, KPI Trend Sparkline.*  
+*Update v1.6: Penambahan role Co-SPV Dealing, dokumentasi modal tiket Tugas & Keluhan, fitur Edit Catatan Handover, indikator Carry-Over Komplain, flag log mencurigakan.*  
 *Untuk pertanyaan teknis, hubungi tim pengembang.*

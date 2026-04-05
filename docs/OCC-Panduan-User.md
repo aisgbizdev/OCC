@@ -1,6 +1,6 @@
 # OCC — Panduan Singkat Penggunaan
 **Untuk:** Tim Dealing — Solid Group  
-**Versi:** 1.1 | Maret 2026
+**Versi:** 1.2 | April 2026
 
 ---
 
@@ -8,7 +8,7 @@
 
 1. Buka aplikasi OCC di browser atau HP
 2. Pilih **tab PT Anda** (SGB / RFB / KPF / BPF / EWF)  
-   → Khusus Admin & Chief: pilih tab **"Semua PT"**
+   → Khusus Admin, Chief, dan **Co-SPV Dealing**: pilih tab **"Semua PT"**
 3. Pilih **nama Anda** dari dropdown
 4. Masukkan **password** → klik **Masuk**
 
@@ -39,10 +39,12 @@
 ### 3. Tugas yang Di-Assign ke Saya
 - Buka menu **Tugas**
 - Lihat daftar tugas milik Anda
-- Klik tugas → ubah status: **New → In Progress → Completed**
-- Bisa tambah komentar di detail tugas
+- **Klik kartu tugas** → buka **modal tiket** berisi:
+  - **Stepper status** — klik langsung: Baru → Berjalan → Selesai
+  - **Progress slider** — geser untuk update persentase penyelesaian
+  - **Thread komentar** — ketik dan kirim komentar ke atasan/tim
 
-> Mobile: **geser kartu ke kanan** = tandai selesai | **geser ke kiri** = buka detail
+> Mobile: **geser kartu ke kanan** = tandai selesai | **geser ke kiri** = buka modal tiket
 
 ---
 
@@ -90,6 +92,15 @@
 ### 4. Handover Shift
 Sama seperti Dealer — SPV **wajib** mengisi handover di akhir setiap shift.
 
+**Indikator Carry-Over Komplain:**  
+Saat mengisi checklist "Review Komplain Tertunda", sistem menampilkan daftar komplain terbuka. Komplain yang sudah ada sejak shift sebelumnya diberi label **🔁 Carry-over** — pastikan semua carry-over ditangani atau diserahkan dengan catatan jelas.
+
+**Edit catatan setelah submit:**  
+Jika perlu menambah/koreksi catatan handover yang sudah di-submit:
+1. Temukan kartu handover di daftar
+2. Klik ikon **✏️ pensil**
+3. Edit catatan → **Simpan**
+
 ### 5. Catat Kesalahan Tim (Quality)
 1. Buka menu **Quality Control**
 2. Klik **"+ Catat Kesalahan"**
@@ -97,6 +108,21 @@ Sama seperti Dealer — SPV **wajib** mengisi handover di akhir setiap shift.
 4. Klik **"Simpan"**
 
 ---
+
+---
+
+## 🟤 CO-SPV DEALING — Monitoring Lintas PT
+
+Co-SPV Dealing adalah pendamping Chief Dealing di level HQ. Tidak terikat satu PT — bisa melihat dan mengelola semua PT.
+
+**Hak akses setara SPV Dealing:**
+- Monitor dashboard operasional semua PT
+- Assign tugas, kelola keluhan, buat pengumuman
+- Isi dan edit catatan handover
+- Catat quality error
+- **Tidak bisa** kelola master data atau pengaturan sistem
+
+**Cara login:** Pilih tab **"Semua PT"** → cari nama Anda → masukkan password
 
 ---
 
@@ -181,5 +207,6 @@ Chief / Owner / Superadmin dapat memfilter data berdasarkan **Cabang** di:
 
 ---
 
-*OCC — Solid Group | v1.1 — Maret 2026*  
-*Update v1.1: Form Keluhan + PT/Cabang, Filter Cabang di semua modul (Chief/Owner/Superadmin)*
+*OCC — Solid Group | v1.2 — April 2026*  
+*Update v1.1: Form Keluhan + PT/Cabang, Filter Cabang di semua modul (Chief/Owner/Superadmin)*  
+*Update v1.2: Role Co-SPV Dealing, Modal Tiket Tugas (stepper + slider + komentar), Edit Catatan Handover, Carry-Over Komplain di checklist handover*
