@@ -203,14 +203,14 @@ export default function ActivityLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Log Aktivitas</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Log Aktivitas</h1>
           <p className="text-muted-foreground mt-1">Lacak operasional harian dan KPI.</p>
         </div>
         {canCreateLog && (
-          <Button onClick={() => { setPresetActivityTypeId(undefined); setModalOpen(true); }} className="hidden md:flex gap-2">
-            <Plus className="w-4 h-4" /> Log Aktivitas
+          <Button onClick={() => { setPresetActivityTypeId(undefined); setModalOpen(true); }} className="gap-2 shrink-0">
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Log Aktivitas</span><span className="sm:hidden">Log</span>
           </Button>
         )}
       </div>
@@ -276,9 +276,9 @@ export default function ActivityLogs() {
               className="bg-background"
             />
           </div>
-          <div className="flex gap-2">
-            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-background w-40" placeholder="Dari" />
-            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-background w-40" placeholder="Sampai" />
+          <div className="flex flex-wrap gap-2">
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-background flex-1 min-w-[130px]" placeholder="Dari" />
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-background flex-1 min-w-[130px]" placeholder="Sampai" />
             {hasFilters && (
               <Button variant="outline" size="icon" onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setFilterPtId(""); setFilterBranchId(""); }}>
                 <Filter className="w-4 h-4" />

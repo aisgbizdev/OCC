@@ -64,14 +64,14 @@ export default function KPI() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight flex items-center gap-2 md:gap-3">
             <Trophy className="w-8 h-8 text-amber-400" /> Leaderboard
           </h1>
           <p className="text-muted-foreground mt-1">Peringkat global seluruh tim operasional.</p>
         </div>
-        <div className="flex bg-muted p-1 rounded-xl">
+        <div className="flex bg-muted p-1 rounded-xl shrink-0">
           {(["daily", "weekly", "monthly", "yearly"] as Period[]).map(p => (
-            <button key={p} onClick={() => setPeriod(p)} className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${period === p ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            <button key={p} onClick={() => setPeriod(p)} className={`px-2 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium capitalize transition-all ${period === p ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
               {p === "daily" ? "Harian" : p === "weekly" ? "Mingguan" : p === "monthly" ? "Bulanan" : "Tahunan"}
             </button>
           ))}
@@ -120,7 +120,7 @@ export default function KPI() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card border rounded-2xl p-6 shadow-sm h-[400px]">
+        <div className="lg:col-span-2 bg-card border rounded-2xl p-4 md:p-6 shadow-sm h-[240px] md:h-[400px]">
           <h3 className="font-bold mb-6">Top 10 Performer</h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>

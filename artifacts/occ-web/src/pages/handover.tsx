@@ -124,13 +124,13 @@ NOTES: ${log.notes ?? "-"}`;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shift Handover</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Shift Handover</h1>
           <p className="text-muted-foreground mt-1">Laporan transisi shift terstruktur.</p>
         </div>
         {canCreateHandover && (
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> Handover Baru
           </Button>
         )}
@@ -177,17 +177,17 @@ NOTES: ${log.notes ?? "-"}`;
         {filteredLogs.map((log: HandoverLogWithRelations) => {
           const logWithBranch = log as HandoverLogWithRelations & { ptName?: string | null; branchName?: string | null };
           return (
-            <div key={log.id} className="bg-card border rounded-2xl p-6 shadow-sm">
-              <div className="flex justify-between items-start mb-6 border-b pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+            <div key={log.id} className="bg-card border rounded-2xl p-4 md:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 md:mb-6 border-b pb-4 gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
                     <Repeat className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Handover dari {log.creatorName ?? "-"}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-base md:text-lg">Handover dari {log.creatorName ?? "-"}</h3>
                     <p className="text-sm text-muted-foreground">{log.fromShiftName ?? "-"} → {log.toShiftName ?? "-"}</p>
                     {(logWithBranch.ptName || logWithBranch.branchName) && (
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         {logWithBranch.ptName && (
                           <span className="flex items-center gap-1 text-xs text-primary font-medium">
                             <Building2 className="w-3 h-3" />{logWithBranch.ptName}
@@ -202,7 +202,7 @@ NOTES: ${log.notes ?? "-"}`;
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:shrink-0">
                   {(isManager || (log as HandoverLogWithRelations & { createdBy?: number }).createdBy === user?.id) && (
                     <Button variant="ghost" size="icon" onClick={() => handleEditNotes(log)} title="Edit catatan">
                       <Pencil className="w-4 h-4" />
@@ -214,8 +214,8 @@ NOTES: ${log.notes ?? "-"}`;
                   <Button variant="ghost" size="icon" onClick={() => handleCopy(log)} title="Salin ke clipboard">
                     <Copy className="w-4 h-4" />
                   </Button>
-                  <div className="text-right">
-                    <p className="font-mono text-sm font-medium">{log.createdAt ? format(new Date(log.createdAt), "MMM d, yyyy") : "-"}</p>
+                  <div className="text-right ml-1">
+                    <p className="font-mono text-xs md:text-sm font-medium">{log.createdAt ? format(new Date(log.createdAt), "MMM d, yyyy") : "-"}</p>
                     <p className="text-xs text-muted-foreground">{log.createdAt ? format(new Date(log.createdAt), "HH:mm") : ""}</p>
                   </div>
                 </div>

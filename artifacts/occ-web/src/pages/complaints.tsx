@@ -62,13 +62,13 @@ export default function Complaints() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Komplain & SLA</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Komplain & SLA</h1>
           <p className="text-muted-foreground mt-1">Catat dan monitor keluhan masuk dari cabang maupun internal.</p>
         </div>
         {canCreateComplaint && (
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> Komplain Baru
           </Button>
         )}

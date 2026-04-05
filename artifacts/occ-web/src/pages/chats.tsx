@@ -90,13 +90,13 @@ function ChatList({ onSelect }: { onSelect: (id: number) => void }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Chat Rooms</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Chat Rooms</h1>
           <p className="text-muted-foreground mt-1">Komunikasi internal tim operasional.</p>
         </div>
         {canCreateChat && (
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> Chat Baru
           </Button>
         )}

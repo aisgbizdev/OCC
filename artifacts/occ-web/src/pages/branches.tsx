@@ -126,14 +126,14 @@ export default function Branches() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-primary" /> Branch Overview
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight flex items-center gap-2 md:gap-3">
+            <Building2 className="w-6 h-6 md:w-8 md:h-8 text-primary" /> Branch Overview
           </h1>
           <p className="text-muted-foreground mt-1">Ringkasan performa dan status seluruh cabang.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {canManageBranch && (
             <Button size="sm" onClick={() => setShowAddForm(true)} className="gap-2">
               <Plus className="w-4 h-4" /> Tambah Cabang

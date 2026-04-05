@@ -18,13 +18,13 @@ export default function Announcements() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pengumuman</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Pengumuman</h1>
           <p className="text-muted-foreground mt-1">Komunikasi resmi dan pemberitahuan.</p>
         </div>
         {canCreateAnnouncement && (
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> Buat Pengumuman
           </Button>
         )}
@@ -32,16 +32,16 @@ export default function Announcements() {
 
       <div className="space-y-4">
         {announcements?.map(ann => (
-          <div key={ann.id} className="bg-card border rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+          <div key={ann.id} className="bg-card border rounded-2xl p-4 md:p-6 shadow-sm relative overflow-hidden group">
             {ann.priority === 'high' && <div className="absolute top-0 left-0 w-1 h-full bg-destructive" />}
             <div className="flex items-start gap-4">
               <div className={`p-3 rounded-full ${ann.priority === 'high' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
                 <Megaphone className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-lg">{ann.title}</h3>
-                  <span className="text-xs text-muted-foreground font-mono">{ann.createdAt ? format(new Date(ann.createdAt), "MMM d, HH:mm") : ""}</span>
+                <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
+                  <h3 className="font-bold text-base md:text-lg">{ann.title}</h3>
+                  <span className="text-xs text-muted-foreground font-mono shrink-0">{ann.createdAt ? format(new Date(ann.createdAt), "MMM d, HH:mm") : ""}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed whitespace-pre-wrap">{ann.content}</p>
                 <div className="mt-4 flex items-center gap-3 text-xs font-medium">

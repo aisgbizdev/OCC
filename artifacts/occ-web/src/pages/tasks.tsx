@@ -97,13 +97,13 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manajemen Tugas</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Manajemen Tugas</h1>
           <p className="text-muted-foreground mt-1">Lacak dan perbarui operasi yang ditugaskan.</p>
         </div>
         {canCreateTask && (
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> Tugas Baru
           </Button>
         )}

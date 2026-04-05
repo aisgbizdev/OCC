@@ -110,7 +110,7 @@ export default function SystemPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Sistem & Audit</h1>
+        <h1 className="text-xl md:text-3xl font-bold tracking-tight">Sistem & Audit</h1>
         <p className="text-muted-foreground mt-1">Monitoring platform, konfigurasi, dan riwayat aktivitas sistem.</p>
       </div>
 

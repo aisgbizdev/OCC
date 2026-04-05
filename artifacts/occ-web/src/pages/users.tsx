@@ -300,13 +300,13 @@ export default function MasterData() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Master Data</h1>
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight">Master Data</h1>
           <p className="text-muted-foreground mt-1">Kelola pengguna, PT, dan role sistem OCC.</p>
         </div>
         {canAddUser && !showForm && (
-          <Button onClick={() => { setShowForm(true); setForm({ ...EMPTY_FORM, roleId: defaultRoleId }); }} className="gap-2">
+          <Button onClick={() => { setShowForm(true); setForm({ ...EMPTY_FORM, roleId: defaultRoleId }); }} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> Tambah User
           </Button>
         )}
