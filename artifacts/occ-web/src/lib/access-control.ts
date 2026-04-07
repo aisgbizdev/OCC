@@ -83,6 +83,15 @@ const MGMT_ROLES: readonly RoleName[] = [
   "Admin System",
 ];
 
+const COMPLAINT_CREATE_ROLES: readonly RoleName[] = [
+  "Owner",
+  "Chief Dealing",
+  "SPV Dealing",
+  "Co-SPV Dealing",
+  "Dealer",
+  "Admin System",
+];
+
 const ADMIN_ROLES: readonly RoleName[] = ["Owner", "Admin System"];
 
 const SPV_AND_ABOVE: readonly RoleName[] = [
@@ -123,11 +132,15 @@ const ACCESS_MATRIX: AccessMatrix = {
     comment: ALL_ROLES,
     updateStatus: ALL_ROLES,
   },
-  complaint: { view: ALL_ROLES, create: MGMT_ROLES, edit: MGMT_ROLES, delete: MGMT_ROLES },
+  complaint: { view: ALL_ROLES, create: COMPLAINT_CREATE_ROLES, edit: MGMT_ROLES, delete: COMPLAINT_CREATE_ROLES },
   announcement: { view: ALL_ROLES, create: MGMT_ROLES, edit: MGMT_ROLES, delete: MGMT_ROLES },
   message: { view: ALL_ROLES, send: MGMT_ROLES },
   chat: { view: ALL_ROLES, send: ALL_ROLES, create: ALL_ROLES },
-  handover: { view: ALL_ROLES, create: ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"] },
+  handover: {
+    view: ALL_ROLES,
+    create: ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"],
+    delete: ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"],
+  },
   notification: { view: ALL_ROLES },
   user: {
     view: USER_VIEW_ROLES,
@@ -166,13 +179,6 @@ const PAGE_MATRIX: Record<PageKey, readonly RoleName[]> = {
 };
 
 const ACTIVITY_EDIT_WINDOW_BYPASS: readonly RoleName[] = ["Owner", "Admin System"];
-const ACTIVITY_DELETE_GLOBAL_ANYTIME: readonly RoleName[] = ["Owner"];
-const ACTIVITY_DELETE_PT_ANYTIME: readonly RoleName[] = [
-  "SPV Dealing",
-  "Co-SPV Dealing",
-  "Chief Dealing",
-];
-
 function getRoleName(user: AccessUser): RoleName | null {
   if (!user?.roleName) return null;
   return user.roleName as RoleName;
@@ -272,19 +278,8 @@ export function canDeleteActivityLog(
   log: Pick<ActivityLogWithRelations, "userId" | "ptId" | "createdAt">,
   editWindowMinutes: number,
 ): boolean {
+  void log;
+  void editWindowMinutes;
   if (!canDelete("activityLog", user)) return false;
-  const role = getRoleName(user);
-  if (!role) return false;
-
-  if (ACTIVITY_DELETE_GLOBAL_ANYTIME.includes(role)) return true;
-  if (ACTIVITY_DELETE_PT_ANYTIME.includes(role)) {
-    if (user?.ptId === null || user?.ptId === undefined) return false;
-    return log.ptId === user.ptId;
-  }
-
-  if (log.userId !== user?.id) return false;
-  const elapsedMinutes = log.createdAt
-    ? (Date.now() - new Date(log.createdAt).getTime()) / 60000
-    : Infinity;
-  return elapsedMinutes <= editWindowMinutes;
+  return true;
 }

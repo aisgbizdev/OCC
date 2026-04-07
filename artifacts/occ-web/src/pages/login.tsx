@@ -54,7 +54,17 @@ export default function Login() {
   useEffect(() => {
     fetch("/api/auth/users")
       .then(r => r.json())
-      .then(data => { setUsers(data); setLoading(false); })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setUsers(data as LoginUser[]);
+        } else if (Array.isArray((data as { users?: unknown }).users)) {
+          setUsers((data as { users: LoginUser[] }).users);
+        } else {
+          console.error("Unexpected /api/auth/users payload:", data);
+          setUsers([]);
+        }
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 

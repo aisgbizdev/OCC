@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
-  useListComplaints, useCreateComplaint,
+  useListComplaints, useCreateComplaint, useDeleteComplaint,
   useListPts, useListBranches,
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { AlertTriangle, Plus, Building2, MapPin, Filter, MessageSquare } from "lucide-react";
+import { AlertTriangle, Plus, Building2, MapPin, Filter, MessageSquare, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SlaTimer } from "@/components/sla-timer";
@@ -14,7 +14,7 @@ import { ComplaintDetailModal } from "@/components/complaint-detail-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { canCreate } from "@/lib/access-control";
+import { canCreate, canDelete } from "@/lib/access-control";
 import { cn } from "@/lib/utils";
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
@@ -30,7 +30,11 @@ const STATUS_COLORS: Record<string, string> = {
 export default function Complaints() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const canCreateComplaint = canCreate("complaint", user);
+  const canDeleteComplaint = canDelete("complaint", user);
+  const deleteComplaint = useDeleteComplaint();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -59,6 +63,43 @@ export default function Complaints() {
   };
 
   const hasFilters = filterPtId || filterBranchId || filterStatus;
+
+  const handleDeleteComplaint = (id: number, title: string) => {
+    if (!canDeleteComplaint) return;
+    const confirmed = window.confirm(`Tutup komplain "${title}"?`);
+    if (!confirmed) return;
+    deleteComplaint.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: "Komplain Ditutup", description: `"${title}" berhasil ditutup` });
+          qc.invalidateQueries({ queryKey: ["/api/complaints"] });
+          if (detailId === id) setDetailId(null);
+        },
+        onError: () => toast({ title: "Error", description: "Gagal menutup komplain", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handlePermanentDeleteComplaint = async (id: number, title: string) => {
+    if (!canDeleteComplaint) return;
+    const confirmed = window.confirm(`Hapus permanen komplain "${title}"? Tindakan ini tidak bisa dibatalkan.`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/complaints/${id}/permanent`, { method: "DELETE" });
+      const body = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        toast({ title: "Gagal hapus permanen", description: body.error ?? "Terjadi kesalahan", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Komplain Dihapus Permanen", description: `"${title}" dihapus dari database` });
+      qc.invalidateQueries({ queryKey: ["/api/complaints"] });
+      if (detailId === id) setDetailId(null);
+    } catch {
+      toast({ title: "Gagal hapus permanen", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -208,6 +249,36 @@ export default function Complaints() {
             </div>
             <div className="shrink-0 flex items-center justify-between sm:flex-col sm:items-end gap-2 border-t sm:border-t-0 pt-4 sm:pt-0">
               <SlaTimer createdAt={comp.createdAt ? String(comp.createdAt) : undefined} status={comp.status} />
+              {canDeleteComplaint && (
+                <div className="flex gap-1.5">
+                  {comp.status !== "closed" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-amber-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteComplaint(comp.id, comp.title);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1.5" /> Tutup
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePermanentDeleteComplaint(comp.id, comp.title);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1.5" /> Hapus Permanen
+                  </Button>
+                </div>
+              )}
             </div>
           </button>
         ))}

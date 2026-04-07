@@ -406,7 +406,7 @@ export default function ActivityLogs() {
                           {showDelete && (
                             <button
                               onClick={() => setDeleteLog(log)}
-                              title="Hapus log"
+                              title="Hapus permanen log"
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -471,7 +471,7 @@ export default function ActivityLogs() {
       <ResponsiveModal
         open={!!deleteLog}
         onOpenChange={(open) => { if (!open) setDeleteLog(null); }}
-        title="Hapus Log Aktivitas"
+        title="Hapus Permanen Log Aktivitas"
         description="Tindakan ini tidak dapat dibatalkan."
       >
         <div className="space-y-4">

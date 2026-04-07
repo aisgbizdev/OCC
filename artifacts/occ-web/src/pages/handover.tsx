@@ -13,13 +13,13 @@ import {
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw } from "lucide-react";
+import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { canCreate } from "@/lib/access-control";
+import { canCreate, canDelete } from "@/lib/access-control";
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
@@ -27,6 +27,7 @@ export default function Handover() {
   const { user } = useAuth();
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const canCreateHandover = canCreate("handover", user);
+  const canDeleteHandover = canDelete("handover", user);
 
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
@@ -84,6 +85,25 @@ export default function Handover() {
   const handlePtChange = (ptId: string) => {
     setFilterPtId(ptId);
     setFilterBranchId("");
+  };
+
+  const handleDeleteLog = async (log: HandoverLogWithRelations) => {
+    if (!canDeleteHandover) return;
+    const confirmed = window.confirm(`Hapus log handover "${log.fromShiftName ?? "-"} -> ${log.toShiftName ?? "-"}" secara permanen?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/handover-logs/${log.id}`, { method: "DELETE" });
+      const body = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        toast({ title: "Gagal menghapus handover", description: body.error ?? "Terjadi kesalahan", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Handover Dihapus", description: "Log handover berhasil dihapus permanen" });
+      qcMain.invalidateQueries({ queryKey: ["/api/handover-logs"] });
+    } catch {
+      toast({ title: "Gagal menghapus handover", variant: "destructive" });
+    }
   };
 
   const buildHandoverText = (log: HandoverLogWithRelations) =>
@@ -208,6 +228,11 @@ NOTES: ${log.notes ?? "-"}`;
                       <Pencil className="w-4 h-4" />
                     </Button>
                   )}
+                  {canDeleteHandover && ((log as HandoverLogWithRelations & { createdBy?: number }).createdBy === user?.id || isManager) && (
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteLog(log)} title="Hapus handover">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" onClick={() => handleShare(log)} title="Bagikan laporan">
                     <Share2 className="w-4 h-4" />
                   </Button>
@@ -247,7 +272,7 @@ NOTES: ${log.notes ?? "-"}`;
         )}
       </div>
 
-      <ResponsiveModal open={createOpen && canCreateHandover} onOpenChange={setCreateOpen} title="Checklist Handover Shift" description="Lengkapi semua poin sebelum submit.">
+      <ResponsiveModal open={createOpen && canCreateHandover} onOpenChange={setCreateOpen} title="Checklist Handover Shift" description="Centang minimal 1 poin sebelum submit.">
         <HandoverChecklistForm onSuccess={() => setCreateOpen(false)} lastLog={filteredLogs[0] as HandoverLogWithRelations | undefined} />
       </ResponsiveModal>
 
@@ -309,7 +334,7 @@ function HandoverChecklistForm({ onSuccess, lastLog }: { onSuccess: () => void; 
   const [notes, setNotes] = useState("");
 
   const openComplaintNames = complaints?.map(c => `• ${c.title} [${c.severity}] (${c.status})`).join("\n") || "None";
-  const allChecked = checks.reviewedComplaints && checks.reviewedTasks && checks.systemStatus && checks.activitiesLogged;
+  const hasAtLeastOneChecked = checks.reviewedComplaints || checks.reviewedTasks || checks.systemStatus || checks.activitiesLogged;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,8 +342,8 @@ function HandoverChecklistForm({ onSuccess, lastLog }: { onSuccess: () => void; 
       toast({ title: "Anda tidak memiliki akses", variant: "destructive" });
       return;
     }
-    if (!allChecked) {
-      toast({ title: "Belum Lengkap", description: "Lengkapi semua poin checklist", variant: "destructive" });
+    if (!hasAtLeastOneChecked) {
+      toast({ title: "Belum Lengkap", description: "Centang minimal 1 poin checklist", variant: "destructive" });
       return;
     }
     createHandover.mutate({ data: {
@@ -402,8 +427,8 @@ function HandoverChecklistForm({ onSuccess, lastLog }: { onSuccess: () => void; 
       </div>
 
       <div className="flex justify-between items-center pt-4 border-t">
-        <span className="text-xs text-muted-foreground">{allChecked ? "✅ Semua item selesai" : "⚠️ Lengkapi semua item"}</span>
-        <Button type="submit" disabled={createHandover.isPending || !allChecked || !canCreateHandover} className="px-8">
+        <span className="text-xs text-muted-foreground">{hasAtLeastOneChecked ? "✅ Minimal checklist terpenuhi" : "⚠️ Centang minimal 1 item"}</span>
+        <Button type="submit" disabled={createHandover.isPending || !hasAtLeastOneChecked || !canCreateHandover} className="px-8">
           {createHandover.isPending ? "Mengirim..." : "Submit Handover"}
         </Button>
       </div>

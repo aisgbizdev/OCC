@@ -223,4 +223,19 @@ router.delete("/tasks/:id", authMiddleware, requireRole(...MGMT_ROLES), async (r
   }
 });
 
+router.delete("/tasks/:id/permanent", authMiddleware, requireRole(...MGMT_ROLES), async (req, res) => {
+  try {
+    const taskId = Number(req.params.id);
+    const [existing] = await db.select({ id: tasksTable.id }).from(tasksTable).where(eq(tasksTable.id, taskId)).limit(1);
+    if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
+
+    await db.delete(tasksTable).where(eq(tasksTable.id, taskId));
+    await createAuditLog({ userId: req.user!.userId, actionType: "delete_permanent", module: "task", entityId: String(taskId) });
+    res.json({ message: "Task permanently deleted" });
+  } catch (error) {
+    console.error("Permanent delete task error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
