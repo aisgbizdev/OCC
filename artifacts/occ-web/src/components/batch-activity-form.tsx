@@ -72,9 +72,17 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
     fetchRoleTypes();
   }, [allTypes]);
 
-  const displayTypes = isChiefOrAbove
+  const rawDisplayTypes = isChiefOrAbove
     ? ((allTypes ?? []) as ActivityTypeItem[]).filter(t => t.activeStatus)
     : roleTypes.filter(t => t.activeStatus);
+
+  const displayTypes = [...rawDisplayTypes].sort((a, b) => {
+    const aIsOther = a.name.trim().toLowerCase() === "aktivitas lainnya";
+    const bIsOther = b.name.trim().toLowerCase() === "aktivitas lainnya";
+    if (aIsOther && !bIsOther) return 1;
+    if (!aIsOther && bIsOther) return -1;
+    return a.name.localeCompare(b.name);
+  });
 
   const [rows, setRows] = useState<RowItem[]>([{
     activityTypeId: presetActivityTypeId ? String(presetActivityTypeId) : "",
