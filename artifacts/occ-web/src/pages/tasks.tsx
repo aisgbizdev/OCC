@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useListTasks, useUpdateTask, useCreateTask, useListUsers, useListPts, useListBranches, type TaskWithRelations, type UserWithRelations, type Branch } from "@workspace/api-client-react";
+import { useListTasks, useUpdateTask, useCreateTask, useDeleteTask, useListUsers, useListPts, useListBranches, type TaskWithRelations, type UserWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
 
-import { CheckCircle2, Circle, Clock, Plus, ChevronRight, Check, Building2, MapPin, Filter } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Plus, ChevronRight, Check, Building2, MapPin, Filter, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
-import { canCreate, canUpdateTask } from "@/lib/access-control";
+import { canCreate, canDelete, canUpdateTask } from "@/lib/access-control";
 import { TaskDetailModal } from "@/components/task-detail-modal";
 
 type TaskEnriched = TaskWithRelations & {
@@ -25,6 +25,7 @@ export default function Tasks() {
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
   const canCreateTask = canCreate("task", user);
+  const canDeleteTask = canDelete("task", user);
 
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
@@ -59,6 +60,7 @@ export default function Tasks() {
   });
 
   const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -92,6 +94,43 @@ export default function Tasks() {
       onError: () => toast({ title: "Error", description: "Gagal memperbarui tugas", variant: "destructive" })
     });
   }, [updateTask, toast, qc]);
+
+  const handleDeleteTask = (task: TaskEnriched) => {
+    if (!canDeleteTask) return;
+    const confirmed = window.confirm(`Batalkan tugas "${task.title}"?`);
+    if (!confirmed) return;
+    deleteTask.mutate(
+      { id: task.id },
+      {
+        onSuccess: () => {
+          toast({ title: "Tugas Dibatalkan", description: `"${task.title}" berhasil dibatalkan` });
+          qc.invalidateQueries({ queryKey: ["/api/tasks"] });
+          if (detailTask?.id === task.id) setDetailTask(null);
+        },
+        onError: () => toast({ title: "Error", description: "Gagal membatalkan tugas", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handlePermanentDeleteTask = async (task: TaskEnriched) => {
+    if (!canDeleteTask) return;
+    const confirmed = window.confirm(`Hapus permanen tugas "${task.title}"? Tindakan ini tidak bisa dibatalkan.`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/permanent`, { method: "DELETE" });
+      const body = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        toast({ title: "Gagal hapus permanen", description: body.error ?? "Terjadi kesalahan", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Tugas Dihapus Permanen", description: `"${task.title}" dihapus dari database` });
+      qc.invalidateQueries({ queryKey: ["/api/tasks"] });
+      if (detailTask?.id === task.id) setDetailTask(null);
+    } catch {
+      toast({ title: "Gagal hapus permanen", variant: "destructive" });
+    }
+  };
 
   const hasFilters = filterPtId || filterBranchId || filterStatus || filterAssignedTo;
 
@@ -188,6 +227,9 @@ export default function Tasks() {
             onStatusToggle={handleStatusToggle}
             onComplete={handleComplete}
             onDetail={setDetailTask}
+            onDelete={handleDeleteTask}
+            onPermanentDelete={handlePermanentDeleteTask}
+            canDeleteTask={canDeleteTask}
           />
         ))}
         {!filteredTasks?.length && (
@@ -226,9 +268,12 @@ interface SwipeableTaskCardProps {
   onStatusToggle: (id: number, currentStatus: string) => void;
   onComplete: (task: TaskEnriched) => void;
   onDetail: (task: TaskEnriched) => void;
+  onDelete: (task: TaskEnriched) => void;
+  onPermanentDelete: (task: TaskEnriched) => void;
+  canDeleteTask: boolean;
 }
 
-function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: SwipeableTaskCardProps) {
+function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail, onDelete, onPermanentDelete, canDeleteTask }: SwipeableTaskCardProps) {
   const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number | null>(null);
@@ -339,16 +384,38 @@ function SwipeableTaskCard({ task, onStatusToggle, onComplete, onDetail }: Swipe
           }`}>
             {task.priority.toUpperCase()}
           </div>
-          <button
-            onClick={() => canUpdateThisTask && onStatusToggle(task.id, task.status)}
-            disabled={!canUpdateThisTask}
-            className="text-muted-foreground enabled:hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            title={canUpdateThisTask ? "Ubah status tugas" : "Anda tidak memiliki akses"}
-          >
-            {task.status === "completed" ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
-             task.status === "in_progress" ? <Clock className="w-6 h-6 text-amber-500" /> :
-             <Circle className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center gap-2">
+            {canDeleteTask && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onDelete(task)}
+                  className="text-muted-foreground hover:text-amber-500 transition-colors"
+                  title="Batalkan tugas"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onPermanentDelete(task)}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  title="Hapus permanen"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => canUpdateThisTask && onStatusToggle(task.id, task.status)}
+              disabled={!canUpdateThisTask}
+              className="text-muted-foreground enabled:hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title={canUpdateThisTask ? "Ubah status tugas" : "Anda tidak memiliki akses"}
+            >
+              {task.status === "completed" ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> :
+               task.status === "in_progress" ? <Clock className="w-6 h-6 text-amber-500" /> :
+               <Circle className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
         <button
           className="text-left"

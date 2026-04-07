@@ -12,7 +12,7 @@ import { sendPushToRoles, sendPushToUsers } from "../lib/push";
 const router: IRouter = Router();
 
 const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
-const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
 const UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 const SPV_NOTIFY_ROLES = ["SPV Dealing", "Co-SPV Dealing", "Chief Dealing", "Owner", "Direksi", "Superadmin"];
@@ -394,6 +394,21 @@ router.delete("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), a
     res.json({ message: "Complaint closed" });
   } catch (error) {
     console.error("Delete complaint error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/complaints/:id/permanent", authMiddleware, requireRole(...CREATE_ROLES), async (req, res) => {
+  try {
+    const cid = Number(req.params.id);
+    const [existing] = await db.select({ id: complaintsTable.id }).from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);
+    if (!existing) { res.status(404).json({ error: "Complaint not found" }); return; }
+
+    await db.delete(complaintsTable).where(eq(complaintsTable.id, cid));
+    await createAuditLog({ userId: req.user!.userId, actionType: "delete_permanent", module: "complaint", entityId: String(cid) });
+    res.json({ message: "Complaint permanently deleted" });
+  } catch (error) {
+    console.error("Permanent delete complaint error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

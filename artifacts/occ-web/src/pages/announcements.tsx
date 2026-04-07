@@ -1,20 +1,40 @@
 import { useState } from "react";
-import { useListAnnouncements, useCreateAnnouncement } from "@workspace/api-client-react";
+import { useListAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Megaphone, Plus } from "lucide-react";
+import { Megaphone, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { canCreate } from "@/lib/access-control";
+import { canCreate, canDelete } from "@/lib/access-control";
 
 export default function Announcements() {
   const { data: announcements } = useListAnnouncements();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const canCreateAnnouncement = canCreate("announcement", user);
+  const canDeleteAnnouncement = canDelete("announcement", user);
+  const deleteAnnouncement = useDeleteAnnouncement();
+
+  const handleDeleteAnnouncement = (id: number, title: string) => {
+    if (!canDeleteAnnouncement) return;
+    const confirmed = window.confirm(`Hapus pengumuman "${title}"?`);
+    if (!confirmed) return;
+    deleteAnnouncement.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: "Pengumuman Dihapus", description: `"${title}" berhasil dihapus` });
+          qc.invalidateQueries({ queryKey: ["/api/announcements"] });
+        },
+        onError: () => toast({ title: "Error", description: "Gagal menghapus pengumuman", variant: "destructive" }),
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -39,9 +59,23 @@ export default function Announcements() {
                 <Megaphone className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
-                  <h3 className="font-bold text-base md:text-lg">{ann.title}</h3>
-                  <span className="text-xs text-muted-foreground font-mono shrink-0">{ann.createdAt ? format(new Date(ann.createdAt), "MMM d, HH:mm") : ""}</span>
+                <div className="flex justify-between items-start">
+                  <h3 className="font-bold text-lg">{ann.title}</h3>
+                  <div className="flex items-center gap-1.5">
+                    {canDeleteAnnouncement && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                        title="Hapus pengumuman"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <span className="text-xs text-muted-foreground font-mono">{ann.createdAt ? format(new Date(ann.createdAt), "MMM d, HH:mm") : ""}</span>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed whitespace-pre-wrap">{ann.content}</p>
                 <div className="mt-4 flex items-center gap-3 text-xs font-medium">

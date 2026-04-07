@@ -160,4 +160,26 @@ router.patch("/handover-logs/:id", authMiddleware, requireRole(...ALL_ROLES), as
   }
 });
 
+router.delete("/handover-logs/:id", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [existing] = await db.select().from(handoverLogsTable)
+      .where(eq(handoverLogsTable.id, id)).limit(1);
+    if (!existing) { res.status(404).json({ error: "Handover log not found" }); return; }
+
+    const isCreator = existing.createdBy === req.user!.userId;
+    const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(req.user!.roleName);
+    if (!isCreator && !isManager) {
+      res.status(403).json({ error: "Only creator or manager can delete handover" }); return;
+    }
+
+    await db.delete(handoverLogsTable).where(eq(handoverLogsTable.id, id));
+    await createAuditLog({ userId: req.user!.userId, actionType: "delete", module: "handover", entityId: String(id) });
+    res.json({ message: "Handover deleted" });
+  } catch (error) {
+    console.error("Delete handover log error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
