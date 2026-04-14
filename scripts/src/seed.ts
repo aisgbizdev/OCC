@@ -7,6 +7,7 @@ import {
   branchesTable,
   shiftsTable,
   activityTypesTable,
+  roleActivityTypesTable,
   usersTable,
   systemSettingsTable,
   qualityErrorTypesTable,
@@ -223,6 +224,8 @@ async function seed() {
         { name: "Rekap Kebutuhan Barang Printing",        category: "Operasional", weightPoints: "2"                },
         { name: "Rekap OR / Kebutuhan Operasional Cabang", category: "Operasional", weightPoints: "2"               },
         { name: "Laporan Logbook / Serah Terima",         category: "Operasional", weightPoints: "2", noteRequired: true },
+        { name: "Master Report",                          category: "Operasional", weightPoints: "2"                },
+        { name: "Today Margin",                           category: "Transaksi",   weightPoints: "2"                },
         // Tugas tambahan / occasional
         { name: "Pengumpulan Data Audit",                 category: "Support",     weightPoints: "3", noteRequired: true },
         { name: "Mencari Data Account",                   category: "Support",     weightPoints: "2"                },
@@ -230,6 +233,13 @@ async function seed() {
         { name: "Komoditi Statement & Report",            category: "Transaksi",   weightPoints: "4"                },
         { name: "Report Daily All PT",                    category: "Operasional", weightPoints: "3", noteRequired: true },
         { name: "Prodem Monthly / Quarterly",             category: "Operasional", weightPoints: "4", noteRequired: true },
+        // Chief-specific additions
+        { name: "Update Juknis & Prosedur",               category: "Operasional", weightPoints: "3", noteRequired: true },
+        { name: "Reporting Hierarchy (Bulanan/Kuartalan/Semester/Tahunan)", category: "Operasional", weightPoints: "4", noteRequired: true },
+        { name: "Administrasi Perubahan Upline (Marketing Chart)", category: "Support", weightPoints: "4", noteRequired: true },
+        { name: "Pelaksanaan Prodem Bulanan & Kuartalan", category: "Operasional", weightPoints: "4", noteRequired: true },
+        { name: "Meeting",                                category: "Operasional", weightPoints: "4"                },
+        { name: "Update Daily Margin / Monthly / Quartal / Semester / Annual", category: "Operasional", weightPoints: "2", noteRequired: true },
         // Semua role
         { name: "Menangani Komplain",                     category: "Support",     weightPoints: "4", noteRequired: true },
         { name: "Investigasi Transaksi",                  category: "Support",     weightPoints: "6", noteRequired: true },
@@ -240,6 +250,31 @@ async function seed() {
       ])
       .returning();
     console.log(`Created ${activityTypes.length} activity types`);
+
+    // Default activity-type mapping per role.
+    // Keep Co-SPV aligned with SPV so Co-SPV does not end up with only fallback items.
+    const roleMap = new Map(roles.map((r) => [r.name, r.id]));
+    const typeIdByName = new Map(activityTypes.map((t) => [t.name, t.id]));
+    const spvAndDealerTypeNames = activityTypes.map((t) => t.name);
+
+    const coSpvRoleIdForMapping = roleMap.get("Co-SPV Dealing");
+    const spvRoleIdForMapping = roleMap.get("SPV Dealing");
+    const dealerRoleIdForMapping = roleMap.get("Dealer");
+    const chiefRoleIdForMapping = roleMap.get("Chief Dealing");
+
+    const mappingRows: Array<{ roleId: number; activityTypeId: number }> = [];
+    for (const roleId of [dealerRoleIdForMapping, spvRoleIdForMapping, coSpvRoleIdForMapping, chiefRoleIdForMapping]) {
+      if (!roleId) continue;
+      for (const typeName of spvAndDealerTypeNames) {
+        const typeId = typeIdByName.get(typeName);
+        if (!typeId) continue;
+        mappingRows.push({ roleId, activityTypeId: typeId });
+      }
+    }
+    if (mappingRows.length > 0) {
+      await db.insert(roleActivityTypesTable).values(mappingRows).onConflictDoNothing();
+    }
+    console.log(`Role activity mappings initialized (${mappingRows.length} rows)`);
 
     const pw = await bcryptjs.hash("password123", 10);
 

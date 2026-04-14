@@ -335,7 +335,7 @@ export default function ActivityLogs() {
               <tr>
                 <th className="px-6 py-4">Waktu</th>
                 <th className="px-6 py-4">Dealer</th>
-                <th className="px-6 py-4">Cabang</th>
+                <th className="px-6 py-4">PT</th>
                 <th className="px-6 py-4">Tipe Aktivitas</th>
                 <th className="px-6 py-4">Qty</th>
                 <th className="px-6 py-4">Catatan</th>
@@ -353,22 +353,10 @@ export default function ActivityLogs() {
                     <td className="px-6 py-4 font-mono">{log.createdAt ? format(new Date(log.createdAt), "MMM d, HH:mm") : "-"}</td>
                     <td className="px-6 py-4 font-medium">{log.userName ?? "-"}</td>
                     <td className="px-6 py-4">
-                      {(log.ptName || log.branchName) ? (
-                        <div className="flex flex-col gap-0.5">
-                          {log.ptName && (
-                            <span className="flex items-center gap-1 text-xs text-primary font-medium">
-                              <Building2 className="w-3 h-3 shrink-0" />{log.ptName}
-                            </span>
-                          )}
-                          {log.branchName && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin className="w-3 h-3 shrink-0" />{log.branchName}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        {log.ptName ?? "-"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">{log.activityTypeName ?? "-"}</td>
                     <td className="px-6 py-4 font-mono">{log.quantity}</td>

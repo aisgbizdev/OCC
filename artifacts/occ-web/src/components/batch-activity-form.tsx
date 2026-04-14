@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Save, AlertCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useListActivityTypes, useListUsers } from "@workspace/api-client-react";
+import { useListActivityTypes, useListUsers, useListPts } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
@@ -21,6 +21,7 @@ type RowItem = {
   quantity: number;
   note: string;
   targetUserId: string;
+  ptId: string;
 };
 
 type DuplicateWarning = {
@@ -35,6 +36,7 @@ const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "S
 
 export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSuccess: () => void; presetActivityTypeId?: number }) {
   const { data: allTypes } = useListActivityTypes();
+  const { data: pts = [] } = useListPts();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -89,17 +91,24 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
     quantity: 1,
     note: "",
     targetUserId: "",
+    ptId: user?.ptId ? String(user.ptId) : "",
   }]);
   const [isPending, setIsPending] = useState(false);
   const [duplicateWarnings, setDuplicateWarnings] = useState<DuplicateWarning[] | null>(null);
 
   useEffect(() => {
     if (presetActivityTypeId && rows.length === 1 && rows[0].activityTypeId === "") {
-      setRows([{ activityTypeId: String(presetActivityTypeId), quantity: 1, note: "", targetUserId: "" }]);
+      setRows([{
+        activityTypeId: String(presetActivityTypeId),
+        quantity: 1,
+        note: "",
+        targetUserId: "",
+        ptId: user?.ptId ? String(user.ptId) : "",
+      }]);
     }
-  }, [presetActivityTypeId]);
+  }, [presetActivityTypeId, user?.ptId]);
 
-  const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "" }]);
+  const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "", ptId: user?.ptId ? String(user.ptId) : "" }]);
   const handleRemove = (index: number) => setRows(rows.filter((_, i) => i !== index));
 
   const handleChange = (index: number, field: keyof RowItem, value: string | number) => {
@@ -123,6 +132,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
       quantity: Number(r.quantity),
       note: r.note || undefined,
       ...(r.targetUserId ? { targetUserId: Number(r.targetUserId) } : {}),
+      ...(r.ptId ? { ptId: Number(r.ptId) } : {}),
     }));
 
     if (validRows.length === 0) {
@@ -251,6 +261,16 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
                 )}
 
                 <div className="flex gap-2">
+                  <select
+                    className="w-48 h-10 px-3 rounded-md bg-background border text-sm"
+                    value={row.ptId}
+                    onChange={(e) => handleChange(i, "ptId", e.target.value)}
+                  >
+                    <option value="">PT Default (Profil)</option>
+                    {pts.map((pt) => (
+                      <option key={pt.id} value={pt.id}>{pt.name}</option>
+                    ))}
+                  </select>
                   <Input
                     type="number" min="1" placeholder="Qty"
                     value={row.quantity} onChange={e => handleChange(i, "quantity", e.target.value)}
