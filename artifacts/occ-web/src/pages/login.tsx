@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Activity, Lock, Shield, Crown, Eye, EyeOff,
+  Lock, Shield, Crown, Eye, EyeOff,
   Star, Users, TrendingUp, Settings, Loader2, ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -139,8 +139,8 @@ export default function Login() {
       <div className="relative z-10 w-full max-w-sm mx-4 py-8">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3 border border-primary/30 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-            <Activity className="w-7 h-7 text-primary" />
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3 border border-primary/30 shadow-[0_0_30px_rgba(99,102,241,0.3)] overflow-hidden">
+            <img src="/logo.png" alt="OCC Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-center">OCC — Operational Control Center</h1>
           <p className="text-muted-foreground mt-1 text-sm">Pilih jabatan Anda untuk masuk</p>

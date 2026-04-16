@@ -107,7 +107,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar h-full shrink-0">
           <div className="p-6">
             <h1 className="text-2xl font-black tracking-tighter bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
-              <Activity className="w-6 h-6 text-primary" /> OCC
+              <img src="/logo.png" alt="OCC Logo" className="w-7 h-7 rounded-md object-cover border border-primary/20" /> OCC
             </h1>
             <p className="text-xs text-muted-foreground mt-1 tracking-wide uppercase font-mono">Control Center</p>
           </div>
@@ -184,7 +184,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <aside className="relative w-72 max-w-[85vw] bg-sidebar border-r border-border h-full flex flex-col z-10 animate-in slide-in-from-left-full duration-200">
               <div className="p-6 flex items-center justify-between">
                 <h1 className="text-2xl font-black tracking-tighter bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
-                  <Activity className="w-6 h-6 text-primary" /> OCC
+                  <img src="/logo.png" alt="OCC Logo" className="w-7 h-7 rounded-md object-cover border border-primary/20" /> OCC
                 </h1>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -270,7 +270,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Menu className="w-5 h-5" />
               </button>
               <div className="md:hidden flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
+                <img src="/logo.png" alt="OCC Logo" className="w-5 h-5 rounded object-cover border border-primary/20" />
                 <span className="font-bold text-sm">OCC</span>
               </div>
               <div className="hidden md:block text-sm font-mono text-muted-foreground">

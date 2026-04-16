@@ -215,7 +215,7 @@ async function seed() {
       .insert(activityTypesTable)
       .values([
         // Dealer / Staff — aktivitas harian wajib
-        { name: "Aktivasi Account",                      category: "Akun",        weightPoints: "4"                },
+        { name: "Aktivasi Account",                      category: "Akun",        weightPoints: "3"                },
         { name: "Cek Dana Masuk (Deposit)",               category: "Transaksi",   weightPoints: "3"                },
         { name: "Cek Withdrawal",                         category: "Transaksi",   weightPoints: "3"                },
         { name: "Cek Dana Masuk New Account / Top Up",    category: "Transaksi",   weightPoints: "3"                },
@@ -226,6 +226,11 @@ async function seed() {
         { name: "Laporan Logbook / Serah Terima",         category: "Operasional", weightPoints: "2", noteRequired: true },
         { name: "Master Report",                          category: "Operasional", weightPoints: "2"                },
         { name: "Today Margin",                           category: "Transaksi",   weightPoints: "2"                },
+        { name: "Backup Outlook Registrasi",              category: "Operasional", weightPoints: "1"                },
+        { name: "Margin In dan Out House",                category: "Transaksi",   weightPoints: "1"                },
+        { name: "Volume Transaksi",                       category: "Transaksi",   weightPoints: "3"                },
+        { name: "Return",                                 category: "Transaksi",   weightPoints: "1"                },
+        { name: "NA Activation",                          category: "Akun",        weightPoints: "1"                },
         // Tugas tambahan / occasional
         { name: "Pengumpulan Data Audit",                 category: "Support",     weightPoints: "3", noteRequired: true },
         { name: "Mencari Data Account",                   category: "Support",     weightPoints: "2"                },

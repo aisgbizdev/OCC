@@ -1,4 +1,4 @@
-const CACHE_NAME = "occ-shell-v4";
+const CACHE_NAME = "occ-shell-v5";
 const SHELL_ASSETS = [
   "./icon-192.png",
   "./icon-512.png",

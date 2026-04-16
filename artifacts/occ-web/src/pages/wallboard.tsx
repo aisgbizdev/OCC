@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, Component } from "react";
 import type { ReactNode } from "react";
 import { useSearch } from "wouter";
 import { useAuth } from "@/lib/auth";
-import { Award, Activity, AlertTriangle, Clock, Wifi, WifiOff, Monitor } from "lucide-react";
+import { Award, Activity, AlertTriangle, Clock, Wifi, WifiOff } from "lucide-react";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -170,7 +170,7 @@ function WallboardInner() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Monitor className="w-6 h-6 text-primary" />
+              <img src="/logo.png" alt="OCC Logo" className="w-6 h-6 rounded-md object-cover border border-primary/20" />
               <div>
                 <span className="text-lg font-black tracking-widest text-primary uppercase">OCC</span>
                 <span className="text-xs text-gray-400 ml-2">Operational Control Center</span>
