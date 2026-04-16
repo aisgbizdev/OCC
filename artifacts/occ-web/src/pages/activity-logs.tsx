@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useListActivityLogs, useListPts, useListBranches, useUpdateActivityLog, useDeleteActivityLog, type ActivityLogWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2, CheckSquare, Square } from "lucide-react";
+import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2, CheckSquare, Square, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { can, canCreate, canDeleteActivityLog, canEditActivityLog } from "@/lib/access-control";
 
 const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+const CHIEF_TO_SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 // Edit: Owner/Admin System bypass window; all non-Dealer roles can edit anyone's log (within window)
 
@@ -45,6 +46,7 @@ export default function ActivityLogs() {
   const [editQty, setEditQty] = useState("");
   const [editNote, setEditNote] = useState("");
   const [deleteLog, setDeleteLog] = useState<ActivityLogEnriched | null>(null);
+  const [viewLog, setViewLog] = useState<ActivityLogEnriched | null>(null);
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [checklistLoading, setChecklistLoading] = useState(true);
@@ -54,6 +56,7 @@ export default function ActivityLogs() {
   const qc = useQueryClient();
 
   const isSPV = can("activityLog", "flag", user);
+  const canViewDetail = CHIEF_TO_SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
   const canCreateLog = canCreate("activityLog", user);
@@ -391,6 +394,15 @@ export default function ActivityLogs() {
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          {canViewDetail && (
+                            <button
+                              onClick={() => setViewLog(log)}
+                              title="Lihat detail log"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {showDelete && (
                             <button
                               onClick={() => setDeleteLog(log)}
@@ -419,6 +431,49 @@ export default function ActivityLogs() {
           onSuccess={() => handleModalClose(false)}
           presetActivityTypeId={presetActivityTypeId}
         />
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!viewLog}
+        onOpenChange={(open) => { if (!open) setViewLog(null); }}
+        title="Detail Log Aktivitas"
+        description={viewLog ? `${viewLog.activityTypeName} — ${viewLog.userName}` : ""}
+      >
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Waktu</p>
+              <p className="font-medium">{viewLog?.createdAt ? format(new Date(viewLog.createdAt), "dd MMM yyyy, HH:mm") : "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Dealer</p>
+              <p className="font-medium">{viewLog?.userName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">PT</p>
+              <p className="font-medium">{viewLog?.ptName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Cabang</p>
+              <p className="font-medium">{viewLog?.branchName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Tipe Aktivitas</p>
+              <p className="font-medium">{viewLog?.activityTypeName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Qty / Poin</p>
+              <p className="font-medium">{viewLog?.quantity ?? 0} / +{viewLog?.points ?? "0.00"}</p>
+            </div>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground mb-1">Catatan</p>
+            <p className="whitespace-pre-wrap break-words">{viewLog?.note?.trim() ? viewLog.note : "-"}</p>
+          </div>
+          <div className="flex justify-end pt-1">
+            <Button variant="outline" onClick={() => setViewLog(null)}>Tutup</Button>
+          </div>
+        </div>
       </ResponsiveModal>
 
       <ResponsiveModal
