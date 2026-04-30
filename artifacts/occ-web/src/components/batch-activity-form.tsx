@@ -278,13 +278,15 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
                     value={row.quantity} onChange={e => handleChange(i, "quantity", e.target.value)}
                     className="w-24 bg-background" required
                   />
-                  <Input
-                    type="text" placeholder={isError ? "Deskripsi kesalahan (wajib)..." : "Catatan (opsional)..."}
-                    value={row.note} onChange={e => handleChange(i, "note", e.target.value)}
-                    className="flex-1 bg-background"
-                    required={isError}
-                  />
                 </div>
+
+                <textarea
+                  placeholder={isError ? "Deskripsi kesalahan (wajib)..." : "Catatan (opsional)..."}
+                  value={row.note}
+                  onChange={e => handleChange(i, "note", e.target.value)}
+                  className="w-full min-h-[88px] resize-y rounded-md border bg-background px-3 py-2 text-sm leading-relaxed outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required={isError}
+                />
               </div>
               {rows.length > 1 && (
                 <Button type="button" size="icon" variant="ghost" className="text-destructive mt-1" onClick={() => handleRemove(i)}>
