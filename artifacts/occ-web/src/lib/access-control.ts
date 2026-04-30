@@ -103,6 +103,13 @@ const SPV_AND_ABOVE: readonly RoleName[] = [
   "Admin System",
 ];
 
+const POINT_VIEW_ROLES: readonly RoleName[] = [
+  "Owner",
+  "Direksi",
+  "Chief Dealing",
+  "Admin System",
+];
+
 const BRANCH_OVERVIEW_ROLES: readonly RoleName[] = [
   "Owner",
   "Direksi",
@@ -237,6 +244,10 @@ export function canResetPassword(moduleKey: ModuleKey, user: AccessUser): boolea
 
 export function canAccessPage(page: PageKey, user: AccessUser): boolean {
   return hasRole(user, PAGE_MATRIX[page]);
+}
+
+export function canViewPoints(user: AccessUser): boolean {
+  return hasRole(user, POINT_VIEW_ROLES);
 }
 
 export function canUpdateTask(user: AccessUser, task: Pick<TaskWithRelations, "assignedTo">): boolean {

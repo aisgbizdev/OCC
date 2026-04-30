@@ -10,9 +10,8 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { can, canCreate, canDeleteActivityLog, canEditActivityLog } from "@/lib/access-control";
+import { can, canCreate, canDeleteActivityLog, canEditActivityLog, canViewPoints } from "@/lib/access-control";
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_TO_SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 // Edit: Owner/Admin System bypass window; all non-Dealer roles can edit anyone's log (within window)
@@ -56,6 +55,7 @@ export default function ActivityLogs() {
   const qc = useQueryClient();
 
   const isSPV = can("activityLog", "flag", user);
+  const showPoints = canViewPoints(user);
   const canViewDetail = CHIEF_TO_SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
@@ -342,7 +342,7 @@ export default function ActivityLogs() {
                 <th className="px-6 py-4">Tipe Aktivitas</th>
                 <th className="px-6 py-4">Qty</th>
                 <th className="px-6 py-4">Catatan</th>
-                <th className="px-6 py-4 text-right">Poin</th>
+                {showPoints && <th className="px-6 py-4 text-right">Poin</th>}
                 {isSPV && <th className="px-4 py-4 text-center">Flag</th>}
                 {showActionsCol && <th className="px-4 py-4 text-center">Aksi</th>}
               </tr>
@@ -364,7 +364,7 @@ export default function ActivityLogs() {
                     <td className="px-6 py-4">{log.activityTypeName ?? "-"}</td>
                     <td className="px-6 py-4 font-mono">{log.quantity}</td>
                     <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{log.note ?? "-"}</td>
-                    <td className="px-6 py-4 text-right font-mono font-bold text-primary">+{log.points}</td>
+                    {showPoints && <td className="px-6 py-4 text-right font-mono font-bold text-primary">+{log.points}</td>}
                     {isSPV && (
                       <td className="px-4 py-4 text-center">
                         <button
@@ -419,7 +419,12 @@ export default function ActivityLogs() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={isSPV ? (showActionsCol ? 9 : 8) : (showActionsCol ? 8 : 7)} className="text-center py-8 text-muted-foreground">Tidak ada aktivitas ditemukan</td></tr>
+                <tr><td colSpan={(() => {
+                  const base = showPoints ? 7 : 6;
+                  const withFlag = isSPV ? base + 1 : base;
+                  return showActionsCol ? withFlag + 1 : withFlag;
+                })()} className="text-center py-8 text-muted-foreground">Tidak ada aktivitas ditemukan</td></tr>
+                
               )}
             </tbody>
           </table>
@@ -462,8 +467,10 @@ export default function ActivityLogs() {
               <p className="font-medium">{viewLog?.activityTypeName ?? "-"}</p>
             </div>
             <div className="rounded-lg border bg-muted/20 p-3">
-              <p className="text-xs text-muted-foreground">Qty / Poin</p>
-              <p className="font-medium">{viewLog?.quantity ?? 0} / +{viewLog?.points ?? "0.00"}</p>
+              <p className="text-xs text-muted-foreground">{showPoints ? "Qty / Poin" : "Qty"}</p>
+              <p className="font-medium">
+                {showPoints ? `${viewLog?.quantity ?? 0} / +${viewLog?.points ?? "0.00"}` : `${viewLog?.quantity ?? 0}`}
+              </p>
             </div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-3">

@@ -97,8 +97,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const canViewWallboard = canView("wallboard", user);
   const showAdminSection = canAccessUsersPage || canAccessSystemPage || canViewWallboard;
 
-  const visibleNavItems = NAV_ITEMS.filter((item) => canAccessPage(item.page, user));
-  const visibleBottomNav = MOBILE_BOTTOM_NAV.filter((item) => canAccessPage(item.page, user));
+  const isChiefOrAbove = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"].includes(user?.roleName ?? "");
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    if (item.page === "kpi" && !isChiefOrAbove) return false;
+    return canAccessPage(item.page, user);
+  });
+  const visibleBottomNav = MOBILE_BOTTOM_NAV.filter((item) => {
+    if (item.page === "kpi" && !isChiefOrAbove) return false;
+    return canAccessPage(item.page, user);
+  });
 
   return (
     <SidebarProvider style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>

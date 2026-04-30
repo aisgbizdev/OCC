@@ -6,6 +6,7 @@ import { useListActivityTypes, useListUsers, useListPts } from "@workspace/api-c
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { canViewPoints } from "@/lib/access-control";
 import type { UserWithRelations } from "@workspace/api-client-react";
 
 type ActivityTypeItem = {
@@ -40,6 +41,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
   const { toast } = useToast();
   const qc = useQueryClient();
   const { user } = useAuth();
+  const showPoints = canViewPoints(user);
 
   const isSPVOrAbove = SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChiefOrAbove = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
@@ -237,7 +239,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
                     const isErrType = t.category === "Error";
                     return (
                       <option key={t.id} value={t.id}>
-                        {isErrType ? "⚠ " : ""}{t.name} {isErrType ? "(Error)" : `(+${t.weightPoints} poin)`}
+                        {isErrType ? "⚠ " : ""}{t.name} {isErrType ? "(Error)" : (showPoints ? `(+${t.weightPoints} poin)` : "")}
                       </option>
                     );
                   })}
