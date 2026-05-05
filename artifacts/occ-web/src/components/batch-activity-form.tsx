@@ -22,6 +22,7 @@ type RowItem = {
   quantity: number;
   note: string;
   targetUserId: string;
+  targetOtherName: string;
   ptId: string;
 };
 
@@ -93,6 +94,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
     quantity: 1,
     note: "",
     targetUserId: "",
+    targetOtherName: "",
     ptId: user?.ptId ? String(user.ptId) : "",
   }]);
   const [isPending, setIsPending] = useState(false);
@@ -105,12 +107,13 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
         quantity: 1,
         note: "",
         targetUserId: "",
+        targetOtherName: "",
         ptId: user?.ptId ? String(user.ptId) : "",
       }]);
     }
   }, [presetActivityTypeId, user?.ptId]);
 
-  const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "", ptId: user?.ptId ? String(user.ptId) : "" }]);
+  const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "", targetOtherName: "", ptId: user?.ptId ? String(user.ptId) : "" }]);
   const handleRemove = (index: number) => setRows(rows.filter((_, i) => i !== index));
 
   const handleChange = (index: number, field: keyof RowItem, value: string | number) => {
@@ -118,6 +121,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
     newRows[index] = { ...newRows[index], [field]: value };
     if (field === "activityTypeId") {
       newRows[index].targetUserId = "";
+      newRows[index].targetOtherName = "";
     }
     setRows(newRows);
   };
@@ -129,11 +133,31 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
   }
 
   async function submitBatch(confirmDuplicates: boolean) {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!isErrorType(r.activityTypeId)) continue;
+      if (!isSPVOrAbove) continue;
+      if (!r.targetUserId) {
+        toast({ title: "Error", description: `Baris ${i + 1}: pilih anggota error atau Lainnya`, variant: "destructive" });
+        return;
+      }
+      if (r.targetUserId === "__OTHER__" && !r.targetOtherName.trim()) {
+        toast({ title: "Error", description: `Baris ${i + 1}: isi nama untuk opsi Lainnya`, variant: "destructive" });
+        return;
+      }
+    }
+
     const validRows = rows.filter(r => r.activityTypeId && r.quantity > 0).map(r => ({
+      ...(() => {
+        const notePrefix = r.targetUserId === "__OTHER__" && r.targetOtherName.trim()
+          ? `[Request Cabang: ${r.targetOtherName.trim()}]`
+          : "";
+        const mergedNote = [notePrefix, r.note?.trim() ?? ""].filter(Boolean).join(" ");
+        return { note: mergedNote || undefined };
+      })(),
       activityTypeId: Number(r.activityTypeId),
       quantity: Number(r.quantity),
-      note: r.note || undefined,
-      ...(r.targetUserId ? { targetUserId: Number(r.targetUserId) } : {}),
+      ...(r.targetUserId && r.targetUserId !== "__OTHER__" ? { targetUserId: Number(r.targetUserId) } : {}),
       ...(r.ptId ? { ptId: Number(r.ptId) } : {}),
     }));
 
@@ -258,8 +282,18 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
                       {teamUsers.map(u => (
                         <option key={u.id} value={u.id}>{u.name} ({u.roleName})</option>
                       ))}
+                      <option value="__OTHER__">Lainnya (input manual)</option>
                     </select>
                   </div>
+                )}
+                {isError && isSPVOrAbove && row.targetUserId === "__OTHER__" && (
+                  <Input
+                    className="w-full bg-background"
+                    value={row.targetOtherName}
+                    onChange={(e) => handleChange(i, "targetOtherName", e.target.value)}
+                    placeholder="Nama anak cabang yang minta koreksi..."
+                    required
+                  />
                 )}
 
                 <div className="flex gap-2">

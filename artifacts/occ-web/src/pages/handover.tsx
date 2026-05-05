@@ -13,7 +13,7 @@ import {
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw, Trash2, MessageSquareReply, BadgeCheck, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,13 @@ import { useAuth } from "@/lib/auth";
 import { canCreate, canDelete } from "@/lib/access-control";
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
+const SOLVED_TAG = "[SOLVED]";
+const REPLY_TAG = "[REPLY]";
+
+function appendHandoverLine(existingNotes: string | undefined | null, line: string): string {
+  const base = (existingNotes ?? "").trimEnd();
+  return base ? `${base}\n${line}` : line;
+}
 
 export default function Handover() {
   const { user } = useAuth();
@@ -53,6 +60,10 @@ export default function Handover() {
   const [editLog, setEditLog] = useState<HandoverLogWithRelations | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [replyLog, setReplyLog] = useState<HandoverLogWithRelations | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [savingReply, setSavingReply] = useState(false);
+  const [solvingLogId, setSolvingLogId] = useState<number | null>(null);
 
   const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(user?.roleName ?? "");
 
@@ -85,6 +96,57 @@ export default function Handover() {
   const handlePtChange = (ptId: string) => {
     setFilterPtId(ptId);
     setFilterBranchId("");
+  };
+
+  const openReplyModal = (log: HandoverLogWithRelations) => {
+    setReplyLog(log);
+    setReplyText("");
+  };
+
+  const handleSaveReply = async () => {
+    if (!replyLog || !replyText.trim()) return;
+    setSavingReply(true);
+    const tkn = localStorage.getItem("occ_token");
+    try {
+      const stamp = format(new Date(), "yyyy-MM-dd HH:mm");
+      const line = `${REPLY_TAG} ${stamp} | ${user?.name ?? "-"} (${user?.roleName ?? "-"}) : ${replyText.trim()}`;
+      const notes = appendHandoverLine(replyLog.notes, line);
+      const res = await fetch(`/api/handover-logs/${replyLog.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tkn}` },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Reply tersimpan" });
+      qcMain.invalidateQueries({ queryKey: ["/api/handover-logs"] });
+      setReplyLog(null);
+    } catch {
+      toast({ title: "Gagal menyimpan reply", variant: "destructive" });
+    } finally {
+      setSavingReply(false);
+    }
+  };
+
+  const handleMarkSolved = async (log: HandoverLogWithRelations) => {
+    setSolvingLogId(log.id);
+    const tkn = localStorage.getItem("occ_token");
+    try {
+      const stamp = format(new Date(), "yyyy-MM-dd HH:mm");
+      const line = `${SOLVED_TAG} ${stamp} | ${user?.name ?? "-"} (${user?.roleName ?? "-"})`;
+      const notes = appendHandoverLine(log.notes, line);
+      const res = await fetch(`/api/handover-logs/${log.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tkn}` },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Ditandai solved" });
+      qcMain.invalidateQueries({ queryKey: ["/api/handover-logs"] });
+    } catch {
+      toast({ title: "Gagal menandai solved", variant: "destructive" });
+    } finally {
+      setSolvingLogId(null);
+    }
   };
 
   const handleDeleteLog = async (log: HandoverLogWithRelations) => {
@@ -196,6 +258,14 @@ NOTES: ${log.notes ?? "-"}`;
       <div className="grid grid-cols-1 gap-6">
         {filteredLogs.map((log: HandoverLogWithRelations) => {
           const logWithBranch = log as HandoverLogWithRelations & { ptName?: string | null; branchName?: string | null };
+          const noteLines = (log.notes ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
+          const replyLines = noteLines.filter((line) => line.startsWith(REPLY_TAG));
+          const solvedLine = [...noteLines].reverse().find((line) => line.startsWith(SOLVED_TAG));
+          const cleanNotes = noteLines
+            .filter((line) => !line.startsWith(REPLY_TAG) && !line.startsWith(SOLVED_TAG))
+            .join("\n");
+          const hasPending = (log.pendingTasks && log.pendingTasks !== "None") || (log.pendingComplaints && log.pendingComplaints !== "None");
+          const isSolved = !!solvedLine || !hasPending;
           return (
             <div key={log.id} className="bg-card border rounded-2xl p-6 shadow-sm">
               <div className="flex justify-between items-start mb-6 border-b pb-4">
@@ -206,6 +276,18 @@ NOTES: ${log.notes ?? "-"}`;
                   <div>
                     <h3 className="font-bold text-lg">Handover dari {log.creatorName ?? "-"}</h3>
                     <p className="text-sm text-muted-foreground">{log.fromShiftName ?? "-"} → {log.toShiftName ?? "-"}</p>
+                    <div className="mt-1">
+                      {isSolved ? (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600">
+                          <BadgeCheck className="w-3 h-3" />
+                          {solvedLine ? solvedLine.replace(SOLVED_TAG, "Solved by").trim() : "Solved"}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600">
+                          <CircleDot className="w-3 h-3" /> Belum Solve
+                        </span>
+                      )}
+                    </div>
                     {(logWithBranch.ptName || logWithBranch.branchName) && (
                       <div className="flex items-center gap-2 mt-1">
                         {logWithBranch.ptName && (
@@ -226,6 +308,14 @@ NOTES: ${log.notes ?? "-"}`;
                   {(isManager || (log as HandoverLogWithRelations & { createdBy?: number }).createdBy === user?.id) && (
                     <Button variant="ghost" size="icon" onClick={() => handleEditNotes(log)} title="Edit catatan">
                       <Pencil className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={() => openReplyModal(log)} title="Reply handover">
+                    <MessageSquareReply className="w-4 h-4" />
+                  </Button>
+                  {isManager && !isSolved && (
+                    <Button variant="ghost" size="icon" onClick={() => handleMarkSolved(log)} disabled={solvingLogId === log.id} title="Tandai solve">
+                      <BadgeCheck className="w-4 h-4" />
                     </Button>
                   )}
                   {canDeleteHandover && ((log as HandoverLogWithRelations & { createdBy?: number }).createdBy === user?.id || isManager) && (
@@ -253,7 +343,21 @@ NOTES: ${log.notes ?? "-"}`;
                 </div>
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Catatan</h4>
-                  <p className="text-sm bg-muted/30 p-3 rounded-lg border">{log.notes ?? "-"}</p>
+                  <p className="text-sm bg-muted/30 p-3 rounded-lg border whitespace-pre-line">{cleanNotes || "-"}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Reply</h4>
+                  {replyLines.length === 0 ? (
+                    <p className="text-sm bg-muted/20 p-3 rounded-lg border text-muted-foreground">Belum ada reply.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {replyLines.map((line, idx) => (
+                        <p key={`${log.id}-reply-${idx}`} className="text-sm bg-muted/30 p-3 rounded-lg border whitespace-pre-line">
+                          {line.replace(REPLY_TAG, "").trim()}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/> Tugas Tertunda</h4>
@@ -296,6 +400,31 @@ NOTES: ${log.notes ?? "-"}`;
             <Button variant="outline" onClick={() => setEditLog(null)}>Batal</Button>
             <Button onClick={handleSaveNotes} disabled={savingEdit}>
               {savingEdit ? "Menyimpan..." : "Simpan Catatan"}
+            </Button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!replyLog}
+        onOpenChange={(open) => { if (!open) setReplyLog(null); }}
+        title="Reply Handover"
+        description={replyLog ? `Tambah reply untuk handover #${replyLog.id}` : undefined}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Pesan Reply</label>
+            <textarea
+              className="w-full min-h-[120px] px-3 py-2 rounded-md bg-background border text-sm resize-none"
+              value={replyText}
+              onChange={e => setReplyText(e.target.value)}
+              placeholder="Update progress / info solve / instruksi dari Chief..."
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setReplyLog(null)}>Batal</Button>
+            <Button onClick={handleSaveReply} disabled={savingReply || !replyText.trim()}>
+              {savingReply ? "Menyimpan..." : "Kirim Reply"}
             </Button>
           </div>
         </div>
@@ -354,7 +483,7 @@ function HandoverChecklistForm({ onSuccess, lastLog }: { onSuccess: () => void; 
       pendingActivities: checks.activitiesLogged ? "Semua aktivitas shift ini sudah dilog" : "Ada aktivitas yang belum dilog",
       pendingComplaints: openComplaintNames,
       notes: notes || undefined,
-    }}, {
+    } as unknown as { fromShiftId: number; toShiftId: number }}, {
       onSuccess: () => {
         toast({ title: "Handover Submitted", description: "Laporan handover berhasil disimpan" });
         qc.invalidateQueries({ queryKey: ["/api/handover"] });
