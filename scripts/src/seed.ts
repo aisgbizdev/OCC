@@ -224,6 +224,7 @@ async function seed() {
         { name: "Rekap OR / Kebutuhan Operasional Cabang", category: "Operasional", weightPoints: "2"               },
         { name: "Laporan Logbook / Serah Terima",         category: "Operasional", weightPoints: "2", noteRequired: true },
         { name: "Master Report",                          category: "Operasional", weightPoints: "2"                },
+        { name: "Upload MDB",                             category: "Operasional", weightPoints: "2", noteRequired: true },
         { name: "Today Margin",                           category: "Transaksi",   weightPoints: "2"                },
         { name: "Backup Outlook Registrasi",              category: "Operasional", weightPoints: "1"                },
         { name: "Margin In dan Out House",                category: "Transaksi",   weightPoints: "1"                },
@@ -540,6 +541,24 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
     console.error("Failed to consolidate Aktivasi activity type:", err);
   }
 
+
+  // Backfill Upload MDB activity type for upgraded environments.
+  try {
+    const { rows } = await pool.query(
+      `SELECT id FROM activity_types WHERE name = $1 LIMIT 1`,
+      ["Upload MDB"]
+    );
+    if (rows.length === 0) {
+      await pool.query(
+        `INSERT INTO activity_types (name, category, weight_points, note_required, active_status)
+         VALUES ($1, $2, $3, $4, true)`,
+        ["Upload MDB", "Operasional", "2", true]
+      );
+      console.log("Inserted activity type: Upload MDB");
+    }
+  } catch (err) {
+    console.error("Failed to backfill Upload MDB activity type:", err);
+  }
   // ── Quality Error Types (idempotent, always runs) ─────────────────────────
   try {
     const existing = await db.select({ id: qualityErrorTypesTable.id }).from(qualityErrorTypesTable).limit(1);
