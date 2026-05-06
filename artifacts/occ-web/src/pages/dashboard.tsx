@@ -182,6 +182,7 @@ export default function Dashboard() {
 function DealerDashboard() {
   const { user } = useAuth();
   const showPoints = canViewPoints(user);
+  const { data: scores } = useListKpiScores({ ptId: user?.ptId });
   const { data: tasks } = useListTasks({ assignedTo: user?.id, status: "in_progress" });
   const dateFrom7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
   const { data: logs } = useListActivityLogs({ userId: user?.id, dateFrom: dateFrom7 });
