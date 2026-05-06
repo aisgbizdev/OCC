@@ -58,6 +58,9 @@ router.get("/complaints", authMiddleware, requireRole(...ALL_ROLES), async (req,
       conditions.push(eq(complaintsTable.ptId, Number(req.query.ptId)));
     }
     if (req.query.assignedUserId) conditions.push(eq(complaintsTable.assignedUserId, Number(req.query.assignedUserId)));
+    if (req.user!.roleName === "Dealer") {
+      conditions.push(eq(complaintsTable.assignedUserId, req.user!.userId));
+    }
 
     const complaints = await db.select().from(complaintsTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -87,6 +90,9 @@ router.get("/complaints/:id", authMiddleware, requireRole(...ALL_ROLES), async (
     const cid = Number(req.params.id);
     const [complaint] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);
     if (!complaint) { res.status(404).json({ error: "Complaint not found" }); return; }
+    if (req.user!.roleName === "Dealer" && complaint.assignedUserId !== req.user!.userId) {
+      res.status(403).json({ error: "Access denied" }); return;
+    }
 
     const [enriched, comments, history] = await Promise.all([
       enrichComplaint(complaint),
@@ -134,6 +140,9 @@ router.post("/complaints/:id/comments", authMiddleware, requireRole(...ALL_ROLES
 
     const [complaint] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);
     if (!complaint) { res.status(404).json({ error: "Complaint not found" }); return; }
+    if (req.user!.roleName === "Dealer" && complaint.assignedUserId !== req.user!.userId) {
+      res.status(403).json({ error: "Access denied" }); return;
+    }
 
     const [comment] = await db.insert(complaintCommentsTable).values({
       complaintId: cid,
@@ -218,12 +227,17 @@ router.post("/complaints", authMiddleware, requireRole(...CREATE_ROLES), async (
     if (!title || !complaintType) {
       res.status(400).json({ error: "title and complaintType are required" }); return;
     }
+    if (req.user!.roleName === "Dealer" && assignedUserId && Number(assignedUserId) !== req.user!.userId) {
+      res.status(403).json({ error: "Dealer hanya boleh assign komplain ke dirinya sendiri" }); return;
+    }
+    const finalAssignedUserId = assignedUserId ?? (req.user!.roleName === "Dealer" ? req.user!.userId : null);
+
     const [complaint] = await db.insert(complaintsTable).values({
       title,
       complaintType,
       ptId: ptId ?? req.user!.ptId,
       branchId: branchId ?? null,
-      assignedUserId: assignedUserId ?? null,
+      assignedUserId: finalAssignedUserId,
       severity: severity ?? "medium",
       chronology: chronology ?? null,
       followUp: followUp ?? null,
@@ -388,6 +402,9 @@ router.delete("/complaints/:id", authMiddleware, requireRole(...CREATE_ROLES), a
     const cid = Number(req.params.id);
     const [existing] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);
     if (!existing) { res.status(404).json({ error: "Complaint not found" }); return; }
+    if (req.user!.roleName === "Dealer" && existing.assignedUserId !== req.user!.userId) {
+      res.status(403).json({ error: "Access denied" }); return;
+    }
     await db.update(complaintsTable).set({ status: "closed" }).where(eq(complaintsTable.id, cid));
     await db.insert(complaintHistoryTable).values({ complaintId: cid, userId: req.user!.userId, changeType: "status_changed", oldValue: existing.status, newValue: "closed" });
     await createAuditLog({ userId: req.user!.userId, actionType: "close", module: "complaint", entityId: String(cid) });
@@ -403,6 +420,12 @@ router.delete("/complaints/:id/permanent", authMiddleware, requireRole(...CREATE
     const cid = Number(req.params.id);
     const [existing] = await db.select({ id: complaintsTable.id }).from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);
     if (!existing) { res.status(404).json({ error: "Complaint not found" }); return; }
+    if (req.user!.roleName === "Dealer") {
+      const [fullComplaint] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, cid)).limit(1);
+      if (!fullComplaint || fullComplaint.assignedUserId !== req.user!.userId) {
+        res.status(403).json({ error: "Access denied" }); return;
+      }
+    }
 
     await db.delete(complaintsTable).where(eq(complaintsTable.id, cid));
     await createAuditLog({ userId: req.user!.userId, actionType: "delete_permanent", module: "complaint", entityId: String(cid) });

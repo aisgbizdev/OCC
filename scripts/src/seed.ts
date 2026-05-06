@@ -7,6 +7,7 @@ import {
   branchesTable,
   shiftsTable,
   activityTypesTable,
+  roleActivityTypesTable,
   usersTable,
   systemSettingsTable,
   qualityErrorTypesTable,
@@ -214,15 +215,21 @@ async function seed() {
       .insert(activityTypesTable)
       .values([
         // Dealer / Staff — aktivitas harian wajib
-        { name: "Aktivasi Account",                      category: "Akun",        weightPoints: "4"                },
+        { name: "Aktivasi (input client bank + send user id n pass)", category: "Akun", weightPoints: "3"         },
         { name: "Cek Dana Masuk (Deposit)",               category: "Transaksi",   weightPoints: "3"                },
         { name: "Cek Withdrawal",                         category: "Transaksi",   weightPoints: "3"                },
         { name: "Cek Dana Masuk New Account / Top Up",    category: "Transaksi",   weightPoints: "3"                },
-        { name: "Input Client Bank & New Account",        category: "Akun",        weightPoints: "2"                },
         { name: "Pengiriman Statement Nasabah",           category: "Operasional", weightPoints: "2"                },
         { name: "Rekap Kebutuhan Barang Printing",        category: "Operasional", weightPoints: "2"                },
         { name: "Rekap OR / Kebutuhan Operasional Cabang", category: "Operasional", weightPoints: "2"               },
         { name: "Laporan Logbook / Serah Terima",         category: "Operasional", weightPoints: "2", noteRequired: true },
+        { name: "Master Report",                          category: "Operasional", weightPoints: "2"                },
+        { name: "Today Margin",                           category: "Transaksi",   weightPoints: "2"                },
+        { name: "Backup Outlook Registrasi",              category: "Operasional", weightPoints: "1"                },
+        { name: "Margin In dan Out House",                category: "Transaksi",   weightPoints: "1"                },
+        { name: "Volume Transaksi",                       category: "Transaksi",   weightPoints: "3"                },
+        { name: "Return",                                 category: "Transaksi",   weightPoints: "1"                },
+        { name: "NA Activation",                          category: "Akun",        weightPoints: "1"                },
         // Tugas tambahan / occasional
         { name: "Pengumpulan Data Audit",                 category: "Support",     weightPoints: "3", noteRequired: true },
         { name: "Mencari Data Account",                   category: "Support",     weightPoints: "2"                },
@@ -230,6 +237,12 @@ async function seed() {
         { name: "Komoditi Statement & Report",            category: "Transaksi",   weightPoints: "4"                },
         { name: "Report Daily All PT",                    category: "Operasional", weightPoints: "3", noteRequired: true },
         { name: "Prodem Monthly / Quarterly",             category: "Operasional", weightPoints: "4", noteRequired: true },
+        // Chief-specific additions
+        { name: "Update Juknis & Prosedur",               category: "Operasional", weightPoints: "3", noteRequired: true },
+        { name: "Reporting Hierarchy (Bulanan/Kuartalan/Semester/Tahunan)", category: "Operasional", weightPoints: "4", noteRequired: true },
+        { name: "Administrasi Perubahan Upline (Marketing Chart)", category: "Support", weightPoints: "4", noteRequired: true },
+        { name: "Meeting",                                category: "Operasional", weightPoints: "4"                },
+        { name: "Update Daily Margin / Monthly / Quartal / Semester / Annual", category: "Operasional", weightPoints: "2", noteRequired: true },
         // Semua role
         { name: "Menangani Komplain",                     category: "Support",     weightPoints: "4", noteRequired: true },
         { name: "Investigasi Transaksi",                  category: "Support",     weightPoints: "6", noteRequired: true },
@@ -240,6 +253,31 @@ async function seed() {
       ])
       .returning();
     console.log(`Created ${activityTypes.length} activity types`);
+
+    // Default activity-type mapping per role.
+    // Keep Co-SPV aligned with SPV so Co-SPV does not end up with only fallback items.
+    const roleMap = new Map(roles.map((r) => [r.name, r.id]));
+    const typeIdByName = new Map(activityTypes.map((t) => [t.name, t.id]));
+    const spvAndDealerTypeNames = activityTypes.map((t) => t.name);
+
+    const coSpvRoleIdForMapping = roleMap.get("Co-SPV Dealing");
+    const spvRoleIdForMapping = roleMap.get("SPV Dealing");
+    const dealerRoleIdForMapping = roleMap.get("Dealer");
+    const chiefRoleIdForMapping = roleMap.get("Chief Dealing");
+
+    const mappingRows: Array<{ roleId: number; activityTypeId: number }> = [];
+    for (const roleId of [dealerRoleIdForMapping, spvRoleIdForMapping, coSpvRoleIdForMapping, chiefRoleIdForMapping]) {
+      if (!roleId) continue;
+      for (const typeName of spvAndDealerTypeNames) {
+        const typeId = typeIdByName.get(typeName);
+        if (!typeId) continue;
+        mappingRows.push({ roleId, activityTypeId: typeId });
+      }
+    }
+    if (mappingRows.length > 0) {
+      await db.insert(roleActivityTypesTable).values(mappingRows).onConflictDoNothing();
+    }
+    console.log(`Role activity mappings initialized (${mappingRows.length} rows)`);
 
     const pw = await bcryptjs.hash("password123", 10);
 
@@ -467,6 +505,41 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
     console.error("Failed to backfill error activity types:", err);
   }
 
+  // Disable legacy duplicate activity type in upgraded environments.
+  try {
+    await pool.query(
+      `UPDATE activity_types
+       SET active_status = false, updated_at = NOW()
+       WHERE name = $1`,
+      ["Pelaksanaan Prodem Bulanan & Kuartalan"]
+    );
+    console.log("Legacy activity type cleanup complete.");
+  } catch (err) {
+    console.error("Failed to cleanup legacy activity type:", err);
+  }
+
+  // Consolidate Aktivasi + Input Client Bank into one activity type.
+  try {
+    await pool.query(
+      `UPDATE activity_types
+       SET name = $1, updated_at = NOW()
+       WHERE name = $2`,
+      [
+        "Aktivasi (input client bank + send user id n pass)",
+        "Aktivasi Account",
+      ]
+    );
+    await pool.query(
+      `UPDATE activity_types
+       SET active_status = false, updated_at = NOW()
+       WHERE name = $1`,
+      ["Input Client Bank & New Account"]
+    );
+    console.log("Activity type consolidation complete: Aktivasi + Input Client Bank.");
+  } catch (err) {
+    console.error("Failed to consolidate Aktivasi activity type:", err);
+  }
+
   // ── Quality Error Types (idempotent, always runs) ─────────────────────────
   try {
     const existing = await db.select({ id: qualityErrorTypesTable.id }).from(qualityErrorTypesTable).limit(1);
@@ -501,3 +574,4 @@ seed().catch((err) => {
   console.error("Seed error:", err);
   process.exit(1);
 });
+

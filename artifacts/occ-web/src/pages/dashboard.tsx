@@ -15,10 +15,11 @@ import {
   type CheckInactivity200,
   type KpiTrendPoint,
 } from "@workspace/api-client-react";
-import { Activity, Award, CheckSquare, Target, AlertTriangle, TrendingUp, Users, Clock, Zap, ArrowRight } from "lucide-react";
+import { Activity, Award, CheckSquare, Target, AlertTriangle, TrendingUp, Users, Clock, ArrowRight } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { Link } from "wouter";
 import type { LucideIcon } from "lucide-react";
+import { canViewPoints } from "@/lib/access-control";
 
 interface TrendPoint { date: string; points: number; }
 
@@ -180,14 +181,10 @@ export default function Dashboard() {
 
 function DealerDashboard() {
   const { user } = useAuth();
-  const { data: scores } = useListKpiScores({ ptId: user?.ptId });
+  const showPoints = canViewPoints(user);
   const { data: tasks } = useListTasks({ assignedTo: user?.id, status: "in_progress" });
   const dateFrom7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
   const { data: logs } = useListActivityLogs({ userId: user?.id, dateFrom: dateFrom7 });
-
-  const myScore = scores?.find(s => s.userId === user?.id);
-  const myRank = scores?.findIndex(s => s.userId === user?.id);
-  const rankDisplay = myRank !== undefined && myRank >= 0 ? myRank + 1 : "-";
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -195,15 +192,6 @@ function DealerDashboard() {
         <h1 className="text-xl md:text-3xl font-bold tracking-tight">Dashboard Saya</h1>
         <p className="text-muted-foreground mt-1">Selamat datang, {user?.name}. Ini performa Anda hari ini.</p>
       </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Skor Harian" value={myScore?.currentDailyScore ?? "0"} icon={Zap} color="text-amber-400" />
-        <StatCard title="Skor Mingguan" value={myScore?.currentWeeklyScore ?? "0"} icon={Target} color="text-primary" />
-        <StatCard title="Ranking Saya" value={String(rankDisplay)} icon={Award} color="text-emerald-400" />
-        <StatCard title="Tugas Aktif" value={String(tasks?.length ?? 0)} icon={CheckSquare} color="text-purple-400" />
-      </div>
-
-      <KpiTrendChart logs={logs} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border rounded-2xl p-4 md:p-6 shadow-sm">
@@ -242,7 +230,7 @@ function DealerDashboard() {
                   <p className="text-xs text-muted-foreground">Qty: {log.quantity}{log.note ? ` • ${log.note}` : ""}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-primary font-bold">+{log.points}</p>
+                  {showPoints && <p className="font-mono text-primary font-bold">+{log.points}</p>}
                   <p className="text-xs text-muted-foreground">{log.createdAt ? format(new Date(log.createdAt), "HH:mm") : ""}</p>
                 </div>
               </div>
@@ -251,7 +239,6 @@ function DealerDashboard() {
           </div>
         </div>
       </div>
-
       <div className="bg-card border rounded-2xl p-4 md:p-6 shadow-sm">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-amber-400"/> Leaderboard PT</h2>
         <div className="space-y-3">
@@ -274,6 +261,8 @@ function DealerDashboard() {
 
 function SupervisorDashboard() {
   const { user } = useAuth();
+  const isSpv = user?.roleName === "SPV Dealing";
+  const showPoints = canViewPoints(user);
   const { data: scores } = useListKpiScores({ ptId: user?.ptId });
   const { data: tasks } = useListTasks({ ptId: user?.ptId });
   const { data: complaints } = useListComplaints({ ptId: user?.ptId });
@@ -294,14 +283,18 @@ function SupervisorDashboard() {
         <p className="text-muted-foreground mt-1">Overview tim untuk {user?.ptName ?? "PT Anda"}.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Aktivitas Tim Hari Ini" value={String(todayLogs.length)} icon={Activity} color="text-blue-400" href="/activity-logs" />
-        <StatCard title="Dealer Aktif" value={String(scores?.length ?? 0)} icon={Users} color="text-emerald-400" href="/kpi" />
-        <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" href="/tasks" />
-        <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" href="/complaints" />
-      </div>
+      {!isSpv && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Aktivitas Tim Hari Ini" value={String(todayLogs.length)} icon={Activity} color="text-blue-400" href="/activity-logs" />
+            <StatCard title="Dealer Aktif" value={String(scores?.length ?? 0)} icon={Users} color="text-emerald-400" href="/kpi" />
+            <StatCard title="Tugas Tertunda" value={String(pendingTasks.length)} icon={CheckSquare} color="text-amber-400" href="/tasks" />
+            <StatCard title="Komplain Terbuka" value={String(openComplaints.length)} icon={AlertTriangle} color="text-destructive" href="/complaints" />
+          </div>
 
-      <SpvKpiTrendChart trend={trendData} />
+          <SpvKpiTrendChart trend={trendData} />
+        </>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-card border rounded-2xl shadow-sm overflow-hidden">
@@ -315,7 +308,7 @@ function SupervisorDashboard() {
                   <th className="px-6 py-3 text-left">Dealer</th>
                   <th className="px-6 py-3 text-left">Aktivitas</th>
                   <th className="px-6 py-3 text-right">Qty</th>
-                  <th className="px-6 py-3 text-right">Poin</th>
+                  {showPoints && <th className="px-6 py-3 text-right">Poin</th>}
                   <th className="px-6 py-3 text-right">Waktu</th>
                 </tr>
               </thead>
@@ -325,12 +318,12 @@ function SupervisorDashboard() {
                     <td className="px-6 py-3 font-medium">{log.userName ?? "-"}</td>
                     <td className="px-6 py-3">{log.activityTypeName ?? "-"}</td>
                     <td className="px-6 py-3 text-right font-mono">{log.quantity}</td>
-                    <td className="px-6 py-3 text-right font-mono text-primary font-bold">+{log.points}</td>
+                    {showPoints && <td className="px-6 py-3 text-right font-mono text-primary font-bold">+{log.points}</td>}
                     <td className="px-6 py-3 text-right text-muted-foreground font-mono">{log.createdAt ? format(new Date(log.createdAt), "HH:mm") : ""}</td>
                   </tr>
                 ))}
                 {todayLogs.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-6 text-muted-foreground">Belum ada aktivitas tim hari ini.</td></tr>
+                  <tr><td colSpan={showPoints ? 5 : 4} className="text-center py-6 text-muted-foreground">Belum ada aktivitas tim hari ini.</td></tr>
                 )}
               </tbody>
             </table>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useListActivityLogs, useListPts, useListBranches, useUpdateActivityLog, useDeleteActivityLog, type ActivityLogWithRelations, type Branch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2, CheckSquare, Square } from "lucide-react";
+import { Plus, Filter, Flag, Building2, MapPin, Pencil, Trash2, CheckSquare, Square, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -10,9 +10,9 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { can, canCreate, canDeleteActivityLog, canEditActivityLog } from "@/lib/access-control";
+import { can, canCreate, canDeleteActivityLog, canEditActivityLog, canViewPoints } from "@/lib/access-control";
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
+const CHIEF_TO_SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 // Edit: Owner/Admin System bypass window; all non-Dealer roles can edit anyone's log (within window)
 
@@ -45,6 +45,7 @@ export default function ActivityLogs() {
   const [editQty, setEditQty] = useState("");
   const [editNote, setEditNote] = useState("");
   const [deleteLog, setDeleteLog] = useState<ActivityLogEnriched | null>(null);
+  const [viewLog, setViewLog] = useState<ActivityLogEnriched | null>(null);
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [checklistLoading, setChecklistLoading] = useState(true);
@@ -54,6 +55,8 @@ export default function ActivityLogs() {
   const qc = useQueryClient();
 
   const isSPV = can("activityLog", "flag", user);
+  const showPoints = canViewPoints(user);
+  const canViewDetail = CHIEF_TO_SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChief = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
   const isDireksi = user?.roleName === "Direksi";
   const canCreateLog = canCreate("activityLog", user);
@@ -335,11 +338,11 @@ export default function ActivityLogs() {
               <tr>
                 <th className="px-6 py-4">Waktu</th>
                 <th className="px-6 py-4">Dealer</th>
-                <th className="px-6 py-4">Cabang</th>
+                <th className="px-6 py-4">PT</th>
                 <th className="px-6 py-4">Tipe Aktivitas</th>
                 <th className="px-6 py-4">Qty</th>
                 <th className="px-6 py-4">Catatan</th>
-                <th className="px-6 py-4 text-right">Poin</th>
+                {showPoints && <th className="px-6 py-4 text-right">Poin</th>}
                 {isSPV && <th className="px-4 py-4 text-center">Flag</th>}
                 {showActionsCol && <th className="px-4 py-4 text-center">Aksi</th>}
               </tr>
@@ -353,27 +356,15 @@ export default function ActivityLogs() {
                     <td className="px-6 py-4 font-mono">{log.createdAt ? format(new Date(log.createdAt), "MMM d, HH:mm") : "-"}</td>
                     <td className="px-6 py-4 font-medium">{log.userName ?? "-"}</td>
                     <td className="px-6 py-4">
-                      {(log.ptName || log.branchName) ? (
-                        <div className="flex flex-col gap-0.5">
-                          {log.ptName && (
-                            <span className="flex items-center gap-1 text-xs text-primary font-medium">
-                              <Building2 className="w-3 h-3 shrink-0" />{log.ptName}
-                            </span>
-                          )}
-                          {log.branchName && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin className="w-3 h-3 shrink-0" />{log.branchName}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        {log.ptName ?? "-"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">{log.activityTypeName ?? "-"}</td>
                     <td className="px-6 py-4 font-mono">{log.quantity}</td>
                     <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{log.note ?? "-"}</td>
-                    <td className="px-6 py-4 text-right font-mono font-bold text-primary">+{log.points}</td>
+                    {showPoints && <td className="px-6 py-4 text-right font-mono font-bold text-primary">+{log.points}</td>}
                     {isSPV && (
                       <td className="px-4 py-4 text-center">
                         <button
@@ -403,6 +394,15 @@ export default function ActivityLogs() {
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          {canViewDetail && (
+                            <button
+                              onClick={() => setViewLog(log)}
+                              title="Lihat detail log"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {showDelete && (
                             <button
                               onClick={() => setDeleteLog(log)}
@@ -419,7 +419,12 @@ export default function ActivityLogs() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={isSPV ? (showActionsCol ? 9 : 8) : (showActionsCol ? 8 : 7)} className="text-center py-8 text-muted-foreground">Tidak ada aktivitas ditemukan</td></tr>
+                <tr><td colSpan={(() => {
+                  const base = showPoints ? 7 : 6;
+                  const withFlag = isSPV ? base + 1 : base;
+                  return showActionsCol ? withFlag + 1 : withFlag;
+                })()} className="text-center py-8 text-muted-foreground">Tidak ada aktivitas ditemukan</td></tr>
+                
               )}
             </tbody>
           </table>
@@ -431,6 +436,51 @@ export default function ActivityLogs() {
           onSuccess={() => handleModalClose(false)}
           presetActivityTypeId={presetActivityTypeId}
         />
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!viewLog}
+        onOpenChange={(open) => { if (!open) setViewLog(null); }}
+        title="Detail Log Aktivitas"
+        description={viewLog ? `${viewLog.activityTypeName} — ${viewLog.userName}` : ""}
+      >
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Waktu</p>
+              <p className="font-medium">{viewLog?.createdAt ? format(new Date(viewLog.createdAt), "dd MMM yyyy, HH:mm") : "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Dealer</p>
+              <p className="font-medium">{viewLog?.userName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">PT</p>
+              <p className="font-medium">{viewLog?.ptName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Cabang</p>
+              <p className="font-medium">{viewLog?.branchName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">Tipe Aktivitas</p>
+              <p className="font-medium">{viewLog?.activityTypeName ?? "-"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">{showPoints ? "Qty / Poin" : "Qty"}</p>
+              <p className="font-medium">
+                {showPoints ? `${viewLog?.quantity ?? 0} / +${viewLog?.points ?? "0.00"}` : `${viewLog?.quantity ?? 0}`}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground mb-1">Catatan</p>
+            <p className="whitespace-pre-wrap break-words">{viewLog?.note?.trim() ? viewLog.note : "-"}</p>
+          </div>
+          <div className="flex justify-end pt-1">
+            <Button variant="outline" onClick={() => setViewLog(null)}>Tutup</Button>
+          </div>
+        </div>
       </ResponsiveModal>
 
       <ResponsiveModal

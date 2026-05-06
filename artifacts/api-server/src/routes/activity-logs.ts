@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { activityLogsTable, activityTypesTable, usersTable, ptsTable, branchesTable, shiftsTable, systemSettingsTable, kpiScoresTable } from "@workspace/db/schema";
-import { eq, and, gte, lte, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { authMiddleware, requireRole, getPtScope } from "../middlewares/auth";
 import { createAuditLog } from "../helpers/audit";
 
@@ -114,6 +114,7 @@ async function resolveTargetUser(
   req: { user?: { userId: number; roleName: string; ptId?: number | null } },
   targetUserId: number | undefined,
   activityTypeId: number,
+  requestedPtId?: number,
 ): Promise<{ userId: number; ptId: number | null | undefined } | { error: string; status: number }> {
   const caller = req.user!;
 
@@ -132,9 +133,12 @@ async function resolveTargetUser(
     if (caller.roleName === "SPV Dealing" && caller.ptId && target.ptId !== caller.ptId) {
       return { error: "SPV hanya bisa mencatat error untuk anggota di PT yang sama", status: 403 };
     }
-    return { userId: targetUserId, ptId: target.ptId };
+    if (requestedPtId !== undefined && target.ptId !== null && requestedPtId !== target.ptId) {
+      return { error: "ptId harus sama dengan PT target user untuk pencatatan ke user lain", status: 400 };
+    }
+    return { userId: targetUserId, ptId: requestedPtId ?? target.ptId };
   }
-  return { userId: caller.userId, ptId: caller.ptId };
+  return { userId: caller.userId, ptId: requestedPtId ?? caller.ptId };
 }
 
 router.post("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (req, res) => {
@@ -144,7 +148,17 @@ router.post("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (
     const qty = Number(quantity) || 1;
     if (qty < 1 || !Number.isInteger(qty)) { res.status(400).json({ error: "quantity must be a positive integer" }); return; }
 
-    const resolved = await resolveTargetUser(req, targetUserId ? Number(targetUserId) : undefined, activityTypeId);
+    let requestedPtId: number | undefined;
+    if (req.body.ptId !== undefined && req.body.ptId !== null && req.body.ptId !== "") {
+      requestedPtId = Number(req.body.ptId);
+      if (!Number.isInteger(requestedPtId) || requestedPtId < 1) {
+        res.status(400).json({ error: "ptId must be a positive integer" }); return;
+      }
+      const [pt] = await db.select({ id: ptsTable.id }).from(ptsTable).where(eq(ptsTable.id, requestedPtId)).limit(1);
+      if (!pt) { res.status(400).json({ error: "ptId tidak ditemukan" }); return; }
+    }
+
+    const resolved = await resolveTargetUser(req, targetUserId ? Number(targetUserId) : undefined, activityTypeId, requestedPtId);
     if ("error" in resolved) { res.status(resolved.status).json({ error: resolved.error }); return; }
 
     const oneMinAgo = new Date(Date.now() - 60000);
@@ -214,14 +228,35 @@ router.post("/activity-logs/batch", authMiddleware, requireRole(...ALL_ROLES), a
       res.status(429).json({ error: "Terlalu banyak aktivitas dalam 1 menit. Harap tunggu sebentar." }); return;
     }
     const { confirmDuplicates } = req.body;
+    const normalizedItems = [];
+    const requestedPtIds: number[] = [];
+    for (const item of items) {
+      let requestedPtId: number | undefined;
+      if (item.ptId !== undefined && item.ptId !== null && item.ptId !== "") {
+        requestedPtId = Number(item.ptId);
+        if (!Number.isInteger(requestedPtId) || requestedPtId < 1) {
+          res.status(400).json({ error: "Semua ptId harus berupa bilangan bulat positif" }); return;
+        }
+        requestedPtIds.push(requestedPtId);
+      }
+      normalizedItems.push({ ...item, requestedPtId });
+    }
+
+    if (requestedPtIds.length > 0) {
+      const uniquePtIds = [...new Set(requestedPtIds)];
+      const existingPts = await db.select({ id: ptsTable.id }).from(ptsTable).where(inArray(ptsTable.id, uniquePtIds));
+      if (existingPts.length !== uniquePtIds.length) {
+        res.status(400).json({ error: "Ada ptId yang tidak ditemukan" }); return;
+      }
+    }
 
     if (!confirmDuplicates) {
       const fiveMinAgo = new Date(Date.now() - 5 * 60000);
       const duplicateWarnings: Array<{ index: number; activityTypeId: number; minutesAgo: number; message: string }> = [];
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const resolved = await resolveTargetUser(req, item.targetUserId ? Number(item.targetUserId) : undefined, item.activityTypeId);
+      for (let i = 0; i < normalizedItems.length; i++) {
+        const item = normalizedItems[i];
+        const resolved = await resolveTargetUser(req, item.targetUserId ? Number(item.targetUserId) : undefined, item.activityTypeId, item.requestedPtId);
         if ("error" in resolved) continue;
 
         const [recentLog] = await db.select({ id: activityLogsTable.id, createdAt: activityLogsTable.createdAt })
@@ -254,12 +289,12 @@ router.post("/activity-logs/batch", authMiddleware, requireRole(...ALL_ROLES), a
     const results: Array<typeof activityLogsTable.$inferSelect> = [];
     const affectedUserIds = new Set<number>();
 
-    for (const item of items) {
+    for (const item of normalizedItems) {
       const qty = Number(item.quantity) || 1;
       if (qty < 1 || !Number.isInteger(qty)) {
         res.status(400).json({ error: "All quantities must be positive integers" }); return;
       }
-      const resolved = await resolveTargetUser(req, item.targetUserId ? Number(item.targetUserId) : undefined, item.activityTypeId);
+      const resolved = await resolveTargetUser(req, item.targetUserId ? Number(item.targetUserId) : undefined, item.activityTypeId, item.requestedPtId);
       if ("error" in resolved) { res.status(resolved.status).json({ error: resolved.error }); return; }
 
       const points = await calculatePoints(item.activityTypeId, qty);

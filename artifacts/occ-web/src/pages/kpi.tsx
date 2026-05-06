@@ -1,20 +1,23 @@
 import { useState, useEffect } from "react";
-import { useGetKpiLeaderboard, useListPts, useListBranches, type KpiScoreWithUser, type Branch } from "@workspace/api-client-react";
+import { useGetKpiLeaderboard, useListPts, useListBranches, type Branch } from "@workspace/api-client-react";
 import { Trophy, Building2, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from "@/lib/auth";
 
 type Period = "daily" | "weekly" | "monthly" | "yearly";
+type LeaderboardItem = {
+  userId: number;
+  userName?: string | null;
+  ptName?: string | null;
+  ptId?: number | null;
+  branchId?: number | null;
+  score?: string | number | null;
+};
 
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
-function getScore(user: KpiScoreWithUser, period: Period): number {
-  switch (period) {
-    case "daily": return Number(user.currentDailyScore ?? 0);
-    case "weekly": return Number(user.currentWeeklyScore ?? 0);
-    case "monthly": return Number(user.currentMonthlyScore ?? 0);
-    case "yearly": return Number(user.currentYearlyScore ?? 0);
-  }
+function getScore(user: LeaderboardItem): number {
+  return Number(user.score ?? 0);
 }
 
 export default function KPI() {
@@ -42,10 +45,9 @@ export default function KPI() {
     ptId: isChief && filterPtId ? Number(filterPtId) : undefined,
   });
 
-  const filteredLeaderboard = (leaderboard ?? []).filter((u: KpiScoreWithUser) => {
+  const filteredLeaderboard = (leaderboard ?? []).filter((u: LeaderboardItem) => {
     if (isChief && filterBranchId) {
-      const uWithBranch = u as KpiScoreWithUser & { branchId?: number };
-      return uWithBranch.branchId === Number(filterBranchId);
+      return u.branchId === Number(filterBranchId);
     }
     return true;
   });
@@ -55,9 +57,9 @@ export default function KPI() {
     setFilterBranchId("");
   };
 
-  const chartData = filteredLeaderboard.slice(0, 10).map((u: KpiScoreWithUser) => ({
+  const chartData = filteredLeaderboard.slice(0, 10).map((u: LeaderboardItem) => ({
     name: (u.userName ?? "?").split(" ")[0],
-    score: getScore(u, period)
+    score: getScore(u)
   }));
 
   return (
@@ -140,7 +142,7 @@ export default function KPI() {
         <div className="bg-card border rounded-2xl p-6 shadow-sm overflow-y-auto max-h-[400px]">
           <h3 className="font-bold mb-4">Peringkat</h3>
           <div className="space-y-4">
-            {filteredLeaderboard.map((u: KpiScoreWithUser, i: number) => (
+            {filteredLeaderboard.map((u: LeaderboardItem, i: number) => (
               <div key={u.userId} className="flex items-center gap-4">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                   i === 0 ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]' :
@@ -154,7 +156,7 @@ export default function KPI() {
                   <p className="font-medium text-sm truncate">{u.userName ?? "-"}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.ptName ?? "-"}</p>
                 </div>
-                <div className="font-mono font-bold text-lg">{getScore(u, period)}</div>
+                <div className="font-mono font-bold text-lg">{getScore(u)}</div>
               </div>
             ))}
             {filteredLeaderboard.length === 0 && (

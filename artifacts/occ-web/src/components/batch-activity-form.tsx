@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Save, AlertCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useListActivityTypes, useListUsers } from "@workspace/api-client-react";
+import { useListActivityTypes, useListUsers, useListPts } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { canViewPoints } from "@/lib/access-control";
 import type { UserWithRelations } from "@workspace/api-client-react";
 
 type ActivityTypeItem = {
@@ -21,6 +22,8 @@ type RowItem = {
   quantity: number;
   note: string;
   targetUserId: string;
+  targetOtherName: string;
+  ptId: string;
 };
 
 type DuplicateWarning = {
@@ -35,9 +38,11 @@ const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "S
 
 export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSuccess: () => void; presetActivityTypeId?: number }) {
   const { data: allTypes } = useListActivityTypes();
+  const { data: pts = [] } = useListPts();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { user } = useAuth();
+  const showPoints = canViewPoints(user);
 
   const isSPVOrAbove = SPV_AND_ABOVE.includes(user?.roleName ?? "");
   const isChiefOrAbove = CHIEF_AND_ABOVE.includes(user?.roleName ?? "");
@@ -72,26 +77,43 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
     fetchRoleTypes();
   }, [allTypes]);
 
-  const displayTypes = isChiefOrAbove
+  const rawDisplayTypes = isChiefOrAbove
     ? ((allTypes ?? []) as ActivityTypeItem[]).filter(t => t.activeStatus)
     : roleTypes.filter(t => t.activeStatus);
+
+  const displayTypes = [...rawDisplayTypes].sort((a, b) => {
+    const aIsOther = a.name.trim().toLowerCase() === "aktivitas lainnya";
+    const bIsOther = b.name.trim().toLowerCase() === "aktivitas lainnya";
+    if (aIsOther && !bIsOther) return 1;
+    if (!aIsOther && bIsOther) return -1;
+    return a.name.localeCompare(b.name);
+  });
 
   const [rows, setRows] = useState<RowItem[]>([{
     activityTypeId: presetActivityTypeId ? String(presetActivityTypeId) : "",
     quantity: 1,
     note: "",
     targetUserId: "",
+    targetOtherName: "",
+    ptId: user?.ptId ? String(user.ptId) : "",
   }]);
   const [isPending, setIsPending] = useState(false);
   const [duplicateWarnings, setDuplicateWarnings] = useState<DuplicateWarning[] | null>(null);
 
   useEffect(() => {
     if (presetActivityTypeId && rows.length === 1 && rows[0].activityTypeId === "") {
-      setRows([{ activityTypeId: String(presetActivityTypeId), quantity: 1, note: "", targetUserId: "" }]);
+      setRows([{
+        activityTypeId: String(presetActivityTypeId),
+        quantity: 1,
+        note: "",
+        targetUserId: "",
+        targetOtherName: "",
+        ptId: user?.ptId ? String(user.ptId) : "",
+      }]);
     }
-  }, [presetActivityTypeId]);
+  }, [presetActivityTypeId, user?.ptId]);
 
-  const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "" }]);
+  const handleAdd = () => setRows([...rows, { activityTypeId: "", quantity: 1, note: "", targetUserId: "", targetOtherName: "", ptId: user?.ptId ? String(user.ptId) : "" }]);
   const handleRemove = (index: number) => setRows(rows.filter((_, i) => i !== index));
 
   const handleChange = (index: number, field: keyof RowItem, value: string | number) => {
@@ -99,6 +121,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
     newRows[index] = { ...newRows[index], [field]: value };
     if (field === "activityTypeId") {
       newRows[index].targetUserId = "";
+      newRows[index].targetOtherName = "";
     }
     setRows(newRows);
   };
@@ -110,11 +133,32 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
   }
 
   async function submitBatch(confirmDuplicates: boolean) {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!isErrorType(r.activityTypeId)) continue;
+      if (!isSPVOrAbove) continue;
+      if (!r.targetUserId) {
+        toast({ title: "Error", description: `Baris ${i + 1}: pilih anggota error atau Lainnya`, variant: "destructive" });
+        return;
+      }
+      if (r.targetUserId === "__OTHER__" && !r.targetOtherName.trim()) {
+        toast({ title: "Error", description: `Baris ${i + 1}: isi nama untuk opsi Lainnya`, variant: "destructive" });
+        return;
+      }
+    }
+
     const validRows = rows.filter(r => r.activityTypeId && r.quantity > 0).map(r => ({
+      ...(() => {
+        const notePrefix = r.targetUserId === "__OTHER__" && r.targetOtherName.trim()
+          ? `[Request Cabang: ${r.targetOtherName.trim()}]`
+          : "";
+        const mergedNote = [notePrefix, r.note?.trim() ?? ""].filter(Boolean).join(" ");
+        return { note: mergedNote || undefined };
+      })(),
       activityTypeId: Number(r.activityTypeId),
       quantity: Number(r.quantity),
-      note: r.note || undefined,
-      ...(r.targetUserId ? { targetUserId: Number(r.targetUserId) } : {}),
+      ...(r.targetUserId && r.targetUserId !== "__OTHER__" ? { targetUserId: Number(r.targetUserId) } : {}),
+      ...(r.ptId ? { ptId: Number(r.ptId) } : {}),
     }));
 
     if (validRows.length === 0) {
@@ -219,7 +263,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
                     const isErrType = t.category === "Error";
                     return (
                       <option key={t.id} value={t.id}>
-                        {isErrType ? "⚠ " : ""}{t.name} {isErrType ? "(Error)" : `(+${t.weightPoints} poin)`}
+                        {isErrType ? "⚠ " : ""}{t.name} {isErrType ? "(Error)" : (showPoints ? `(+${t.weightPoints} poin)` : "")}
                       </option>
                     );
                   })}
@@ -238,23 +282,45 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
                       {teamUsers.map(u => (
                         <option key={u.id} value={u.id}>{u.name} ({u.roleName})</option>
                       ))}
+                      <option value="__OTHER__">Lainnya (input manual)</option>
                     </select>
                   </div>
                 )}
+                {isError && isSPVOrAbove && row.targetUserId === "__OTHER__" && (
+                  <Input
+                    className="w-full bg-background"
+                    value={row.targetOtherName}
+                    onChange={(e) => handleChange(i, "targetOtherName", e.target.value)}
+                    placeholder="Nama anak cabang yang minta koreksi..."
+                    required
+                  />
+                )}
 
                 <div className="flex gap-2">
+                  <select
+                    className="w-48 h-10 px-3 rounded-md bg-background border text-sm"
+                    value={row.ptId}
+                    onChange={(e) => handleChange(i, "ptId", e.target.value)}
+                  >
+                    <option value="">PT Default (Profil)</option>
+                    {pts.map((pt) => (
+                      <option key={pt.id} value={pt.id}>{pt.name}</option>
+                    ))}
+                  </select>
                   <Input
                     type="number" min="1" placeholder="Qty"
                     value={row.quantity} onChange={e => handleChange(i, "quantity", e.target.value)}
                     className="w-24 bg-background" required
                   />
-                  <Input
-                    type="text" placeholder={isError ? "Deskripsi kesalahan (wajib)..." : "Catatan (opsional)..."}
-                    value={row.note} onChange={e => handleChange(i, "note", e.target.value)}
-                    className="flex-1 bg-background"
-                    required={isError}
-                  />
                 </div>
+
+                <textarea
+                  placeholder={isError ? "Deskripsi kesalahan (wajib)..." : "Catatan (opsional)..."}
+                  value={row.note}
+                  onChange={e => handleChange(i, "note", e.target.value)}
+                  className="w-full min-h-[88px] resize-y rounded-md border bg-background px-3 py-2 text-sm leading-relaxed outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required={isError}
+                />
               </div>
               {rows.length > 1 && (
                 <Button type="button" size="icon" variant="ghost" className="text-destructive mt-1" onClick={() => handleRemove(i)}>
