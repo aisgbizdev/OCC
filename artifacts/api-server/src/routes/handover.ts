@@ -140,15 +140,9 @@ router.patch("/handover-logs/:id", authMiddleware, requireRole(...ALL_ROLES), as
       .where(eq(handoverLogsTable.id, Number(req.params.id))).limit(1);
     if (!existing) { res.status(404).json({ error: "Handover log not found" }); return; }
 
-    const isCreator = existing.createdBy === req.user!.userId;
-    const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(req.user!.roleName);
-    if (!isCreator && !isManager) {
-      res.status(403).json({ error: "Only creator or manager can update handover" }); return;
-    }
-
     const updateData: Partial<typeof handoverLogsTable.$inferInsert> = {};
     if (req.body.notes !== undefined) updateData.notes = req.body.notes;
-    if (isManager && req.body.pendingTasks !== undefined) updateData.pendingTasks = req.body.pendingTasks;
+    if (req.body.pendingTasks !== undefined) updateData.pendingTasks = req.body.pendingTasks;
 
     const [updated] = await db.update(handoverLogsTable).set(updateData)
       .where(eq(handoverLogsTable.id, Number(req.params.id))).returning();
