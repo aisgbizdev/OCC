@@ -242,6 +242,7 @@ async function seed() {
         { name: "Update Juknis & Prosedur",               category: "Operasional", weightPoints: "3", noteRequired: true },
         { name: "Reporting Hierarchy (Bulanan/Kuartalan/Semester/Tahunan)", category: "Operasional", weightPoints: "4", noteRequired: true },
         { name: "Administrasi Perubahan Upline (Marketing Chart)", category: "Support", weightPoints: "4", noteRequired: true },
+        { name: "Mutasi Marketing",                       category: "Support",     weightPoints: "4", noteRequired: true },
         { name: "Meeting",                                category: "Operasional", weightPoints: "4"                },
         { name: "Update Daily Margin / Monthly / Quartal / Semester / Annual", category: "Operasional", weightPoints: "2", noteRequired: true },
         // Semua role
@@ -259,7 +260,11 @@ async function seed() {
     // Keep Co-SPV aligned with SPV so Co-SPV does not end up with only fallback items.
     const roleMap = new Map(roles.map((r) => [r.name, r.id]));
     const typeIdByName = new Map(activityTypes.map((t) => [t.name, t.id]));
-    const spvAndDealerTypeNames = activityTypes.map((t) => t.name);
+    const chiefOnlyTypeNames = new Set<string>(["Mutasi Marketing"]);
+    const spvAndDealerTypeNames = activityTypes
+      .map((t) => t.name)
+      .filter((name) => !chiefOnlyTypeNames.has(name));
+    const chiefTypeNames = activityTypes.map((t) => t.name);
 
     const coSpvRoleIdForMapping = roleMap.get("Co-SPV Dealing");
     const spvRoleIdForMapping = roleMap.get("SPV Dealing");
@@ -267,12 +272,19 @@ async function seed() {
     const chiefRoleIdForMapping = roleMap.get("Chief Dealing");
 
     const mappingRows: Array<{ roleId: number; activityTypeId: number }> = [];
-    for (const roleId of [dealerRoleIdForMapping, spvRoleIdForMapping, coSpvRoleIdForMapping, chiefRoleIdForMapping]) {
+    for (const roleId of [dealerRoleIdForMapping, spvRoleIdForMapping, coSpvRoleIdForMapping]) {
       if (!roleId) continue;
       for (const typeName of spvAndDealerTypeNames) {
         const typeId = typeIdByName.get(typeName);
         if (!typeId) continue;
         mappingRows.push({ roleId, activityTypeId: typeId });
+      }
+    }
+    if (chiefRoleIdForMapping) {
+      for (const typeName of chiefTypeNames) {
+        const typeId = typeIdByName.get(typeName);
+        if (!typeId) continue;
+        mappingRows.push({ roleId: chiefRoleIdForMapping, activityTypeId: typeId });
       }
     }
     if (mappingRows.length > 0) {
@@ -560,6 +572,50 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
     console.error("Failed to backfill Upload MDB activity type:", err);
   }
   // ── Quality Error Types (idempotent, always runs) ─────────────────────────
+  // Backfill chief-only Mutasi Marketing activity type for upgraded environments.
+  try {
+    const { rows: activityRows } = await pool.query(
+      `SELECT id FROM activity_types WHERE name = $1 LIMIT 1`,
+      ["Mutasi Marketing"]
+    );
+    let mutasiMarketingTypeId: number;
+    if (activityRows.length === 0) {
+      const { rows: insertedRows } = await pool.query(
+        `INSERT INTO activity_types (name, category, weight_points, note_required, active_status)
+         VALUES ($1, $2, $3, $4, true)
+         RETURNING id`,
+        ["Mutasi Marketing", "Support", "4", true]
+      );
+      mutasiMarketingTypeId = insertedRows[0].id;
+      console.log("Inserted activity type: Mutasi Marketing");
+    } else {
+      mutasiMarketingTypeId = activityRows[0].id;
+    }
+
+    const { rows: chiefRows } = await pool.query(
+      `SELECT id FROM roles WHERE name = $1 LIMIT 1`,
+      ["Chief Dealing"]
+    );
+    if (chiefRows.length > 0) {
+      const chiefRoleId = chiefRows[0].id;
+      await pool.query(
+        `INSERT INTO role_activity_types (role_id, activity_type_id)
+         VALUES ($1, $2)
+         ON CONFLICT (role_id, activity_type_id) DO NOTHING`,
+        [chiefRoleId, mutasiMarketingTypeId]
+      );
+      await pool.query(
+        `DELETE FROM role_activity_types
+         WHERE activity_type_id = $1
+           AND role_id <> $2`,
+        [mutasiMarketingTypeId, chiefRoleId]
+      );
+      console.log("Chief-only mapping ensured: Mutasi Marketing");
+    }
+  } catch (err) {
+    console.error("Failed to backfill Mutasi Marketing activity type:", err);
+  }
+
   try {
     const existing = await db.select({ id: qualityErrorTypesTable.id }).from(qualityErrorTypesTable).limit(1);
     if (existing.length > 0) {
