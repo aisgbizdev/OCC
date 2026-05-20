@@ -13,7 +13,7 @@ import {
   type Branch,
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw, Trash2, MessageSquareReply, BadgeCheck, CircleDot } from "lucide-react";
+import { Repeat, Plus, CheckCircle2, AlertTriangle, ClipboardList, Copy, Share2, Building2, MapPin, Filter, Pencil, RefreshCw, Trash2, MessageSquareReply, BadgeCheck, CircleDot, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +38,7 @@ export default function Handover() {
 
   const [filterPtId, setFilterPtId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
+  const [filterQuery, setFilterQuery] = useState("");
 
   const { data: pts } = useListPts();
   const { data: filterBranches } = useListBranches(
@@ -50,6 +51,21 @@ export default function Handover() {
 
   const filteredLogs = (logs ?? []).filter((log: HandoverLogWithRelations) => {
     if (isChief && filterBranchId && (log as HandoverLogWithRelations & { branchId?: number }).branchId !== Number(filterBranchId)) return false;
+    if (filterQuery.trim()) {
+      const logWithBranch = log as HandoverLogWithRelations & { ptName?: string | null; branchName?: string | null };
+      const haystack = [
+        log.creatorName,
+        log.fromShiftName,
+        log.toShiftName,
+        log.summary,
+        log.notes,
+        logWithBranch.ptName,
+        logWithBranch.branchName,
+      ]
+        .map((value) => (value ?? "").toLowerCase())
+        .join(" ");
+      if (!haystack.includes(filterQuery.trim().toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -202,7 +218,7 @@ NOTES: ${log.notes ?? "-"}`;
     }
   };
 
-  const hasFilters = filterPtId || filterBranchId;
+  const hasFilters = filterPtId || filterBranchId || filterQuery.trim();
 
   return (
     <div className="space-y-6">
@@ -220,6 +236,15 @@ NOTES: ${log.notes ?? "-"}`;
 
       {isChief && (
         <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative">
+            <Search className="w-4 h-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              className="h-9 pl-8 pr-3 rounded-md bg-background border text-sm min-w-[220px]"
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              placeholder="Ketik filter handover..."
+            />
+          </div>
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
             <select
@@ -248,7 +273,26 @@ NOTES: ${log.notes ?? "-"}`;
             </select>
           </div>
           {hasFilters && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); }}>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setFilterPtId(""); setFilterBranchId(""); setFilterQuery(""); }}>
+              <Filter className="w-3.5 h-3.5" /> Reset Filter
+            </Button>
+          )}
+        </div>
+      )}
+
+      {!isChief && (
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative">
+            <Search className="w-4 h-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              className="h-9 pl-8 pr-3 rounded-md bg-background border text-sm min-w-[220px]"
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              placeholder="Ketik filter handover..."
+            />
+          </div>
+          {hasFilters && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setFilterQuery("")}>
               <Filter className="w-3.5 h-3.5" /> Reset Filter
             </Button>
           )}
