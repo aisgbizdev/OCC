@@ -8,7 +8,7 @@ import { sendPushToRoles } from "../lib/push";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System"];
 const ADMIN_ROLES = ["Owner", "Admin System"];
 
 router.get("/system-settings", authMiddleware, requireRole(...ALL_ROLES), async (_req, res) => {
@@ -78,7 +78,7 @@ router.get("/audit-logs", authMiddleware, requireRole(...ADMIN_ROLES), async (re
   }
 });
 
-router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Admin System"), async (_req, res) => {
+router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Dealing", "SPV Dealing", "Corporate", "Admin System"), async (_req, res) => {
   try {
     const warningSetting = await db.select().from(systemSettingsTable)
       .where(eq(systemSettingsTable.settingKey, "inactivity_warning_hours")).limit(1);
@@ -155,7 +155,7 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
           tag: `inactive-critical-${dealer.userId}`,
           type: "critical",
         }).catch(console.error);
-        sendPushToRoles(["SPV Dealing", "Chief Dealing"], {
+        sendPushToRoles(["SPV Dealing", "Corporate", "Chief Dealing"], {
           title: "Dealer Tidak Aktif",
           body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
           url: "/system",
@@ -163,7 +163,7 @@ router.get("/inactivity/check", authMiddleware, requireRole("Owner", "Chief Deal
           type: "critical",
         }).catch(console.error);
       } else {
-        sendPushToRoles(["SPV Dealing", "Chief Dealing"], {
+        sendPushToRoles(["SPV Dealing", "Corporate", "Chief Dealing"], {
           title: "Peringatan Inaktivitas Dealer",
           body: `${dealer.userName} tidak aktif selama ${dealer.hoursInactive} jam`,
           url: "/system",

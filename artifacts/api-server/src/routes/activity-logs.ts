@@ -7,7 +7,7 @@ import { createAuditLog } from "../helpers/audit";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
 
 async function enrichLog(log: typeof activityLogsTable.$inferSelect) {
   const [actType] = await db.select().from(activityTypesTable).where(eq(activityTypesTable.id, log.activityTypeId)).limit(1);
@@ -108,7 +108,7 @@ router.get("/activity-logs", authMiddleware, requireRole(...ALL_ROLES), async (r
   }
 });
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"];
 
 async function resolveTargetUser(
   req: { user?: { userId: number; roleName: string; ptId?: number | null } },
@@ -130,7 +130,7 @@ async function resolveTargetUser(
     const [target] = await db.select({ id: usersTable.id, ptId: usersTable.ptId, roleName: usersTable.roleId })
       .from(usersTable).where(eq(usersTable.id, targetUserId)).limit(1);
     if (!target) return { error: "Target user tidak ditemukan", status: 404 };
-    if (caller.roleName === "SPV Dealing" && caller.ptId && target.ptId !== caller.ptId) {
+    if (["SPV Dealing", "Corporate"].includes(caller.roleName) && caller.ptId && target.ptId !== caller.ptId) {
       return { error: "SPV hanya bisa mencatat error untuk anggota di PT yang sama", status: 403 };
     }
     if (requestedPtId !== undefined && target.ptId !== null && requestedPtId !== target.ptId) {

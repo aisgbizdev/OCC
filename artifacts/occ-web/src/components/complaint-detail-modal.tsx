@@ -115,7 +115,7 @@ const TYPE_LABELS: Record<string, string> = {
   system: "Sistem",
 };
 
-const CAN_UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const CAN_UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"];
 
 async function apiFetch(url: string, init?: RequestInit) {
   const res = await fetch(url, init);

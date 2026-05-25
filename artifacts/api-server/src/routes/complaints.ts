@@ -11,11 +11,11 @@ import { sendPushToRoles, sendPushToUsers } from "../lib/push";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
-const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
-const UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Admin System", "Superadmin"];
-const SPV_NOTIFY_ROLES = ["SPV Dealing", "Co-SPV Dealing", "Chief Dealing", "Owner", "Direksi", "Superadmin"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
+const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System", "Superadmin"];
+const UPDATE_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Admin System", "Superadmin"];
+const SPV_NOTIFY_ROLES = ["SPV Dealing", "Corporate", "Co-SPV Dealing", "Chief Dealing", "Owner", "Direksi", "Superadmin"];
 
 async function enrichComplaint(complaint: typeof complaintsTable.$inferSelect) {
   const assignedUser = complaint.assignedUserId
@@ -267,7 +267,7 @@ router.post("/complaints", authMiddleware, requireRole(...CREATE_ROLES), async (
       }).catch(console.error);
     }
 
-    sendPushToRoles(["SPV Dealing", "Chief Dealing", "Owner"], {
+    sendPushToRoles(["SPV Dealing", "Corporate", "Chief Dealing", "Owner"], {
       title: `Komplain Baru${severity === "high" ? " — URGENSI TINGGI" : ""}`,
       body: title,
       url: `/complaints`,

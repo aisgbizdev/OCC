@@ -81,7 +81,7 @@ export default function Handover() {
   const [savingReply, setSavingReply] = useState(false);
   const [solvingLogId, setSolvingLogId] = useState<number | null>(null);
 
-  const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(user?.roleName ?? "");
+  const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(user?.roleName ?? "");
 
   const handleEditNotes = (log: HandoverLogWithRelations) => {
     setEditLog(log);

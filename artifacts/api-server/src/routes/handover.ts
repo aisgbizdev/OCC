@@ -7,8 +7,8 @@ import { createAuditLog } from "../helpers/audit";
 
 const router: IRouter = Router();
 
-const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
-const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"];
+const ALL_ROLES = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System"];
+const CREATE_ROLES = ["Owner", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System"];
 
 async function enrichHandover(log: typeof handoverLogsTable.$inferSelect) {
   const creator = log.createdBy
@@ -162,7 +162,7 @@ router.delete("/handover-logs/:id", authMiddleware, requireRole(...ALL_ROLES), a
     if (!existing) { res.status(404).json({ error: "Handover log not found" }); return; }
 
     const isCreator = existing.createdBy === req.user!.userId;
-    const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(req.user!.roleName);
+    const isManager = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"].includes(req.user!.roleName);
     if (!isCreator && !isManager) {
       res.status(403).json({ error: "Only creator or manager can delete handover" }); return;
     }

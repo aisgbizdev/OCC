@@ -65,6 +65,7 @@ async function seed() {
         { name: "Direksi",         description: "View dashboards and PT performance" },
         { name: "Chief Dealing",   description: "Manage all PT teams, assign tasks, view KPI all PT" },
         { name: "SPV Dealing",     description: "Monitor shift, assign tasks, create complaints" },
+        { name: "Corporate",       description: "Corporate operational role with SPV-level access" },
         { name: "Co-SPV Dealing",  description: "Assist all SPVs cross-PT, no PT restriction" },
         { name: "Dealer",          description: "Log activities, update tasks, view personal KPI" },
         { name: "Admin System",    description: "Manage system configuration and master data" },
@@ -100,6 +101,7 @@ async function seed() {
     const adminRole      = roles.find((r) => r.name === "Admin System")!;
     const chiefRole      = roles.find((r) => r.name === "Chief Dealing")!;
     const spvRole        = roles.find((r) => r.name === "SPV Dealing")!;
+    const corporateRole  = roles.find((r) => r.name === "Corporate")!;
     const coSpvRole      = roles.find((r) => r.name === "Co-SPV Dealing")!;
     const dealerRole     = roles.find((r) => r.name === "Dealer")!;
     const direksiRole    = roles.find((r) => r.name === "Direksi")!;
@@ -114,6 +116,7 @@ async function seed() {
     const spvPerms     = permissions
       .filter((p) => ["dashboard.view","activity.create","activity.edit","task.create","task.edit","task.assign","complaint.create","complaint.edit","kpi.view_all","announcement.create","chat.create_group"].includes(p.code))
       .map((p) => ({ roleId: spvRole.id, permissionId: p.id }));
+    const corporatePerms = spvPerms.map((p) => ({ roleId: corporateRole.id, permissionId: p.permissionId }));
     const coSpvPerms   = permissions
       .filter((p) => ["dashboard.view","activity.create","activity.edit","task.create","task.edit","task.assign","complaint.create","complaint.edit","kpi.view_all","announcement.create","chat.create_group"].includes(p.code))
       .map((p) => ({ roleId: coSpvRole.id, permissionId: p.id }));
@@ -126,7 +129,7 @@ async function seed() {
 
     await db.insert(rolePermissionsTable).values([
       ...ownerPerms, ...adminPerms, ...chiefPerms,
-      ...spvPerms, ...coSpvPerms, ...dealerPerms, ...direksiPerms,
+      ...spvPerms, ...corporatePerms, ...coSpvPerms, ...dealerPerms, ...direksiPerms,
     ]);
     console.log("Role permissions assigned");
 
@@ -267,12 +270,13 @@ async function seed() {
     const chiefTypeNames = activityTypes.map((t) => t.name);
 
     const coSpvRoleIdForMapping = roleMap.get("Co-SPV Dealing");
+    const corporateRoleIdForMapping = roleMap.get("Corporate");
     const spvRoleIdForMapping = roleMap.get("SPV Dealing");
     const dealerRoleIdForMapping = roleMap.get("Dealer");
     const chiefRoleIdForMapping = roleMap.get("Chief Dealing");
 
     const mappingRows: Array<{ roleId: number; activityTypeId: number }> = [];
-    for (const roleId of [dealerRoleIdForMapping, spvRoleIdForMapping, coSpvRoleIdForMapping]) {
+    for (const roleId of [dealerRoleIdForMapping, spvRoleIdForMapping, corporateRoleIdForMapping, coSpvRoleIdForMapping]) {
       if (!roleId) continue;
       for (const typeName of spvAndDealerTypeNames) {
         const typeId = typeIdByName.get(typeName);
@@ -422,7 +426,6 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
       // ── SGB ────────────────────────────────────────────────────────────
       { name: "Iriawan Widadi",           email: "du_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
       { name: "Ahmad Fauzi",              email: "dk_sgb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Johan Fredric B S",        email: "johan.sgb@occ.id",           passwordHash: pw, roleId: spvRole.id,     ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "SPV Dealing", jobDescription: JD_EKO },
       { name: "Yehezkiel Vava Ringgo",    email: "yehezkiel.sgb@occ.id",       passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Dwi Astuti",               email: "dwi.sgb@occ.id",             passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Farid Astra Ridha",        email: "farid.sgb@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: sgb.id, branchId: b0.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
@@ -432,7 +435,6 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
       // ── RFB ────────────────────────────────────────────────────────────
       { name: "Riyan Kurniawan",          email: "du_rfb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
       { name: "Mega Helia Purnama Putri", email: "dk_rfb@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Johan Fredric B S",        email: "johan.rfb@occ.id",           passwordHash: pw, roleId: spvRole.id,     ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "SPV Dealing", jobDescription: JD_EKO },
       { name: "An Nisa Rahmalia",         email: "annisa.rfb@occ.id",          passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Andreas Blasius David",    email: "andreas.rfb@occ.id",         passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Muhammad Zahri",           email: "zahri.rfb@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: rfb.id, branchId: b1.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
@@ -442,7 +444,6 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
       // ── KPF ────────────────────────────────────────────────────────────
       { name: "Lukman Wahyudin",          email: "du_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
       { name: "Egi Ramadian NP",          email: "dk_kpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Johan Fredric B S",        email: "johan.kpf@occ.id",           passwordHash: pw, roleId: spvRole.id,     ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "SPV Dealing", jobDescription: JD_EKO },
       { name: "Tiara Destia Ramadhan",    email: "tiara.kpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Ellin Jackline",           email: "ellin.kpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Bahagia Sihura",           email: "bahagia.kpf@occ.id",         passwordHash: pw, roleId: dealerRole.id,  ptId: kpf.id, branchId: b2.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
@@ -452,7 +453,6 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
       // ── BPF ────────────────────────────────────────────────────────────
       { name: "Nurwanto",                 email: "du_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
       { name: "Akhmad Royani",            email: "dk_bpf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Johan Fredric B S",        email: "johan.bpf@occ.id",           passwordHash: pw, roleId: spvRole.id,     ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "SPV Dealing", jobDescription: JD_EKO },
       { name: "Linda Evans",              email: "linda.bpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Bayu Setiawan",            email: "bayu.bpf@occ.id",            passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Yulsa",                    email: "yulsa.bpf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: bpf.id, branchId: b3.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
@@ -462,14 +462,13 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
       // ── EWF ────────────────────────────────────────────────────────────
       { name: "Agus Wijayanto",           email: "du_ewf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Direktur Utama" },
       { name: "Fadly Khairuzzadhi, M.H.", email: "dk_ewf@occ.id",              passwordHash: pw, roleId: direksiRole.id, ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Direktur Kepatuhan" },
-      { name: "Johan Fredric B S",        email: "johan.ewf@occ.id",           passwordHash: pw, roleId: spvRole.id,     ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "SPV Dealing", jobDescription: JD_EKO },
       { name: "Hadi Susanto",             email: "hadi.ewf@occ.id",            passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Nilam Larassita",          email: "nilam.ewf@occ.id",           passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: siang.id, positionTitle: "Dealer", jobDescription: JD_DEALER_PAGI_SIANG },
       { name: "Andhika",                  email: "andhika.ewf@occ.id",         passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
       { name: "Daniel Simorangkir",       email: "daniel.ewf@occ.id",          passwordHash: pw, roleId: dealerRole.id,  ptId: ewf.id, branchId: b4.id, shiftId: malam.id, positionTitle: "Dealer", jobDescription: JD_DEALER_MALAM },
       { name: "Widi Hartono",             email: "admin.ewf@occ.id",           passwordHash: pw, roleId: adminRole.id,   ptId: ewf.id, branchId: b4.id, shiftId: pagi.id,  positionTitle: "Admin System" },
     ]);
-    console.log("Created 48 users (8 HQ + 5 SPV + 5 Direksi x2 + 5 Dealer x4 + 5 Admin)");
+    console.log("Created 43 users (8 HQ + 5×Direksi×2 + 5×Dealer×4 + 5×Admin)");
 
     await db.insert(systemSettingsTable).values([
       { settingKey: "daily_target_points",          settingValue: "40", description: "Daily KPI target points per dealer" },
@@ -481,14 +480,13 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
     ]);
     console.log("Created system settings");
 
-    console.log("\n✓ Seed complete! 48 users (password: password123)");
+    console.log("\n✓ Seed complete! 43 users (password: password123)");
     console.log("─── HQ/Lintas-PT ──────────────────────────────────────────");
     console.log("  superadmin@occ.id | owner@occ.id");
     console.log("  kiki@occ.id.v23-real-team (Kiki Zainab Prameswari — Chief)");
     console.log("  amel.sgb@occ.id (Amelia Rosita R — Co-SPV) | rusnawati@occ.id (Rusnawati — Co-SPV)");
     console.log("  eko.sgb@occ.id (Eko Hadi — SPV Pagi) | fahrul.sgb@occ.id (Fahrul Rozi — SPV Malam)");
     console.log("  adid.sgb@occ.id (Mujaddid Sabillah — SPV Malam)");
-    console.log("  johan.sgb/rfb/kpf/bpf/ewf@occ.id (Johan Fredric B S - SPV per PT)");
     console.log("─── Dealers per PT (4 each: Pagi/Siang/Malam/Malam) ──────");
     console.log("  SGB: yehezkiel / dwi / farid / haikal");
     console.log("  RFB: annisa / andreas / zahri / giovanny");
@@ -497,63 +495,38 @@ Menindaklanjuti keterlambatan pengiriman statement bersama shift berikutnya bila
     console.log("  EWF: hadi / nilam / andhika / daniel");
   } // end if (!skipMainSeed)
 
-  // Backfill Johan as SPV in every PT for upgraded environments.
+  // Backfill Corporate role with SPV-level permissions and activity mappings.
   try {
-    const pw = await bcryptjs.hash("password123", 10);
-    const { rows: roleRows } = await pool.query(
+    const { rows: corporateRows } = await pool.query(
+      `INSERT INTO roles (name, description)
+       VALUES ($1, $2)
+       ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description, updated_at = NOW()
+       RETURNING id`,
+      ["Corporate", "Corporate operational role with SPV-level access"]
+    );
+    const corporateRoleId = corporateRows[0].id;
+    const { rows: spvRows } = await pool.query(
       `SELECT id FROM roles WHERE name = $1 LIMIT 1`,
       ["SPV Dealing"]
     );
-    const { rows: shiftRows } = await pool.query(
-      `SELECT id FROM shifts WHERE name = $1 LIMIT 1`,
-      ["Pagi"]
-    );
-    const { rows: ptRows } = await pool.query(
-      `SELECT id, code FROM pts ORDER BY id`
-    );
-    const { rows: branchRows } = await pool.query(
-      `SELECT DISTINCT ON (pt_id) id, pt_id
-       FROM branches
-       ORDER BY pt_id, id`
-    );
-
-    if (roleRows.length > 0 && shiftRows.length > 0 && ptRows.length > 0) {
-      const spvRoleId = roleRows[0].id;
-      const pagiShiftId = shiftRows[0].id;
-      const firstBranchByPtId = new Map<number, number>(
-        branchRows.map((branch: { id: number; pt_id: number }) => [branch.pt_id, branch.id])
+    if (spvRows.length > 0) {
+      const spvRoleId = spvRows[0].id;
+      await pool.query(
+        `INSERT INTO role_permissions (role_id, permission_id)
+         SELECT $1, permission_id FROM role_permissions WHERE role_id = $2
+         ON CONFLICT (role_id, permission_id) DO NOTHING`,
+        [corporateRoleId, spvRoleId]
       );
-
-      for (const pt of ptRows as Array<{ id: number; code: string }>) {
-        const branchId = firstBranchByPtId.get(pt.id) ?? null;
-        await pool.query(
-          `INSERT INTO users (name, email, password_hash, role_id, pt_id, branch_id, shift_id, position_title, active_status, dnd_enabled)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, false)
-           ON CONFLICT (email) DO UPDATE SET
-             name = EXCLUDED.name,
-             role_id = EXCLUDED.role_id,
-             pt_id = EXCLUDED.pt_id,
-             branch_id = EXCLUDED.branch_id,
-             shift_id = EXCLUDED.shift_id,
-             position_title = EXCLUDED.position_title,
-             active_status = true,
-             updated_at = NOW()`,
-          [
-            "Johan Fredric B S",
-            `johan.${pt.code.toLowerCase()}@occ.id`,
-            pw,
-            spvRoleId,
-            pt.id,
-            branchId,
-            pagiShiftId,
-            "SPV Dealing",
-          ]
-        );
-      }
-      console.log("Johan Fredric B S SPV per PT backfill complete.");
+      await pool.query(
+        `INSERT INTO role_activity_types (role_id, activity_type_id)
+         SELECT $1, activity_type_id FROM role_activity_types WHERE role_id = $2
+         ON CONFLICT (role_id, activity_type_id) DO NOTHING`,
+        [corporateRoleId, spvRoleId]
+      );
+      console.log("Corporate role backfill complete.");
     }
   } catch (err) {
-    console.error("Failed to backfill Johan Fredric B S SPV users:", err);
+    console.error("Failed to backfill Corporate role:", err);
   }
 
   // ── Error Activity Types (idempotent, always runs) ───────────────────────

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { can, canCreate, canDeleteActivityLog, canEditActivityLog, canViewPoints } from "@/lib/access-control";
 
-const CHIEF_TO_SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const CHIEF_TO_SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 // Edit: Owner/Admin System bypass window; all non-Dealer roles can edit anyone's log (within window)
 

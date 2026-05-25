@@ -10,6 +10,7 @@ export type RoleName =
   | "Direksi"
   | "Chief Dealing"
   | "SPV Dealing"
+  | "Corporate"
   | "Co-SPV Dealing"
   | "Dealer"
   | "Admin System";
@@ -70,6 +71,7 @@ const ALL_ROLES: readonly RoleName[] = [
   "Direksi",
   "Chief Dealing",
   "SPV Dealing",
+  "Corporate",
   "Co-SPV Dealing",
   "Dealer",
   "Admin System",
@@ -79,6 +81,7 @@ const MGMT_ROLES: readonly RoleName[] = [
   "Owner",
   "Chief Dealing",
   "SPV Dealing",
+  "Corporate",
   "Co-SPV Dealing",
   "Admin System",
 ];
@@ -87,6 +90,7 @@ const COMPLAINT_CREATE_ROLES: readonly RoleName[] = [
   "Owner",
   "Chief Dealing",
   "SPV Dealing",
+  "Corporate",
   "Co-SPV Dealing",
   "Dealer",
   "Admin System",
@@ -99,6 +103,7 @@ const SPV_AND_ABOVE: readonly RoleName[] = [
   "Direksi",
   "Chief Dealing",
   "SPV Dealing",
+  "Corporate",
   "Co-SPV Dealing",
   "Admin System",
 ];
@@ -115,6 +120,7 @@ const BRANCH_OVERVIEW_ROLES: readonly RoleName[] = [
   "Direksi",
   "Chief Dealing",
   "SPV Dealing",
+  "Corporate",
   "Co-SPV Dealing",
   "Admin System",
 ];
@@ -124,6 +130,7 @@ const USER_VIEW_ROLES: readonly RoleName[] = [
   "Admin System",
   "Chief Dealing",
   "SPV Dealing",
+  "Corporate",
   "Co-SPV Dealing",
   "Direksi",
 ];
@@ -145,8 +152,8 @@ const ACCESS_MATRIX: AccessMatrix = {
   chat: { view: ALL_ROLES, send: ALL_ROLES, create: ALL_ROLES },
   handover: {
     view: ALL_ROLES,
-    create: ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"],
-    delete: ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Dealer", "Admin System"],
+    create: ["Owner", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System"],
+    delete: ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Dealer", "Admin System"],
   },
   notification: { view: ALL_ROLES },
   user: {
@@ -162,7 +169,7 @@ const ACCESS_MATRIX: AccessMatrix = {
   branchOverview: { view: BRANCH_OVERVIEW_ROLES, create: ADMIN_ROLES, delete: ADMIN_ROLES },
   kpi: { view: ALL_ROLES },
   kpiSnapshot: {
-    view: ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"],
+    view: ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System"],
     create: ADMIN_ROLES,
   },
   wallboard: { view: ADMIN_ROLES },
@@ -215,7 +222,7 @@ export function canCreateGroupChat(user: AccessUser): boolean {
   const role = getRoleName(user);
   if (!role) return false;
   if (role === "Superadmin") return true;
-  return ["Owner", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System"].includes(role);
+  return ["Owner", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System"].includes(role);
 }
 
 export function canEdit(moduleKey: ModuleKey, user: AccessUser): boolean {

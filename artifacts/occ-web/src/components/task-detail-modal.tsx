@@ -40,7 +40,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
-const MANAGER_ROLES = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin", "SPV Dealing", "Co-SPV Dealing"];
+const MANAGER_ROLES = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin", "SPV Dealing", "Corporate", "Co-SPV Dealing"];
 
 interface TaskDetailModalProps {
   task: TaskEnriched;

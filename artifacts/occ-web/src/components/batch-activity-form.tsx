@@ -33,7 +33,7 @@ type DuplicateWarning = {
   message: string;
 };
 
-const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Co-SPV Dealing", "Admin System", "Superadmin"];
+const SPV_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "SPV Dealing", "Corporate", "Co-SPV Dealing", "Admin System", "Superadmin"];
 const CHIEF_AND_ABOVE = ["Owner", "Direksi", "Chief Dealing", "Admin System", "Superadmin"];
 
 export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSuccess: () => void; presetActivityTypeId?: number }) {
@@ -51,7 +51,7 @@ export function BatchActivityForm({ onSuccess, presetActivityTypeId }: { onSucce
   const { data: teamUsersRaw = [] } = useListUsers({ ptId: myPtId ?? undefined });
   const teamUsers = isSPVOrAbove
     ? (teamUsersRaw as UserWithRelations[]).filter(u =>
-        ["SPV Dealing", "Dealer"].includes(u.roleName ?? "")
+        ["SPV Dealing", "Corporate", "Dealer"].includes(u.roleName ?? "")
       )
     : [];
 

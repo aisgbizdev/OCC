@@ -174,7 +174,7 @@ export default function Dashboard() {
 
   const role = user.roleName ?? "";
   if (role === "Dealer") return <DealerDashboard />;
-  if (role === "SPV Dealing" || role === "Chief Dealing") return <SupervisorDashboard />;
+  if (role === "SPV Dealing" || role === "Corporate" || role === "Chief Dealing") return <SupervisorDashboard />;
   if (role === "Owner" || role === "Direksi" || role === "Superadmin") return <ManagementDashboard />;
   return <DealerDashboard />;
 }
@@ -262,7 +262,7 @@ function DealerDashboard() {
 
 function SupervisorDashboard() {
   const { user } = useAuth();
-  const isSpv = user?.roleName === "SPV Dealing";
+  const isSpv = user?.roleName === "SPV Dealing" || user?.roleName === "Corporate";
   const showPoints = canViewPoints(user);
   const { data: scores } = useListKpiScores({ ptId: user?.ptId });
   const { data: tasks } = useListTasks({ ptId: user?.ptId });

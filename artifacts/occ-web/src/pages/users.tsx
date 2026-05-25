@@ -33,6 +33,7 @@ const ROLE_CONFIG: Record<string, { color: string; bg: string; icon: React.React
   "Chief Dealing":   { color: "text-emerald-400", bg: "bg-emerald-500/10", icon: <Star className="w-3.5 h-3.5" /> },
   "Co-SPV Dealing":  { color: "text-yellow-400",  bg: "bg-yellow-500/10",  icon: <Users className="w-3.5 h-3.5" /> },
   "SPV Dealing":     { color: "text-orange-400",  bg: "bg-orange-500/10",  icon: <Star className="w-3.5 h-3.5" /> },
+  "Corporate":       { color: "text-orange-400",  bg: "bg-orange-500/10",  icon: <Star className="w-3.5 h-3.5" /> },
   "Dealer":          { color: "text-cyan-400",    bg: "bg-cyan-500/10",    icon: <TrendingUp className="w-3.5 h-3.5" /> },
   "Admin System":    { color: "text-rose-400",    bg: "bg-rose-500/10",    icon: <Settings className="w-3.5 h-3.5" /> },
 };
